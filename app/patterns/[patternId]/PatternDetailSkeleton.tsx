@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PatternPurchaseBar from "@/components/PatternPurchaseBar";
 import TopBar from "@/components/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,22 +13,38 @@ type PatternDetailData = {
   author: string;
   credits: number;
   image: string;
+  hasPurchased: boolean;
+  details: {
+    category: string;
+    size: string;
+    measurement: string;
+    needle: string;
+    yarn: string;
+    amount: string;
+    gauge: string;
+  };
 };
 
 type PatternDetailSkeletonProps = {
   pattern: PatternDetailData;
 };
 
-function HeartIcon() {
+const detailRows = [
+  { label: "카테고리", key: "category" },
+  { label: "사이즈", key: "size" },
+  { label: "실측", key: "measurement" },
+  { label: "사용바늘", key: "needle" },
+  { label: "원작실", key: "yarn" },
+  { label: "소요량", key: "amount" },
+  { label: "게이지", key: "gauge" },
+] as const;
+
+function CreditBadge({ credits }: { credits: number }) {
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-6 w-6 fill-none stroke-[#e98f9b]"
-      strokeWidth="2"
-    >
-      <path d="M12.1 20.7c-.1.1-.3.1-.4 0-5-4.5-8.2-7.4-8.2-11A4.9 4.9 0 0 1 8.4 4.8c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8a4.9 4.9 0 0 1 4.9 4.9c0 3.6-3.2 6.5-8.2 11Z" />
-    </svg>
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59cbe5]">
+      <span className="inline-block h-3 w-3 rounded-full bg-[#59cbe5]" />
+      {credits} 크레딧
+    </span>
   );
 }
 
@@ -36,10 +53,9 @@ export default function PatternDetailSkeleton({
 }: PatternDetailSkeletonProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<"description" | "alternative">(
-    "description",
-  );
+  const [activeTab, setActiveTab] = useState<"description" | "alternative">("description");
   const profileHref = isAuthenticated ? "/mypage" : "/login";
+  const chatRoomTitle = `${pattern.title} 실시간 채팅방`;
 
   return (
     <div className="min-h-screen bg-[#ececec]">
@@ -54,8 +70,8 @@ export default function PatternDetailSkeleton({
           ]}
         />
 
-        <section className="px-4 pt-3">
-          <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-2xl">
+        <section>
+          <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden">
             <Image
               src={pattern.image}
               alt={`${pattern.title} hero image`}
@@ -71,32 +87,41 @@ export default function PatternDetailSkeleton({
         </section>
 
         <section className="mt-5 px-4">
-          <article className="rounded-2xl border border-[#dcdcdc] bg-white p-4">
-            <h2 className="text-sm font-bold text-[#2f2f2f]">실시간 채팅방</h2>
+          <article className="rounded-2xl border border-[#ffaba6] bg-white p-4">
+            <h2 className="text-sm font-bold text-[#6c6c6c]">{chatRoomTitle}</h2>
 
             <div className="mt-3 flex -space-x-2">
               {[1, 2, 3, 4].map((id) => (
                 <div
                   key={id}
-                  className="h-7 w-7 rounded-full border-2 border-white bg-[#f3c5cc]"
+                  className={`h-7 w-7 rounded-full border-2 border-white ${
+                    pattern.hasPurchased ? "bg-[#f3c5cc]" : "bg-[#f5f5f5]"
+                  } ${pattern.hasPurchased ? "" : "opacity-0"}`}
                 />
               ))}
             </div>
 
             <div className="mt-4 space-y-2">
-              <div className="h-2.5 w-3/4 rounded-full bg-[#ececec]" />
-              <div className="h-2.5 w-2/3 rounded-full bg-[#ececec]" />
+              {pattern.hasPurchased ? (
+                <>
+                  <div className="h-2.5 w-3/4 rounded-full bg-[#ececec]" />
+                  <div className="h-2.5 w-2/3 rounded-full bg-[#ececec]" />
+                </>
+              ) : (
+                <>
+                  <div className="h-2.5 w-3/4 rounded-full bg-[#ececec] opacity-0" />
+                  <div className="h-2.5 w-2/3 rounded-full bg-[#ececec] opacity-0" />
+                </>
+              )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#888]">
-                입장 비용 {pattern.credits} 크레딧
-              </span>
+            <div className="mt-4">
               <button
                 type="button"
-                className="rounded-lg bg-[#ec9ca5] px-3 py-2 text-xs font-bold text-white"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#ffa8a8] bg-[#fff1ed] px-3 text-sm font-bold text-[#777777]"
               >
-                채팅방 입장하기
+                {pattern.hasPurchased ? "채팅방 참여하기" : "채팅방 입장하기"}
+                {pattern.hasPurchased ? null : <CreditBadge credits={pattern.credits} />}
               </button>
             </div>
           </article>
@@ -111,7 +136,7 @@ export default function PatternDetailSkeleton({
                 activeTab === "description" ? "text-[#ec9ca5]" : "text-[#888]"
               }`}
             >
-              도안설명
+              상세정보
               {activeTab === "description" ? (
                 <span className="absolute left-1/2 -bottom-px h-[2px] w-16 -translate-x-1/2 bg-[#ec9ca5]" />
               ) : null}
@@ -130,19 +155,27 @@ export default function PatternDetailSkeleton({
             </button>
           </div>
 
-          <div className="mt-4 rounded-xl bg-white p-4 text-sm text-[#666]">
+          <div className="mt-4">
             {activeTab === "description" ? (
-              <p>
-                도안 설명 영역 (UI 스켈레톤)
-                <br />
-                사이즈, 난이도, 사용 바늘/실 정보 등이 들어갈 예정입니다.
-              </p>
+              <div className="overflow-hidden border">
+                {detailRows.map((row) => (
+                  <div
+                    key={row.key}
+                    className="grid grid-cols-[104px_1fr] border-b bg-[#ffe5e5] last:border-b-0"
+                  >
+                    <div className="flex min-h-[52px] items-center px-4 text-sm font-bold text-[#555]">
+                      {row.label}
+                    </div>
+                    <div className="flex min-h-[52px] items-center justify-end px-4 text-sm font-semibold text-[#9a9a9a]">
+                      {pattern.details[row.key]}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <p>
-                대체실 정보 영역 (UI 스켈레톤)
-                <br />
-                실 대체 추천 목록과 게이지 참고 정보가 들어갈 예정입니다.
-              </p>
+              <div className="rounded-xl bg-[#f5e5e5] p-4 text-sm text-[#7e7e7e]">
+                대체실정보는 추후 API 연동 후 제공될 예정입니다.
+              </div>
             )}
           </div>
         </section>
@@ -152,23 +185,7 @@ export default function PatternDetailSkeleton({
         </section>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-[#ffffff]/95 py-3">
-        <div className="mx-auto flex w-full max-w-[430px] items-center gap-3 px-4">
-          <button
-            type="button"
-            className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#efc2c9]"
-            aria-label="찜하기"
-          >
-            <HeartIcon />
-          </button>
-          <button
-            type="button"
-            className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[#ec9ca5] text-sm font-bold text-white"
-          >
-            구매하기 · {pattern.credits} 크레딧
-          </button>
-        </div>
-      </div>
+      <PatternPurchaseBar credits={pattern.credits} />
     </div>
   );
 }
