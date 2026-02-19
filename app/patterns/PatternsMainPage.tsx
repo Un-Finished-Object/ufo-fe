@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
@@ -232,14 +233,21 @@ export default function PatternsMainPage() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {patternItems.map((item) => (
               <article key={item.id}>
-                <div className="relative mb-2 aspect-square overflow-hidden rounded-2xl">
-                  <Image src={item.image} alt={`${item.title} image`} fill className="object-cover" />
-                  <div className="absolute bottom-2 right-2">
-                    <HeartIcon />
+                <Link href={`/patterns/${item.id}`} className="block">
+                  <div className="relative mb-2 aspect-square overflow-hidden rounded-2xl">
+                    <Image
+                      src={item.image}
+                      alt={`${item.title} image`}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute bottom-2 right-2">
+                      <HeartIcon />
+                    </div>
                   </div>
-                </div>
-                <p className="truncate text-[13px] font-semibold">{item.title}</p>
-                <p className="text-[10px] text-[#8c8c8c]">{item.author}</p>
+                  <p className="truncate text-[13px] font-semibold">{item.title}</p>
+                  <p className="text-[10px] text-[#8c8c8c]">{item.author}</p>
+                </Link>
               </article>
             ))}
           </div>
