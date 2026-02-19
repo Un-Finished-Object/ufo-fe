@@ -4,6 +4,9 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
+import SearchBar from "@/components/SearchBar";
+import TopBar from "@/components/TopBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 type PatternItem = {
   id: number;
@@ -12,7 +15,6 @@ type PatternItem = {
   image: string;
 };
 
-const topTabs = ["홈", "도안", "스타일", "집", "커뮤니티"];
 const mainCategories = ["ALL", "의류", "가방/파우치", "목도리/장갑/모자", "기타"] as const;
 const clothingSubCategories = [
   "가디건/자켓/볼레로",
@@ -62,20 +64,6 @@ const patternItems: PatternItem[] = [
   },
 ];
 
-function SearchIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5 fill-none stroke-[#f3a2aa]"
-      strokeWidth="2"
-    >
-      <circle cx="11" cy="11" r="6" />
-      <path d="M16 16l5 5" />
-    </svg>
-  );
-}
-
 function HeartIcon() {
   return (
     <svg
@@ -90,6 +78,7 @@ function HeartIcon() {
 }
 
 export default function PatternsMainPage() {
+  const { isAuthenticated } = useAuth();
   const [query, setQuery] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] =
     useState<(typeof mainCategories)[number]>("ALL");
@@ -103,6 +92,7 @@ export default function PatternsMainPage() {
 
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
+  const profileHref = isAuthenticated ? "/mypage" : "/login";
 
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
     setSelectedMainCategory(category);
@@ -143,6 +133,15 @@ export default function PatternsMainPage() {
   return (
     <div className="min-h-screen bg-[#ececec]">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+        <TopBar
+          left="logo"
+          leftHref="/"
+          right={[
+            { type: "chat", href: "/chats", ariaLabel: "채팅" },
+            { type: "profile", href: profileHref, ariaLabel: "프로필" },
+          ]}
+        />
+        <SearchBar value={query} onChange={setQuery} />
         <NavBar />
 
         <section className="mb-3 mt-2 px-4">

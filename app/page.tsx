@@ -1,8 +1,14 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import Footer from "@/components/Footer";
 import MainForYouSection from "@/components/MainForYouSection";
 import MainTopSlider from "@/components/MainTopSlider";
 import NavBar from "@/components/NavBar";
+import SearchBar from "@/components/SearchBar";
+import TopBar from "@/components/TopBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 type BestItem = {
   id: number;
@@ -105,9 +111,22 @@ function HeartIcon() {
 }
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const { isAuthenticated } = useAuth();
+  const profileHref = isAuthenticated ? "/mypage" : "/login";
+
   return (
     <div className="min-h-screen bg-[#ececec]">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+        <TopBar
+          left="logo"
+          leftHref="/"
+          right={[
+            { type: "chat", href: "/chats", ariaLabel: "채팅" },
+            { type: "profile", href: profileHref, ariaLabel: "프로필" },
+          ]}
+        />
+        <SearchBar value={query} onChange={setQuery} />
         <NavBar />
         <MainTopSlider posts={bannerPosts} />
 

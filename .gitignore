@@ -143,3 +143,5 @@ AGENTS.md
 /tasks/
 /designs/
 
+# Mac OS
+.DS_Store

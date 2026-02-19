@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "@/components/TopBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 type PatternDetailData = {
   id: string;
@@ -32,14 +34,25 @@ function HeartIcon() {
 export default function PatternDetailSkeleton({
   pattern,
 }: PatternDetailSkeletonProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<"description" | "alternative">(
     "description",
   );
+  const profileHref = isAuthenticated ? "/mypage" : "/login";
 
   return (
     <div className="min-h-screen bg-[#ececec]">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-28 text-[#1f1f1f]">
-        <TopBar />
+        <TopBar
+          left="back"
+          onLeftClick={() => router.back()}
+          showBottomBorder
+          right={[
+            { type: "chat", href: "/chats", ariaLabel: "채팅" },
+            { type: "profile", href: profileHref, ariaLabel: "프로필" },
+          ]}
+        />
 
         <section className="px-4 pt-3">
           <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-2xl">
