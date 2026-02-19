@@ -131,7 +131,7 @@ export default function Home() {
         <MainTopSlider posts={bannerPosts} />
 
         <section className="mb-6 px-4">
-          <h2 className="mb-3 text-2xl font-black tracking-tight">BEST &gt;</h2>
+          <h2 className="mb-3 text-xl font-bold tracking-tight">BEST &gt;</h2>
           <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-4 pb-1">
               {bestItems.map((item) => (
@@ -158,7 +158,7 @@ export default function Home() {
         <MainForYouSection items={curatedItems} />
 
         <section className="px-4 pt-8">
-          <h2 className="mb-4 text-2xl font-black tracking-tight">NEW</h2>
+          <h2 className="mb-4 text-xl font-bold tracking-tight">NEW</h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {newItems.map((item) => (
               <article key={item.id}>
