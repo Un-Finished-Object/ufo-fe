@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -16,21 +17,25 @@ const socialButtons: Array<{
   provider: Provider;
   label: string;
   className: string;
+  logoSrc: string;
 }> = [
   {
     provider: "google",
-    label: "Google로 계속하기",
-    className: "bg-white text-[#222] border border-[#d9d9d9]",
+    label: "Google로 로그인",
+    className: "bg-[#ffffff] text-[#000000] border",
+    logoSrc: "/login/google_logo.svg",
   },
   {
     provider: "kakao",
-    label: "Kakao로 계속하기",
-    className: "bg-[#FEE500] text-[#191919]",
+    label: "카카오로 로그인",
+    className: "bg-[#fee500] text-[#000000]",
+    logoSrc: "/login/kakao_logo.svg",
   },
   {
     provider: "naver",
-    label: "Naver로 계속하기",
-    className: "bg-[#03C75A] text-white",
+    label: "네이버로 로그인",
+    className: "bg-[#03a94d] text-white",
+    logoSrc: "/login/naver_logo.svg",
   },
 ];
 
@@ -66,24 +71,39 @@ export default function LoginPage() {
             { type: "home", href: "/", ariaLabel: "홈" },
           ]}
         />
-        <section className="mx-auto w-full max-w-[430px] rounded-[28px] bg-[#ffffff] p-6 text-[#1f1f1f]">
+        <section className="mx-auto w-full max-w-[430px] bg-[#ffffff] p-6 text-[#1f1f1f]">
           <div className="mb-10">
-            <h1 className="mt-6 text-2xl font-black tracking-tight">로그인</h1>
-            <p className="mt-2 text-sm text-[#7b7b7b]">
-              소셜 계정으로 간편하게 시작해 보세요.
-            </p>
+            <h1 className="mt-6 text-3xl text-[#ffa8a8] text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
           </div>
 
-          <div className="rounded-2xl bg-white/75 p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+          <div className="bg-white/75 p-4 border-t border-[#dddddd] shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+            <p className="mb-5 text-sm text-[#6e6e6e] text-center">
+              소셜 아이디로 뜨친 만들기
+            </p>
             <div className="flex flex-col gap-3">
               {socialButtons.map((button) => (
                 <button
                   key={button.provider}
                   type="button"
                   onClick={() => handleSocialLogin(button.provider)}
-                  className={`h-12 w-full rounded-xl text-sm font-semibold ${button.className}`}
+                  aria-label={button.label}
+                  className={`relative h-12 w-full rounded-[12px] text-sm font-semibold ${button.className}`}
                 >
-                  {button.label}
+                  <span
+                    aria-hidden
+                    className="absolute left-4 top-1/2 block aspect-square -translate-y-1/2"
+                    style={{ height: "max(16px, calc(100% / 3))" }}
+                  >
+                    <Image
+                      src={button.logoSrc}
+                      alt=""
+                      fill
+                      className="object-contain"
+                    />
+                  </span>
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    {button.label}
+                  </span>
                 </button>
               ))}
             </div>
