@@ -71,7 +71,7 @@ export default function PatternDetailSkeleton({
         />
 
         <section>
-          <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden">
+          <div className="relative mb-4 aspect-[5/4] w-full overflow-hidden">
             <Image
               src={pattern.image}
               alt={`${pattern.title} hero image`}
@@ -87,38 +87,39 @@ export default function PatternDetailSkeleton({
         </section>
 
         <section className="mt-5 px-4">
-          <article className="rounded-2xl border border-[#ffaba6] bg-white p-4">
-            <h2 className="text-sm font-bold text-[#6c6c6c]">{chatRoomTitle}</h2>
-
-            <div className="mt-3 flex -space-x-2">
-              {[1, 2, 3, 4].map((id) => (
-                <div
-                  key={id}
-                  className={`h-7 w-7 rounded-full border-2 border-white ${
-                    pattern.hasPurchased ? "bg-[#f3c5cc]" : "bg-[#f5f5f5]"
-                  } ${pattern.hasPurchased ? "" : "opacity-0"}`}
-                />
-              ))}
+          <article className="flex h-[184px] flex-col rounded-2xl border border-[#ffaba6] bg-white p-4">
+            <div className="flex items-center gap-2 border-b border-[#ebebeb] pb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-[#8c8c8c] bi bi-chat-right-text" viewBox="0 0 16 16">
+              <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
+              <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+            </svg>
+              <h2 className="truncate text-sm text-[#8c8c8c]">{chatRoomTitle}</h2>
             </div>
 
-            <div className="mt-4 space-y-2">
-              {pattern.hasPurchased ? (
-                <>
-                  <div className="h-2.5 w-3/4 rounded-full bg-[#ececec]" />
-                  <div className="h-2.5 w-2/3 rounded-full bg-[#ececec]" />
-                </>
-              ) : (
-                <>
-                  <div className="h-2.5 w-3/4 rounded-full bg-[#ececec] opacity-0" />
-                  <div className="h-2.5 w-2/3 rounded-full bg-[#ececec] opacity-0" />
-                </>
-              )}
+            <div className="mt-3">
+              <div
+                className="max-h-[72px] space-y-3 overflow-y-auto"
+                aria-label="실시간 채팅 미리보기"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-9 w-9 rounded-full bg-[#f2e8e5]" aria-hidden="true" />
+                  <span className="h-7 w-[132px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-9 w-9 rounded-full bg-[#ffb7b2]" aria-hidden="true" />
+                  <span className="h-7 w-[132px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-9 w-9 rounded-full bg-[#f2e8e5]" aria-hidden="true" />
+                  <span className="h-7 w-[120px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-3">
               <button
                 type="button"
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#ffa8a8] bg-[#fff1ed] px-3 text-sm font-bold text-[#777777]"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb3ae] bg-[#f9eeea] px-3 text-sm font-bold text-[#777777]"
               >
                 {pattern.hasPurchased ? "채팅방 참여하기" : "채팅방 입장하기"}
                 {pattern.hasPurchased ? null : <CreditBadge credits={pattern.credits} />}
@@ -157,11 +158,11 @@ export default function PatternDetailSkeleton({
 
           <div className="mt-4">
             {activeTab === "description" ? (
-              <div className="overflow-hidden border">
+              <div className="overflow-hidden border-b">
                 {detailRows.map((row) => (
                   <div
                     key={row.key}
-                    className="grid grid-cols-[104px_1fr] border-b bg-[#ffe5e5] last:border-b-0"
+                    className="grid grid-cols-[104px_1fr] border-t bg-[#ffe5e5] last:border-b-0"
                   >
                     <div className="flex min-h-[52px] items-center px-4 text-sm font-bold text-[#555]">
                       {row.label}
