@@ -119,7 +119,7 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
             <div className="flex w-max gap-4">
               {items.map((item) => (
                 <article key={item.id} className="w-[156px] shrink-0">
-                  <div className="relative mb-2 h-[112px] overflow-hidden rounded-2xl">
+                  <div className="relative mb-2 aspect-[5/4] w-full overflow-hidden rounded-2xl">
                     <Image
                       src={item.image}
                       alt={`${item.title} image`}

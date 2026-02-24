@@ -136,7 +136,7 @@ export default function Home() {
             <div className="flex w-max gap-4 pb-1">
               {bestItems.map((item) => (
                 <article key={item.id} className="w-[140px]">
-                  <div className="relative mb-2 h-[108px] overflow-hidden rounded-2xl">
+                  <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-2xl">
                     <Image
                       src={item.image}
                       alt={`${item.title} thumbnail`}
@@ -162,7 +162,7 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {newItems.map((item) => (
               <article key={item.id}>
-                <div className="relative mb-2 h-[108px] overflow-hidden rounded-2xl">
+                <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-2xl">
                   <Image
                     src={item.image}
                     alt={`${item.title} thumbnail`}
