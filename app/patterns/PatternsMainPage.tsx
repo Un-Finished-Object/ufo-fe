@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
+import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,19 +64,6 @@ const patternItems: PatternItem[] = [
     image: "/mock/plush-pink.svg",
   },
 ];
-
-function HeartIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5 fill-none stroke-white"
-      strokeWidth="2"
-    >
-      <path d="M12.1 20.7c-.1.1-.3.1-.4 0-5-4.5-8.2-7.4-8.2-11A4.9 4.9 0 0 1 8.4 4.8c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8a4.9 4.9 0 0 1 4.9 4.9c0 3.6-3.2 6.5-8.2 11Z" />
-    </svg>
-  );
-}
 
 export default function PatternsMainPage() {
   const { isAuthenticated } = useAuth();
@@ -234,19 +221,14 @@ export default function PatternsMainPage() {
             {patternItems.map((item) => (
               <article key={item.id}>
                 <Link href={`/patterns/${item.id}`} className="block">
-                  <div className="relative mb-2 aspect-square overflow-hidden rounded-2xl">
-                    <Image
-                      src={item.image}
-                      alt={`${item.title} image`}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute bottom-2 right-2">
-                      <HeartIcon />
-                    </div>
-                  </div>
-                  <p className="truncate text-[13px] font-semibold">{item.title}</p>
-                  <p className="text-[10px] text-[#8c8c8c]">{item.author}</p>
+                  <PatternCard
+                    imageSrc={item.image}
+                    imageRatio="1:1"
+                    title={item.title}
+                    author={item.author}
+                    heartVariant="outline"
+                    heartClassName="h-5 w-5 stroke-white"
+                  />
                 </Link>
               </article>
             ))}
