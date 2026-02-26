@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 import MainForYouSection from "@/components/MainForYouSection";
 import MainTopSlider from "@/components/MainTopSlider";
 import NavBar from "@/components/NavBar";
+import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,19 +97,6 @@ const newItems: BestItem[] = [
   },
 ];
 
-function HeartIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5 fill-none stroke-white"
-      strokeWidth="2"
-    >
-      <path d="M12.1 20.7c-.1.1-.3.1-.4 0-5-4.5-8.2-7.4-8.2-11A4.9 4.9 0 0 1 8.4 4.8c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8a4.9 4.9 0 0 1 4.9 4.9c0 3.6-3.2 6.5-8.2 11Z" />
-    </svg>
-  );
-}
-
 export default function Home() {
   const [query, setQuery] = useState("");
   const { isAuthenticated } = useAuth();
@@ -136,19 +123,14 @@ export default function Home() {
             <div className="flex w-max gap-4 pb-1">
               {bestItems.map((item) => (
                 <article key={item.id} className="w-[140px]">
-                  <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-2xl">
-                    <Image
-                      src={item.image}
-                      alt={`${item.title} thumbnail`}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute bottom-2 right-2">
-                      <HeartIcon />
-                    </div>
-                  </div>
-                  <p className="truncate text-[13px] font-semibold">{item.title}</p>
-                  <p className="text-[10px] text-[#8c8c8c]">{item.author}</p>
+                  <PatternCard
+                    imageSrc={item.image}
+                    imageRatio="1:1"
+                    title={item.title}
+                    author={item.author}
+                    heartVariant="outline"
+                    heartClassName="h-5 w-5 stroke-white"
+                  />
                 </article>
               ))}
             </div>
@@ -162,19 +144,14 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {newItems.map((item) => (
               <article key={item.id}>
-                <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-2xl">
-                  <Image
-                    src={item.image}
-                    alt={`${item.title} thumbnail`}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute bottom-2 right-2">
-                    <HeartIcon />
-                  </div>
-                </div>
-                <p className="truncate text-[13px] font-semibold">{item.title}</p>
-                <p className="text-[10px] text-[#8c8c8c]">{item.author}</p>
+                <PatternCard
+                  imageSrc={item.image}
+                  imageRatio="1:1"
+                  title={item.title}
+                  author={item.author}
+                  heartVariant="outline"
+                  heartClassName="h-5 w-5 stroke-white"
+                />
               </article>
             ))}
           </div>

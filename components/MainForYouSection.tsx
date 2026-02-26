@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import PatternCard from "@/components/PatternCard";
 
 type CuratedItem = {
   id: number;
@@ -119,18 +119,14 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
             <div className="flex w-max gap-4">
               {items.map((item) => (
                 <article key={item.id} className="w-[156px] shrink-0">
-                  <div className="relative mb-2 aspect-[5/4] w-full overflow-hidden rounded-2xl">
-                    <Image
-                      src={item.image}
-                      alt={`${item.title} image`}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <p className="truncate text-[11px] font-semibold text-white">
-                    {item.title}
-                  </p>
-                  <p className="text-[10px] text-[#8f9198]">{item.author}</p>
+                  <PatternCard
+                    imageSrc={item.image}
+                    imageRatio="5:4"
+                    title={item.title}
+                    author={item.author}
+                    titleClassName="truncate text-[11px] font-semibold text-white"
+                    authorClassName="text-[10px] text-[#8f9198]"
+                  />
                 </article>
               ))}
             </div>
