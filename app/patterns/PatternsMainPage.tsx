@@ -80,7 +80,7 @@ export default function PatternsMainPage() {
 
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
-  const profileHref = isAuthenticated ? "/mypage" : "/login";
+  const profileHref = isAuthenticated ? "/my" : "/login";
 
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
     setSelectedMainCategory(category);

@@ -54,7 +54,7 @@ export default function PatternDetailSkeleton({
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<"description" | "alternative">("description");
-  const profileHref = isAuthenticated ? "/mypage" : "/login";
+  const profileHref = isAuthenticated ? "/my" : "/login";
   const chatRoomTitle = `${pattern.title} 실시간 채팅방`;
 
   return (

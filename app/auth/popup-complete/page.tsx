@@ -2,19 +2,25 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
-export default function AuthCompletePage() {
+type PopupMessageType = "oauth-success" | "oauth-failed";
+
+function notifyOpener(type: PopupMessageType) {
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage({ type }, window.location.origin);
+  }
+}
+
+export default function AuthPopupCompletePage() {
   const router = useRouter();
-  const { setAuthenticated } = useAuth();
 
   useEffect(() => {
-    let isMounted = true;
-
-    const finalizeLogin = async () => {
+    const finalizePopupLogin = async () => {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE;
 
       if (!apiBase) {
+        notifyOpener("oauth-failed");
+        window.close();
         router.replace("/login?error=network");
         return;
       }
@@ -26,27 +32,23 @@ export default function AuthCompletePage() {
         });
 
         if (!refreshResponse.ok) {
+          notifyOpener("oauth-failed");
+          window.close();
           router.replace("/login?error=oauth_failed");
           return;
         }
 
-        if (!isMounted) {
-          return;
-        }
-
-        setAuthenticated();
-        router.replace("/");
+        notifyOpener("oauth-success");
+        window.close();
       } catch {
+        notifyOpener("oauth-failed");
+        window.close();
         router.replace("/login?error=oauth_failed");
       }
     };
 
-    void finalizeLogin();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router, setAuthenticated]);
+    void finalizePopupLogin();
+  }, [router]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f4f5f7] px-4">

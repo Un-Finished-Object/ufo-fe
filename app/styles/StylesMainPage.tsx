@@ -10,7 +10,7 @@ import NavBar from "@/components/NavBar";
 export default function StylesMainPage() {
   const [query, setQuery] = useState("");
   const { isAuthenticated } = useAuth();
-  const profileHref = isAuthenticated ? "/mypage" : "/login";
+  const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
     <div className="min-h-screen bg-[#ececec]">

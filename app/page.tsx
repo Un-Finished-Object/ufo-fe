@@ -100,7 +100,7 @@ const newItems: BestItem[] = [
 export default function Home() {
   const [query, setQuery] = useState("");
   const { isAuthenticated } = useAuth();
-  const profileHref = isAuthenticated ? "/mypage" : "/login";
+  const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
     <div className="min-h-screen bg-[#ececec]">

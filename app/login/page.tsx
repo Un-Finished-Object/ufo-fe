@@ -1,9 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -40,9 +43,47 @@ const socialButtons: Array<{
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { status, setAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const errorMessage = error ? errorMessages[error] : null;
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [router, status]);
+
+  useEffect(() => {
+    const handleOAuthMessage = (event: MessageEvent<unknown>) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const data = event.data;
+      if (!data || typeof data !== "object" || !("type" in data)) {
+        return;
+      }
+
+      const messageType = (data as { type?: string }).type;
+      if (messageType === "oauth-success") {
+        setAuthenticated();
+        router.replace("/");
+        return;
+      }
+
+      if (messageType === "oauth-failed") {
+        router.replace("/login?error=oauth_failed");
+      }
+    };
+
+    window.addEventListener("message", handleOAuthMessage);
+
+    return () => {
+      window.removeEventListener("message", handleOAuthMessage);
+    };
+  }, [router, setAuthenticated]);
 
   const handleSocialLogin = (provider: Provider) => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -53,18 +94,33 @@ export default function LoginPage() {
       return;
     }
 
-    const redirectUri = `${window.location.origin}/auth/complete`;
-    const oauthStartUrl = `${apiBase}/auth/oauth/${provider}/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const redirectUri = `${window.location.origin}/auth/popup-complete`;
+    const oauthStartUrl = `${apiBase}/v1/auth/login/${provider}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const popup = window.open(
+      oauthStartUrl,
+      "ufo-social-login",
+      "popup=yes,width=500,height=740,left=120,top=80",
+    );
 
-    // eslint-disable-next-line react-hooks/immutability
-    window.location.href = oauthStartUrl;
+    if (!popup) {
+      // eslint-disable-next-line react-hooks/immutability
+      window.location.href = oauthStartUrl;
+      return;
+    }
+
+    popup.focus();
   };
+
+  if (status !== "unauthenticated") {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#ececec]">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
         <TopBar
           left="back"
+          onLeftClick={() => router.back()}
           showBottomBorder
           title="로그인"
           right={[

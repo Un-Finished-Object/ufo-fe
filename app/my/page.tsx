@@ -1,4 +1,9 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import TopBar from "@/components/TopBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const profile = {
   nickname: "뜨개람쥐",
@@ -40,6 +45,25 @@ function MenuSection({ title, items }: { title: string; items: string[] }) {
 }
 
 export default function MyPage() {
+  const router = useRouter();
+  const { clearAuth } = useAuth();
+
+  const handleLogout = useCallback(async () => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+
+    try {
+      if (apiBase) {
+        await fetch(`${apiBase}/v1/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      }
+    } finally {
+      clearAuth();
+      router.replace("/login");
+    }
+  }, [clearAuth, router]);
+
   return (
     <div className="min-h-screen bg-[#ececec]">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff]">
@@ -101,7 +125,15 @@ export default function MyPage() {
         <section className="border-t border-[#d9d9d9] px-6 py-4 pb-16">
           <ul className="space-y-3 text-[31px] leading-[1.15] tracking-[-0.02em] text-[#8f8f8f]">
             {userMenuItems.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}>
+                {item === "로그아웃" ? (
+                  <button type="button" onClick={handleLogout} className="text-inherit">
+                    {item}
+                  </button>
+                ) : (
+                  item
+                )}
+              </li>
             ))}
           </ul>
         </section>
