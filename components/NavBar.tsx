@@ -7,7 +7,7 @@ const tabs = [
   { label: "홈", href: "/" },
   { label: "도안", href: "/patterns" },
   { label: "스타일", href: "/styles" },
-  { label: "찜", href: "/favorites" },
+  { label: "찜", href: "/scraps" },
   { label: "커뮤니티", href: "/community" },
 ];
 
