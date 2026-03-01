@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import PatternCard from "@/components/PatternCard";
+import ToastMessage from "@/components/ToastMessage";
+import type { AuthStatus } from "@/contexts/AuthContext";
 
 type CuratedItem = {
   id: number;
@@ -12,9 +14,10 @@ type CuratedItem = {
 
 type MainForYouSectionProps = {
   items: CuratedItem[];
+  isAuthenticated: boolean;
+  authStatus: AuthStatus;
 };
 
-const initialSelectedInterests = ["빈티지"];
 const MAX_INTEREST_COUNT = 4;
 
 const interestRows = [
@@ -46,13 +49,21 @@ const interestRows = [
   },
 ] as const;
 
-export default function MainForYouSection({ items }: MainForYouSectionProps) {
+export default function MainForYouSection({
+  items,
+  isAuthenticated,
+  authStatus,
+}: MainForYouSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>(
-    initialSelectedInterests,
-  );
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [draftInterests, setDraftInterests] = useState<string[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const firstInterestButtonRef = useRef<HTMLButtonElement | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didFetchRef = useRef(false);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+  const isSettingDisabled = !isAuthenticated || authStatus === "loading";
 
   useEffect(() => {
     if (isModalOpen && firstInterestButtonRef.current) {
@@ -60,7 +71,78 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
     }
   }, [isModalOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") {
+      didFetchRef.current = false;
+      setSelectedInterests([]);
+      return;
+    }
+
+    if (!apiBase || didFetchRef.current) {
+      return;
+    }
+
+    let isMounted = true;
+    didFetchRef.current = true;
+
+    const fetchInterests = async () => {
+      try {
+        const response = await fetch(`${apiBase}/v1/users/me/interests`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok || !isMounted) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          data?: { keywords?: string[] };
+          error?: unknown;
+        };
+
+        if (payload.error || !payload.data) {
+          return;
+        }
+
+        setSelectedInterests(Array.isArray(payload.data.keywords) ? payload.data.keywords : []);
+      } catch {
+        // Keep empty interests on network or parsing failures.
+      }
+    };
+
+    void fetchInterests();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [apiBase, authStatus]);
+
+  const showToast = (message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    setToastMessage(message);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 2000);
+  };
+
   const openModal = () => {
+    if (isSettingDisabled) {
+      return;
+    }
+
     setDraftInterests(selectedInterests);
     setIsModalOpen(true);
   };
@@ -81,10 +163,42 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
     });
   };
 
-  const saveInterests = () => {
-    // TODO: Replace local interest state with API save/load when backend is ready.
-    setSelectedInterests(draftInterests);
-    closeModal();
+  const saveInterests = async () => {
+    if (!apiBase) {
+      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBase}/v1/users/me/interests`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ keywords: draftInterests }),
+      });
+
+      if (!response.ok) {
+        showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        data?: { keywords?: string[] };
+        error?: unknown;
+      };
+
+      if (payload.error || !payload.data) {
+        showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      setSelectedInterests(Array.isArray(payload.data.keywords) ? payload.data.keywords : []);
+      closeModal();
+    } catch {
+      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -95,8 +209,12 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
           <button
             type="button"
             onClick={openModal}
-            className="rounded-md bg-[#252525] px-2 py-1.5 text-xs text-[#ffffff]"
+            disabled={isSettingDisabled}
+            className={`rounded-md px-2 py-1.5 text-xs text-[#ffffff] ${
+              isSettingDisabled ? "bg-[#9f9f9f]" : "bg-[#252525]"
+            }`}
             aria-label="관심사 설정"
+            aria-disabled={isSettingDisabled}
           >
             관심사 설정
           </button>
@@ -142,9 +260,17 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
           aria-label="관심사 설정"
         >
           <div className="w-full max-w-[430px] bg-[#252525] px-4 pb-6 pt-5">
-            <h3 className="ml-2 mb-4 text-l leading-tight font-bold text-white">
-              관심사를 알려주세요!
-            </h3>
+            <div className="mb-4 flex items-start justify-between">
+              <h3 className="ml-2 text-l leading-tight font-bold text-white">관심사를 알려주세요!</h3>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-md px-2 py-1 text-sm font-semibold text-white"
+                aria-label="관심사 설정 닫기"
+              >
+                닫기
+              </button>
+            </div>
             <p className="ml-2 text-l font-medium text-[#ffffff]">
               선택한 관심사를 바탕으로 도안을 추천해 드려요.
             </p>
@@ -195,6 +321,7 @@ export default function MainForYouSection({ items }: MainForYouSectionProps) {
           </div>
         </div>
       ) : null}
+      <ToastMessage message={toastMessage} />
     </>
   );
 }

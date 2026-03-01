@@ -99,7 +99,7 @@ const newItems: BestItem[] = [
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, status } = useAuth();
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
@@ -137,7 +137,7 @@ export default function Home() {
           </div>
         </section>
 
-        <MainForYouSection items={curatedItems} />
+        <MainForYouSection items={curatedItems} isAuthenticated={isAuthenticated} authStatus={status} />
 
         <section className="px-4 pt-8">
           <h2 className="mb-4 text-xl font-bold tracking-tight">NEW</h2>
