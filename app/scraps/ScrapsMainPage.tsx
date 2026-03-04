@@ -97,9 +97,10 @@ export default function ScrapsMainPage() {
               <article key={`${selectedTab}-${item.id}`}>
                 <PatternCard
                   imageSrc={item.image}
-                  imageRatio="1:1"
+                  imageRatio="4:5"
                   title={item.title}
                   author={item.author}
+                  patternId={item.id}
                   heartVariant="filled"
                   heartClassName="h-5 w-5 stroke-white fill-white"
                   titleClassName="truncate text-[11px] font-semibold leading-tight"
