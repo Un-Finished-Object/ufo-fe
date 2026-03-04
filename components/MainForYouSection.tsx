@@ -242,6 +242,7 @@ export default function MainForYouSection({
                     imageRatio="5:4"
                     title={item.title}
                     author={item.author}
+                    patternId={item.id}
                     titleClassName="truncate text-[11px] font-semibold text-white"
                     authorClassName="text-[10px] text-[#8f9198]"
                   />

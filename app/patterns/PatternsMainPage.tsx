@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
+import Pagination from "@/components/Pagination";
 import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
@@ -16,6 +16,21 @@ type PatternItem = {
   image: string;
 };
 
+type PatternApiItem = {
+  id: number;
+  title: string;
+  thumbnailUrl: string | null;
+  author: string;
+};
+
+type PatternsApiResponse = {
+  data?: {
+    items?: PatternApiItem[];
+    totalPages?: number;
+  };
+  error?: unknown;
+};
+
 const mainCategories = ["ALL", "의류", "가방/파우치", "목도리/장갑/모자", "기타"] as const;
 const clothingSubCategories = [
   "가디건/자켓/볼레로",
@@ -26,44 +41,27 @@ const clothingSubCategories = [
 ] as const;
 const sortOptions = ["최신순", "인기순", "찜 순"] as const;
 
-const patternItems: PatternItem[] = [
-  {
-    id: 1,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/pattern-card.svg",
-  },
-  {
-    id: 2,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/plush-pink.svg",
-  },
-  {
-    id: 3,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/plush-white.svg",
-  },
-  {
-    id: 4,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/pattern-card.svg",
-  },
-  {
-    id: 5,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/pattern-card.svg",
-  },
-  {
-    id: 6,
-    title: "라인패치아노락(Line Patch)",
-    author: "@da0_knit대금",
-    image: "/mock/plush-pink.svg",
-  },
-];
+const categoryApiMap: Record<string, string> = {
+  ALL: "all",
+  "의류": "apparel",
+  "가방/파우치": "bags",
+  "목도리/장갑/모자": "accessories",
+  "기타": "others",
+};
+
+const subCategoryApiMap: Record<string, string> = {
+  "가디건/자켓/볼레로": "outer",
+  "스웨터": "sweater",
+  "조끼/민소매/뷔스티에": "vest",
+  "원피스": "dress",
+  "기타": "others",
+};
+
+const sortApiMap: Record<string, string> = {
+  "최신순": "news",
+  "인기순": "views",
+  "찜 순": "scraps",
+};
 
 export default function PatternsMainPage() {
   const { isAuthenticated } = useAuth();
@@ -78,45 +76,108 @@ export default function PatternsMainPage() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
 
+  const [patternItems, setPatternItems] = useState<PatternItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
     setSelectedMainCategory(category);
     setSelectedClothingSubCategory(null);
+    setCurrentPage(1);
   };
 
   const handleClothingSubCategoryClick = (
     subCategory: (typeof clothingSubCategories)[number],
   ) => {
-    if (selectedClothingSubCategory === subCategory) {
-      setSelectedClothingSubCategory(null);
-      return;
-    }
-    setSelectedClothingSubCategory(subCategory);
+    setSelectedClothingSubCategory(
+      selectedClothingSubCategory === subCategory ? null : subCategory,
+    );
+    setCurrentPage(1);
+  };
+
+  const handleSortSelect = (sort: (typeof sortOptions)[number]) => {
+    setSelectedSort(sort);
+    setIsSortOpen(false);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
-    if (!isSortOpen) {
-      return;
-    }
+    if (!isSortOpen) return;
 
     const handleOutsideClick = (event: MouseEvent) => {
-      if (!sortMenuRef.current) {
-        return;
-      }
-
-      if (!sortMenuRef.current.contains(event.target as Node)) {
+      if (!sortMenuRef.current?.contains(event.target as Node)) {
         setIsSortOpen(false);
       }
     };
 
     window.addEventListener("mousedown", handleOutsideClick);
-    return () => {
-      window.removeEventListener("mousedown", handleOutsideClick);
-    };
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
   }, [isSortOpen]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+    setIsLoading(true);
+
+    const fetchPatterns = async () => {
+      try {
+        const params = new URLSearchParams({
+          category: categoryApiMap[selectedMainCategory] ?? "all",
+          sort: sortApiMap[selectedSort] ?? "views",
+          page: String(currentPage),
+        });
+
+        if (selectedMainCategory === "의류" && selectedClothingSubCategory) {
+          params.set(
+            "subCategory",
+            subCategoryApiMap[selectedClothingSubCategory] ?? "others",
+          );
+        }
+
+        const response = await fetch(`${apiBase}/v1/patterns?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok || !isMounted) return;
+
+        const payload = (await response.json()) as PatternsApiResponse;
+        if (payload.error || !payload.data || !isMounted) return;
+
+        const items = (payload.data.items ?? [])
+          .filter(
+            (item): item is PatternApiItem =>
+              typeof item.id === "number" &&
+              typeof item.title === "string" &&
+              typeof item.author === "string",
+          )
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            image: item.thumbnailUrl ?? "/mock/pattern-card.svg",
+          }));
+
+        setPatternItems(items);
+        setTotalPages(payload.data.totalPages ?? 1);
+      } catch {
+        // ignore abort / network errors
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    void fetchPatterns();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [apiBase, selectedMainCategory, selectedClothingSubCategory, selectedSort, currentPage]);
 
   return (
     <div className="min-h-screen bg-[#ececec]">
@@ -186,7 +247,7 @@ export default function PatternsMainPage() {
           <div className="relative" ref={sortMenuRef}>
             <button
               type="button"
-              onClick={() => setIsSortOpen((previous) => !previous)}
+              onClick={() => setIsSortOpen((prev) => !prev)}
               className="text-xs font-semibold text-[#9a9a9a]"
             >
               {selectedSort} ▼
@@ -198,10 +259,7 @@ export default function PatternsMainPage() {
                   <button
                     key={option}
                     type="button"
-                    onClick={() => {
-                      setSelectedSort(option);
-                      setIsSortOpen(false);
-                    }}
+                    onClick={() => handleSortSelect(option)}
                     className={`block w-full px-3 py-1 text-left text-xs ${
                       selectedSort === option
                         ? "font-semibold text-[#f09fa7]"
@@ -218,23 +276,37 @@ export default function PatternsMainPage() {
 
         <section className="px-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-            {patternItems.map((item) => (
-              <article key={item.id}>
-                <Link href={`/patterns/${item.id}`} className="block">
+            {isLoading ? (
+              <p className="col-span-2 py-12 text-center text-sm text-[#a4a4a4]">
+                불러오는 중...
+              </p>
+            ) : patternItems.length === 0 ? (
+              <p className="col-span-2 py-12 text-center text-sm text-[#a4a4a4]">
+                도안이 없습니다.
+              </p>
+            ) : (
+              patternItems.map((item) => (
+                <article key={item.id}>
                   <PatternCard
                     imageSrc={item.image}
                     imageRatio="1:1"
                     title={item.title}
                     author={item.author}
+                    patternId={item.id}
                     heartVariant="outline"
                     heartClassName="h-5 w-5 stroke-white"
                   />
-                </Link>
-              </article>
-            ))}
+                </article>
+              ))
+            )}
           </div>
         </section>
 
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
         <Footer />
       </main>
     </div>
