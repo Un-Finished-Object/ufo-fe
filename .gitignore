@@ -138,10 +138,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Codex
+# AI
 AGENTS.md
 /tasks/
 /designs/
+.omx/
+.omc/
 
 # Mac OS
 .DS_Store

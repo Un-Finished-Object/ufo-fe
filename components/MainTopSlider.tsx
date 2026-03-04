@@ -1,12 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type BannerItem = {
   id: number;
   title: string;
   count: string;
+  href?: string;
+  imageSrc?: string;
 };
 
 type MainTopSliderProps = {
@@ -126,45 +129,54 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
         className="overflow-x-auto rounded-[24px] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
       >
         <div className="flex w-full">
-          {posts.map((post, index) => (
-            <article
-              key={post.id}
-              className="relative h-36 w-full shrink-0 snap-start [scroll-snap-stop:always] overflow-hidden rounded-[24px] bg-gradient-to-r from-[#f2bcc8] via-[#f1b8be] to-[#e4e1a8] px-6 py-5"
-            >
-              <p className="absolute bottom-5 left-6 whitespace-pre-line text-lg font-bold leading-6 text-white">
-                {post.title}
-              </p>
+          {posts.map((post, index) => {
+            const articleClass =
+              "relative h-36 w-full shrink-0 snap-start [scroll-snap-stop:always] overflow-hidden rounded-[24px]";
 
-              <div className="absolute right-24 top-6 h-20 w-14 overflow-hidden rounded-md shadow-md">
+            const inner = post.imageSrc ? (
+              <article key={post.id} className={articleClass}>
                 <Image
-                  src="/mock/banner-gray.svg"
-                  alt="Gray book image"
+                  src={post.imageSrc}
+                  alt={post.title}
                   fill
                   className="object-cover"
+                  priority={index === 0}
                 />
-              </div>
-              <div className="absolute right-12 top-6 h-20 w-14 overflow-hidden rounded-md shadow-md">
-                <Image
-                  src="/mock/banner-black.svg"
-                  alt="Black bowl image"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="absolute right-0 top-0 h-24 w-16 overflow-hidden rounded-bl-2xl">
-                <Image
-                  src="/mock/banner-blue.svg"
-                  alt="Blue ceramic image"
-                  fill
-                  className="object-cover"
-                />
-              </div>
+                <div className="absolute bottom-3 right-4 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white">
+                  {index + 1} / {posts.length}
+                </div>
+              </article>
+            ) : (
+              <article
+                key={post.id}
+                className={`${articleClass} bg-gradient-to-r from-[#f2bcc8] via-[#f1b8be] to-[#e4e1a8] px-6 py-5`}
+              >
+                <p className="absolute bottom-5 left-6 whitespace-pre-line text-lg font-bold leading-6 text-white">
+                  {post.title}
+                </p>
 
-              <div className="absolute bottom-3 right-4 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white">
-                {index + 1} / {posts.length}
-              </div>
-            </article>
-          ))}
+                <div className="absolute right-24 top-6 h-20 w-14 overflow-hidden rounded-md shadow-md">
+                  <Image src="/mock/banner-gray.svg" alt="Gray book image" fill className="object-cover" />
+                </div>
+                <div className="absolute right-12 top-6 h-20 w-14 overflow-hidden rounded-md shadow-md">
+                  <Image src="/mock/banner-black.svg" alt="Black bowl image" fill className="object-cover" />
+                </div>
+                <div className="absolute right-0 top-0 h-24 w-16 overflow-hidden rounded-bl-2xl">
+                  <Image src="/mock/banner-blue.svg" alt="Blue ceramic image" fill className="object-cover" />
+                </div>
+
+                <div className="absolute bottom-3 right-4 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white">
+                  {index + 1} / {posts.length}
+                </div>
+              </article>
+            );
+
+            return post.href ? (
+              <Link key={post.id} href={post.href} className="w-full shrink-0">
+                {inner}
+              </Link>
+            ) : inner;
+          })}
         </div>
       </div>
     </section>
