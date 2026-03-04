@@ -3,9 +3,10 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
+import ToastMessage from "@/components/ToastMessage";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Provider = "google" | "kakao" | "naver";
@@ -48,6 +49,18 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const errorMessage = error ? errorMessages[error] : null;
+
+  const [toastMessage, setToastMessage] = useState<string | null>(
+    searchParams.get("toast") === "auth_required"
+      ? "해당 서비스는 로그인 후 사용하실 수 있습니다."
+      : null,
+  );
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -117,6 +130,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#ececec]">
+      <ToastMessage message={toastMessage} />
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
         <TopBar
           left="back"
