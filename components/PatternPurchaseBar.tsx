@@ -1,19 +1,11 @@
 "use client";
 
+import CreditBadge from "@/components/CreditBadge";
 import HeartIcon from "@/components/icons/HeartIcon";
 
 type PatternPurchaseBarProps = {
   credits: number;
 };
-
-function CreditBadge({ credits }: { credits: number }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59cbe5]">
-      <span className="inline-block h-3 w-3 rounded-full bg-[#59cbe5]" />
-      {credits} 크레딧
-    </span>
-  );
-}
 
 export default function PatternPurchaseBar({ credits }: PatternPurchaseBarProps) {
   return (
@@ -31,7 +23,13 @@ export default function PatternPurchaseBar({ credits }: PatternPurchaseBarProps)
           className="flex h-16 flex-1 items-center justify-center gap-2 bg-[#ffffff] text-2xl leading-none font-semibold text-[#ffaba6]"
         >
           구매하기
-          <CreditBadge credits={credits} />
+          <CreditBadge
+            credits={credits}
+            badgeColor="#ffffff"
+            circleColor="#49eaff"
+            starColor="#ffffff"
+            textColor="#49eaff"
+          />
         </button>
       </div>
     </div>
