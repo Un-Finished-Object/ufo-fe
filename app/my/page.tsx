@@ -6,8 +6,6 @@ import TopBar from "@/components/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
 
 const profile = {
-  nickname: "뜨개람쥐",
-  email: "ddugaeramgee@gmail.com",
   credits: "30 크레딧",
   sinceText: "우리 뜨친된지 199일 ♡",
 };
@@ -46,7 +44,9 @@ function MenuSection({ title, items }: { title: string; items: string[] }) {
 
 export default function MyPage() {
   const router = useRouter();
-  const { clearAuth } = useAuth();
+  const { clearAuth, userProfile } = useAuth();
+  const nickname = userProfile?.nickname || "회원";
+  const email = userProfile?.email || "";
 
   const handleLogout = useCallback(async () => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -80,9 +80,9 @@ export default function MyPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-2xl font-bold leading-tight tracking-[-0.03em]">
-                  안녕하세요! {profile.nickname}님
+                  안녕하세요! {nickname}님
                 </p>
-                <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{profile.email}</p>
+                <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{email}</p>
               </div>
               <button
                 type="button"
