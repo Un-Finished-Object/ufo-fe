@@ -34,7 +34,7 @@ export default function SearchBar({
   showBottomBorder = false,
 }: SearchBarProps) {
   return (
-    <div className={`mt-4 mb-4 ${showBottomBorder ? "border-b border-[#dddddd] pb-4" : ""}`}>
+    <div className={`mt-4 mb-4 ${showBottomBorder ? "border-b border-ufo-border-light pb-4" : ""}`}>
       <form
         className="px-5"
         onSubmit={(event) => {

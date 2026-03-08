@@ -21,8 +21,8 @@ export default function ChatsMainScreen() {
   );
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
         <TopBar
           left="back"
           leftHref="/"
@@ -33,8 +33,8 @@ export default function ChatsMainScreen() {
 
         <SearchBar value={query} onChange={setQuery} placeholder="채팅방명을 검색하세요" />
 
-        <section className="border-b border-[#dddddd] px-8 pb-2" aria-label="채팅 사용자 정보">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#8f8f8f]">
+        <section className="border-b border-ufo-border-light px-8 pb-2" aria-label="채팅 사용자 정보">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ufo-text-subtle">
             <span className="inline-block h-3 w-3 rounded-full bg-[#f8a8a8]" aria-hidden="true" />
             뜨개람쥐님
           </h2>

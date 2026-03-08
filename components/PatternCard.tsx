@@ -33,7 +33,7 @@ export default function PatternCard({
   heartVariant,
   heartClassName = "h-5 w-5 stroke-white fill-white",
   titleClassName = "truncate text-[13px] font-semibold",
-  authorClassName = "text-[10px] text-[#8c8c8c]",
+  authorClassName = "text-[10px] text-ufo-text-neutral",
 }: PatternCardProps) {
   const content = (
     <>

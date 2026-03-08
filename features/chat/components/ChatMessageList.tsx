@@ -12,7 +12,7 @@ export default function ChatMessageList({
   errorMessage,
 }: ChatMessageListProps) {
   if (isLoading) {
-    return <p className="px-4 py-6 text-sm text-[#9a9a9a]">메시지를 불러오는 중입니다.</p>;
+    return <p className="px-4 py-6 text-sm text-ufo-text-dim">메시지를 불러오는 중입니다.</p>;
   }
 
   if (errorMessage) {
@@ -20,7 +20,7 @@ export default function ChatMessageList({
   }
 
   if (messages.length === 0) {
-    return <p className="px-4 py-6 text-sm text-[#9a9a9a]">아직 메시지가 없습니다.</p>;
+    return <p className="px-4 py-6 text-sm text-ufo-text-dim">아직 메시지가 없습니다.</p>;
   }
 
   return (

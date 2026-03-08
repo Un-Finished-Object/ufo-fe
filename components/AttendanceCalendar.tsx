@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/ToastMessage";
 
-type AttendanceCalendarProps = {
-  attendedDates?: string[]; // "YYYY-MM-DD"
+type StatusResponse = {
+  data?: { rewarded?: Record<string, boolean> };
+  error?: unknown;
 };
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -13,6 +15,12 @@ const MONTH_LABELS = [
   "1월", "2월", "3월", "4월", "5월", "6월",
   "7월", "8월", "9월", "10월", "11월", "12월",
 ];
+
+function extractRewardedDates(rewarded: Record<string, boolean>) {
+  return Object.entries(rewarded)
+    .filter(([, isRewarded]) => isRewarded === true)
+    .map(([date]) => date);
+}
 
 function ChevronLeft() {
   return (
@@ -30,17 +38,90 @@ function ChevronRight() {
   );
 }
 
-export default function AttendanceCalendar({ attendedDates = [] }: AttendanceCalendarProps) {
+export default function AttendanceCalendar() {
   const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
   const [showPicker, setShowPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
 
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const [checkedInToday, setCheckedInToday] = useState(attendedDates.includes(todayStr));
+  const todayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+
+  const [monthDates, setMonthDates] = useState<string[]>([]);
+  const [isFetchingMonth, setIsFetchingMonth] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [todayChecked, setTodayChecked] = useState<boolean | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const attendedSet = new Set(monthDates);
+  const isViewingCurrentMonth = viewYear === currentYear && viewMonth === currentMonth;
+  const checkedInToday = todayChecked === true;
+
+  // Fetch attendance status whenever the viewed month changes
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+    setIsFetchingMonth(true);
+    setMonthDates([]);
+
+    const isCurrentMonthRequest = viewYear === currentYear && viewMonth === currentMonth;
+    const requestedYear = viewYear;
+    const requestedMonth = viewMonth + 1;
+    const requestedMonthPrefix = `${requestedYear}-${String(requestedMonth).padStart(2, "0")}-`;
+
+    const fetchStatus = async () => {
+      try {
+        const params = new URLSearchParams({
+          year: String(requestedYear),
+          month: String(requestedMonth).padStart(2, "0"),
+        });
+
+        const response = await fetchWithAuthRetry({
+          apiBase,
+          input: `${apiBase}/v1/attendance/status?${params.toString()}`,
+          init: {
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        });
+
+        if (!response.ok || !isMounted) {
+          if (isCurrentMonthRequest) setTodayChecked(false);
+          return;
+        }
+
+        const payload = (await response.json()) as StatusResponse;
+        if (payload.error || !payload.data?.rewarded || !isMounted) {
+          if (isCurrentMonthRequest) setTodayChecked(false);
+          return;
+        }
+
+        const dates = extractRewardedDates(payload.data.rewarded).filter((date) =>
+          date.startsWith(requestedMonthPrefix),
+        );
+
+        setMonthDates(dates);
+        if (isCurrentMonthRequest) {
+          setTodayChecked(dates.includes(todayStr));
+        }
+      } catch {
+        if (isMounted && isCurrentMonthRequest) setTodayChecked(false);
+        // ignore abort / network errors
+      } finally {
+        if (isMounted) setIsFetchingMonth(false);
+      }
+    };
+
+    void fetchStatus();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [apiBase, currentMonth, currentYear, todayStr, viewMonth, viewYear]);
 
   const showToast = (msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -48,31 +129,62 @@ export default function AttendanceCalendar({ attendedDates = [] }: AttendanceCal
     toastTimerRef.current = setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleCheckIn = () => {
-    if (checkedInToday) {
-      showToast("오늘 이미 출석하셨어요!");
-      return;
-    }
-    // TODO: call API POST /v1/events/attendance
-    setCheckedInToday(true);
-    showToast("출석체크 완료! 🎉");
-  };
+  const handleCheckIn = async () => {
+    if (checkedInToday || isCheckingIn) return;
 
-  const attendedSet = new Set([...attendedDates, ...(checkedInToday ? [todayStr] : [])]);
+    setIsCheckingIn(true);
+    try {
+      const response = await fetchWithAuthRetry({
+        apiBase,
+        input: `${apiBase}/v1/attendance/check`,
+        init: {
+          method: "POST",
+        },
+      });
+
+      const payload = (await response.json()) as {
+        data?: { date?: string; rewarded?: boolean; rewardAmount?: number; balance?: number };
+        error?: unknown;
+      };
+
+      if (payload.error || !response.ok) {
+        showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      if (payload.data?.rewarded !== true) {
+        showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      setTodayChecked(true);
+      if (isViewingCurrentMonth) {
+        setMonthDates((prev) => (prev.includes(todayStr) ? prev : [...prev, todayStr]));
+      } else {
+        setViewYear(currentYear);
+        setViewMonth(currentMonth);
+      }
+      showToast("출석체크 완료! 🎉");
+    } catch {
+      showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
 
   const toDateStr = (day: number) =>
     `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const isToday = (day: number) =>
-    viewYear === today.getFullYear() &&
-    viewMonth === today.getMonth() &&
+    viewYear === currentYear &&
+    viewMonth === currentMonth &&
     day === today.getDate();
 
   const isAttended = (day: number) => attendedSet.has(toDateStr(day));
 
   const isFuture = (day: number) => {
     const d = new Date(viewYear, viewMonth, day);
-    const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const t = new Date(currentYear, currentMonth, today.getDate());
     return d > t;
   };
 
@@ -105,128 +217,136 @@ export default function AttendanceCalendar({ attendedDates = [] }: AttendanceCal
     <>
       <div className="px-4 py-6">
         <div className="rounded-xl border border-[#ffa8a8] bg-[#fff1ed] px-4 py-5">
-        {/* Month navigation header */}
-        <div className="mb-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={goPrevMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#ffaba6] hover:bg-[#fff0ef]"
-            aria-label="이전 달"
-          >
-            <ChevronLeft />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setPickerYear(viewYear); setShowPicker(true); }}
-            className="text-lg font-bold tracking-tight text-[#1f1f1f]"
-            aria-label="연도·월 선택"
-          >
-            {viewYear}년 {MONTH_LABELS[viewMonth]}
-          </button>
-
-          <button
-            type="button"
-            onClick={goNextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#ffaba6] hover:bg-[#fff0ef]"
-            aria-label="다음 달"
-          >
-            <ChevronRight />
-          </button>
-        </div>
-
-        {/* Day of week labels */}
-        <div className="mb-3 grid grid-cols-7 text-center text-xs font-semibold text-[#a4a4a4]">
-          {DAY_LABELS.map((label, i) => (
-            <div
-              key={label}
-              className={i === 0 ? "text-[#ff8a80]" : i === 6 ? "text-[#82b1ff]" : ""}
+          {/* Month navigation header */}
+          <div className="mb-6 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={goPrevMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-[#fff0ef]"
+              aria-label="이전 달"
             >
-              {label}
-            </div>
-          ))}
-        </div>
+              <ChevronLeft />
+            </button>
 
-        {/* Calendar cells */}
-        <div className="grid grid-cols-7 gap-y-2">
-          {cells.map((day, idx) => {
-            if (day === null) return <div key={`empty-${idx}`} />;
+            <button
+              type="button"
+              onClick={() => { setPickerYear(viewYear); setShowPicker(true); }}
+              className="text-lg font-bold tracking-tight text-ufo-text"
+              aria-label="연도·월 선택"
+            >
+              {viewYear}년 {MONTH_LABELS[viewMonth]}
+            </button>
 
-            const attended = isAttended(day);
-            const todayCell = isToday(day);
-            const future = isFuture(day);
-            const dayOfWeek = idx % 7;
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-[#fff0ef]"
+              aria-label="다음 달"
+            >
+              <ChevronRight />
+            </button>
+          </div>
 
-            let textColor = "text-[#1f1f1f]";
-            if (future) textColor = "text-[#d0d0d0]";
-            else if (dayOfWeek === 0) textColor = "text-[#ff8a80]";
-            else if (dayOfWeek === 6) textColor = "text-[#82b1ff]";
-
-            return (
-              <div key={day} className="flex flex-col items-center gap-1">
-                <span
-                  className={`text-sm font-medium leading-none ${
-                    todayCell
-                      ? "font-bold text-[#ffaba6]"
-                      : future
-                      ? "text-[#d0d0d0]"
-                      : dayOfWeek === 0
-                      ? "text-[#ff8a80]"
-                      : dayOfWeek === 6
-                      ? "text-[#82b1ff]"
-                      : "text-[#1f1f1f]"
-                  }`}
-                >
-                  {day}
-                </span>
-                {attended ? (
-                  <StarCircleIcon
-                    circleColor="#48eaff"
-                    starColor="#ffffff"
-                    className="h-6 w-6"
-                  />
-                ) : (
-                  <span
-                    className={`inline-block h-6 w-6 rounded-full border-2 ${
-                      future ? "border-[#eeeeee]" : "border-[#d9d9d9]"
-                    }`}
-                  />
-                )}
+          {/* Day of week labels */}
+          <div className="mb-3 grid grid-cols-7 text-center text-xs font-semibold text-ufo-text-muted">
+            {DAY_LABELS.map((label, i) => (
+              <div
+                key={label}
+                className={i === 0 ? "text-[#ff8a80]" : i === 6 ? "text-[#82b1ff]" : ""}
+              >
+                {label}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* Legend */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-xs text-[#a4a4a4]">
-          <span className="flex items-center gap-1.5">
-            <StarCircleIcon circleColor="#48eaff" starColor="#ffffff" className="h-4 w-4" />
-            출석 완료
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-4 w-4 rounded-full border-2 border-[#d9d9d9]" />
-            미출석
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-[#ffaba6]">15</span>
-            오늘
-          </span>
-        </div>
+          {/* Calendar cells */}
+          {isFetchingMonth ? (
+            <div className="py-10 text-center text-sm text-ufo-text-muted">불러오는 중...</div>
+          ) : (
+            <div className="grid grid-cols-7 gap-y-2">
+              {cells.map((day, idx) => {
+                if (day === null) return <div key={`empty-${idx}`} />;
 
+                const attended = isAttended(day);
+                const todayCell = isToday(day);
+                const future = isFuture(day);
+                const dayOfWeek = idx % 7;
+
+                return (
+                  <div key={day} className="flex flex-col items-center gap-1">
+                    <span
+                      className={`text-sm font-medium leading-none ${
+                        todayCell
+                          ? "font-bold text-ufo-brand"
+                          : future
+                          ? "text-[#d0d0d0]"
+                          : dayOfWeek === 0
+                          ? "text-[#ff8a80]"
+                          : dayOfWeek === 6
+                          ? "text-[#82b1ff]"
+                          : "text-ufo-text"
+                      }`}
+                    >
+                      {day}
+                    </span>
+                    {attended ? (
+                      <StarCircleIcon circleColor="#48eaff" starColor="#ffffff" className="h-6 w-6" />
+                    ) : (
+                      <span
+                        className={`inline-block h-6 w-6 rounded-full border-2 ${
+                          future ? "border-[#eeeeee]" : "border-ufo-border"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-ufo-text-muted">
+            <span className="flex items-center gap-1.5">
+              <StarCircleIcon circleColor="#48eaff" starColor="#ffffff" className="h-4 w-4" />
+              출석 완료
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-4 w-4 rounded-full border-2 border-ufo-border" />
+              미출석
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-ufo-brand">15</span>
+              오늘
+            </span>
+          </div>
         </div>{/* end bordered calendar */}
 
         {/* Check-in button */}
-        <button
-          type="button"
-          onClick={handleCheckIn}
-          className={`mt-6 h-14 w-full rounded-2xl text-base font-bold transition-colors ${
-            checkedInToday
-              ? "bg-[#f5f5f5] text-[#a4a4a4]"
-              : "bg-[#ffaba6] text-white"
-          }`}
-        >
-          {checkedInToday ? "오늘 출석 완료 ✓" : "출석체크"}
-        </button>
+        {(() => {
+          const loadingStatus = todayChecked === null;
+          const disabled = checkedInToday || isCheckingIn || loadingStatus;
+          const label = checkedInToday
+            ? "출석 완료"
+            : loadingStatus || isCheckingIn
+            ? "확인 중..."
+            : "출석체크";
+          const style = checkedInToday
+            ? "bg-[#f5f5f5] text-ufo-text-muted"
+            : disabled
+            ? "bg-ufo-brand/60 text-white"
+            : "bg-ufo-brand text-white";
+
+          return (
+            <button
+              type="button"
+              onClick={handleCheckIn}
+              disabled={disabled}
+              className={`mt-6 h-14 w-full rounded-2xl text-base font-bold transition-colors disabled:cursor-not-allowed ${style}`}
+            >
+              {label}
+            </button>
+          );
+        })()}
       </div>
       <ToastMessage message={toastMessage} />
 
@@ -243,28 +363,26 @@ export default function AttendanceCalendar({ attendedDates = [] }: AttendanceCal
             className="w-full max-w-[430px] rounded-t-2xl bg-white px-4 pb-8 pt-5"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Year selector */}
             <div className="mb-5 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setPickerYear((y) => y - 1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#ffaba6]"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand"
                 aria-label="이전 연도"
               >
                 <ChevronLeft />
               </button>
-              <span className="text-lg font-bold text-[#1f1f1f]">{pickerYear}년</span>
+              <span className="text-lg font-bold text-ufo-text">{pickerYear}년</span>
               <button
                 type="button"
                 onClick={() => setPickerYear((y) => y + 1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#ffaba6]"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand"
                 aria-label="다음 연도"
               >
                 <ChevronRight />
               </button>
             </div>
 
-            {/* Month grid */}
             <div className="grid grid-cols-4 gap-2">
               {MONTH_LABELS.map((label, i) => {
                 const isSelected = pickerYear === viewYear && i === viewMonth;
@@ -274,9 +392,7 @@ export default function AttendanceCalendar({ attendedDates = [] }: AttendanceCal
                     type="button"
                     onClick={() => selectMonth(i)}
                     className={`rounded-xl py-3 text-sm font-semibold transition-colors ${
-                      isSelected
-                        ? "bg-[#ffaba6] text-white"
-                        : "bg-[#f5f5f5] text-[#1f1f1f]"
+                      isSelected ? "bg-ufo-brand text-white" : "bg-[#f5f5f5] text-ufo-text"
                     }`}
                   >
                     {label}

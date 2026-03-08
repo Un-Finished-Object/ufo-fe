@@ -49,8 +49,8 @@ export default function ScrapsMainPage() {
   const items = selectedTab === "pattern" ? patternScraps : styleScraps;
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="logo"
           leftHref="/"
@@ -104,7 +104,7 @@ export default function ScrapsMainPage() {
                   heartVariant="filled"
                   heartClassName="h-5 w-5 stroke-white fill-white"
                   titleClassName="truncate text-[11px] font-semibold leading-tight"
-                  authorClassName="text-[9px] text-[#8c8c8c]"
+                  authorClassName="text-[9px] text-ufo-text-neutral"
                 />
               </article>
             ))}

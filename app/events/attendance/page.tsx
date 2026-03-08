@@ -11,16 +11,9 @@ export default function AttendancePage() {
   const { isAuthenticated } = useAuth();
   const profileHref = isAuthenticated ? "/my" : "/login";
 
-  // TODO: fetch attended dates from API
-  const attendedDates: string[] = [
-    "2026-03-01",
-    "2026-03-02",
-    "2026-03-03",
-  ];
-
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -31,7 +24,7 @@ export default function AttendancePage() {
           ]}
           showBottomBorder
         />
-        <AttendanceCalendar attendedDates={attendedDates} />
+        <AttendanceCalendar />
         <Footer />
       </main>
     </div>

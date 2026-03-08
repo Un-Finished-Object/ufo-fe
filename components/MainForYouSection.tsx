@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import PatternCard from "@/components/PatternCard";
 import ToastMessage from "@/components/ToastMessage";
+import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 import type { AuthStatus } from "@/contexts/AuthContext";
 
 type CuratedItem = {
@@ -82,7 +83,9 @@ export default function MainForYouSection({
   useEffect(() => {
     if (authStatus !== "authenticated") {
       didFetchRef.current = false;
-      setSelectedInterests([]);
+      queueMicrotask(() => {
+        setSelectedInterests([]);
+      });
       return;
     }
 
@@ -95,9 +98,12 @@ export default function MainForYouSection({
 
     const fetchInterests = async () => {
       try {
-        const response = await fetch(`${apiBase}/v1/users/me/interests`, {
-          method: "GET",
-          credentials: "include",
+        const response = await fetchWithAuthRetry({
+          apiBase,
+          input: `${apiBase}/v1/users/me/interests`,
+          init: {
+            method: "GET",
+          },
         });
 
         if (!response.ok || !isMounted) {
@@ -170,13 +176,16 @@ export default function MainForYouSection({
     }
 
     try {
-      const response = await fetch(`${apiBase}/v1/users/me/interests`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetchWithAuthRetry({
+        apiBase,
+        input: `${apiBase}/v1/users/me/interests`,
+        init: {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ keywords: draftInterests }),
         },
-        body: JSON.stringify({ keywords: draftInterests }),
       });
 
       if (!response.ok) {
@@ -298,7 +307,7 @@ export default function MainForYouSection({
                         onClick={() => toggleInterest(interest.label)}
                         disabled={disabled}
                         className={`${interest.className} rounded-md px-3 py-1.5 text-sm font-semibold transition-opacity ${
-                          selected ? "bg-[#fecbc8] text-[#222327]" : "bg-[#d9d9d9] text-[#49494d]"
+                          selected ? "bg-[#fecbc8] text-[#222327]" : "bg-ufo-border text-[#49494d]"
                         } ${disabled ? "opacity-45" : ""}`}
                         aria-pressed={selected}
                         aria-disabled={disabled}

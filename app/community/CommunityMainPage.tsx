@@ -13,8 +13,8 @@ export default function CommunityMainPage() {
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="logo"
           leftHref="/"
@@ -25,7 +25,7 @@ export default function CommunityMainPage() {
         />
         <SearchBar value={query} onChange={setQuery} />
         <NavBar />
-        <section className="px-4 py-12 text-center text-base font-semibold text-[#6f6f6f]">
+        <section className="px-4 py-12 text-center text-base font-semibold text-ufo-text-secondary">
           빈 페이지
         </section>
         <Footer />

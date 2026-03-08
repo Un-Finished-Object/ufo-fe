@@ -35,7 +35,7 @@ function ChatRoomItem({ room }: { room: ChatRoom }) {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
-          <p className="mt-0.5 text-xs leading-none text-[#9a9a9a]">{room.participants}</p>
+          <p className="mt-0.5 text-xs leading-none text-ufo-text-dim">{room.participants}</p>
           <p className="mt-1 text-xs leading-none text-[#f29aa4]">{room.statusText}</p>
         </div>
 
@@ -79,7 +79,7 @@ export default function ChatRoomList({
               <button
                 type="button"
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  index === 0 ? "bg-[#ffa8a8] text-white" : "bg-[#fff1ed] text-[#8c8c8c]"
+                  index === 0 ? "bg-ufo-brand-pale text-white" : "bg-[#fff1ed] text-ufo-text-neutral"
                 }`}
                 aria-label={`${chip} 필터`}
               >
@@ -94,7 +94,7 @@ export default function ChatRoomList({
         {rooms.length > 0 ? (
           rooms.map((room) => <ChatRoomItem key={room.patternId} room={room} />)
         ) : (
-          <li className="py-8 text-center text-sm text-[#8f8f8f]">{emptyText}</li>
+          <li className="py-8 text-center text-sm text-ufo-text-subtle">{emptyText}</li>
         )}
       </ul>
     </section>

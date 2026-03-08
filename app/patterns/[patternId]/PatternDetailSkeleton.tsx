@@ -41,8 +41,8 @@ const detailRows = [
 
 function CreditBadge({ credits }: { credits: number }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59cbe5]">
-      <span className="inline-block h-3 w-3 rounded-full bg-[#59cbe5]" />
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ufo-cyan">
+      <span className="inline-block h-3 w-3 rounded-full bg-ufo-cyan" />
       {credits} 크레딧
     </span>
   );
@@ -58,8 +58,8 @@ export default function PatternDetailSkeleton({
   const chatRoomTitle = `${pattern.title} 실시간 채팅방`;
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-28 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-28 text-ufo-text">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -87,13 +87,13 @@ export default function PatternDetailSkeleton({
         </section>
 
         <section className="mt-5 px-4">
-          <article className="flex h-[184px] flex-col rounded-2xl border border-[#ffaba6] bg-white p-4">
+          <article className="flex h-[184px] flex-col rounded-2xl border border-ufo-brand bg-white p-4">
             <div className="flex items-center gap-2 border-b border-[#ebebeb] pb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-[#8c8c8c] bi bi-chat-right-text" viewBox="0 0 16 16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-ufo-text-neutral bi bi-chat-right-text" viewBox="0 0 16 16">
               <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
               <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
             </svg>
-              <h2 className="truncate text-sm text-[#8c8c8c]">{chatRoomTitle}</h2>
+              <h2 className="truncate text-sm text-ufo-text-neutral">{chatRoomTitle}</h2>
             </div>
 
             <div className="mt-3">
@@ -103,15 +103,15 @@ export default function PatternDetailSkeleton({
               >
                 <div className="flex items-center gap-2">
                   <span className="h-9 w-9 rounded-full bg-[#f2e8e5]" aria-hidden="true" />
-                  <span className="h-7 w-[132px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                  <span className="h-7 w-[132px] rounded-xl bg-ufo-border" aria-hidden="true" />
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-9 w-9 rounded-full bg-[#ffb7b2]" aria-hidden="true" />
-                  <span className="h-7 w-[132px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                  <span className="h-7 w-[132px] rounded-xl bg-ufo-border" aria-hidden="true" />
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-9 w-9 rounded-full bg-[#f2e8e5]" aria-hidden="true" />
-                  <span className="h-7 w-[120px] rounded-xl bg-[#d9d9d9]" aria-hidden="true" />
+                  <span className="h-7 w-[120px] rounded-xl bg-ufo-border" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function PatternDetailSkeleton({
         </section>
 
         <section className="mt-6 px-4">
-          <div className="flex border-b border-[#dddddd]">
+          <div className="flex border-b border-ufo-border-light">
             <button
               type="button"
               onClick={() => setActiveTab("description")}
@@ -167,7 +167,7 @@ export default function PatternDetailSkeleton({
                     <div className="flex min-h-[52px] items-center px-4 text-sm font-bold text-[#555]">
                       {row.label}
                     </div>
-                    <div className="flex min-h-[52px] items-center justify-end px-4 text-sm font-semibold text-[#9a9a9a]">
+                    <div className="flex min-h-[52px] items-center justify-end px-4 text-sm font-semibold text-ufo-text-dim">
                       {pattern.details[row.key]}
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export default function PatternDetailSkeleton({
           </div>
         </section>
 
-        <section className="mt-6 px-4 pb-4 text-xs text-[#9a9a9a]">
+        <section className="mt-6 px-4 pb-4 text-xs text-ufo-text-dim">
           patternId: {pattern.id}
         </section>
       </main>

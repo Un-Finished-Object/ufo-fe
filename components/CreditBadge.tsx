@@ -10,10 +10,10 @@ type CreditBadgeProps = {
 
 export default function CreditBadge({
   credits,
-  badgeColor = "#59cbe5",
-  circleColor = "#ffffff",
-  starColor = "#59cbe5",
-  textColor = "#ffffff",
+  badgeColor = "var(--color-ufo-cyan)",
+  circleColor = "var(--color-ufo-surface)",
+  starColor = "var(--color-ufo-cyan)",
+  textColor = "var(--color-ufo-surface)",
 }: CreditBadgeProps) {
   return (
     <span

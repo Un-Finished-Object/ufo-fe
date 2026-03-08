@@ -9,6 +9,7 @@ import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 
 type BestItem = {
   id: number;
@@ -208,10 +209,13 @@ export default function Home() {
 
     const fetchRecommendPatterns = async () => {
       try {
-        const response = await fetch(`${apiBase}/v1/patterns/recommend`, {
-          method: "GET",
-          credentials: "include",
-          signal: controller.signal,
+        const response = await fetchWithAuthRetry({
+          apiBase,
+          input: `${apiBase}/v1/patterns/recommend`,
+          init: {
+            method: "GET",
+            signal: controller.signal,
+          },
         });
 
         if (!response.ok) return;
@@ -251,8 +255,8 @@ export default function Home() {
   }, [apiBase]);
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="logo"
           leftHref="/"

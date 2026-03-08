@@ -29,7 +29,7 @@ function BackIcon() {
       height="34" 
       viewBox="0 0 34 34" 
       fill="none" 
-      className="h-6 w-6 fill-none stroke-[#ffaba6]" 
+      className="h-6 w-6 fill-none stroke-ufo-brand" 
       xmlns="http://www.w3.org/2000/svg"
     >
       <path d="M11.0854 18.4166L19.0187 26.35L17 28.3333L5.66663 17L17 5.66663L19.0187 7.64996L11.0854 15.5833H28.3333V18.4166H11.0854Z" fill="#FFABA6"/>
@@ -102,7 +102,7 @@ function renderRightIcon(type: TopBarRightType) {
 function renderLeftIcon(type: TopBarLeftType) {
   if (type === "logo") {
     return (
-      <span className="text-3xl font-black lowercase tracking-tight text-[#ffaba6]">
+      <span className="text-3xl font-black lowercase tracking-tight text-ufo-brand">
         ufo
       </span>
     );
@@ -128,8 +128,8 @@ export default function TopBar({
   return (
     <header className={`${sticky ? "sticky top-0" : ""} z-50 w-full`}>
       <div
-        className={`mx-auto w-full max-w-[430px] bg-[#ffffff] ${
-          showBottomBorder ? "border-b border-[#dddddd]" : ""
+        className={`mx-auto w-full max-w-[430px] bg-ufo-surface ${
+          showBottomBorder ? "border-b border-ufo-border-light" : ""
         }`}
       >
         <div className="grid h-14 grid-cols-[96px_1fr_96px] items-center px-4">
@@ -150,11 +150,11 @@ export default function TopBar({
             )}
           </div>
 
-          <div className="truncate px-3 text-center text-base font-semibold text-[#ffaba6]">
+          <div className="truncate px-3 text-center text-base font-semibold text-ufo-brand">
             {title ?? ""}
           </div>
 
-          <div className="flex items-center justify-end gap-1 text-[#ffaba6]">
+          <div className="flex items-center justify-end gap-1 text-ufo-brand">
             {rightActions.map((action) => {
               const icon = renderRightIcon(action.type);
               const ariaLabel = action.ariaLabel ?? action.type;

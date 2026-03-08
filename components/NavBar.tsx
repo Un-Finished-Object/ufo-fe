@@ -23,19 +23,19 @@ export default function NavBar() {
 
   return (
     <header className="w-full">
-      <div className="mx-auto w-full max-w-[430px] bg-[#ffffff]">
-        <section className="border-b border-[#dddddd]" aria-label="Main tabs">
+      <div className="mx-auto w-full max-w-[430px] bg-ufo-surface">
+        <section className="border-b border-ufo-border-light" aria-label="Main tabs">
           <div className="px-7">
             <div className="flex items-center text-sm text-[#9e9e9e]">
               {tabs.map((tab) => (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`relative flex-1 pb-3 text-center ${isActive(tab.href) ? "font-semibold text-[#ffb5b3]" : ""}`}
+                  className={`relative flex-1 pb-3 text-center ${isActive(tab.href) ? "font-semibold text-ufo-brand-soft" : ""}`}
                 >
                   {tab.label}
                   {isActive(tab.href) ? (
-                    <span className="absolute left-1/2 -bottom-px h-[2px] w-16 -translate-x-1/2 bg-[#ffb5b3]" />
+                    <span className="absolute left-1/2 -bottom-px h-[2px] w-16 -translate-x-1/2 bg-ufo-brand-soft" />
                   ) : null}
                 </Link>
               ))}

@@ -90,8 +90,8 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-[#ffffff] text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-ufo-surface text-ufo-text">
         <header className="border-b border-[#ededed] px-4 py-3">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-2">

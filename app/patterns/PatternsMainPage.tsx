@@ -180,8 +180,8 @@ export default function PatternsMainPage() {
   }, [apiBase, selectedMainCategory, selectedClothingSubCategory, selectedSort, currentPage]);
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+    <div className="min-h-screen bg-ufo-bg">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="logo"
           leftHref="/"
@@ -202,7 +202,7 @@ export default function PatternsMainPage() {
                 onClick={() => handleMainCategoryClick(category)}
                 className={`h-7 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
                   selectedMainCategory === category
-                    ? "bg-[#ffb5b3] text-[#212121]"
+                    ? "bg-ufo-brand-soft text-[#212121]"
                     : "border border-[#d3d3d3] bg-transparent text-[#777]"
                 }`}
               >
@@ -219,7 +219,7 @@ export default function PatternsMainPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedClothingSubCategory(null)}
-                  className="whitespace-nowrap rounded-md bg-[#ffb5b3] px-3 py-1.5 text-xs leading-none font-semibold text-[#212121]"
+                  className="whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 py-1.5 text-xs leading-none font-semibold text-[#212121]"
                 >
                   {selectedClothingSubCategory}
                 </button>
@@ -231,7 +231,7 @@ export default function PatternsMainPage() {
                     onClick={() => handleClothingSubCategoryClick(subCategory)}
                     className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs leading-none font-semibold ${
                       selectedClothingSubCategory === subCategory
-                        ? "bg-[#ffb5b3] text-[#212121]"
+                        ? "bg-ufo-brand-soft text-[#212121]"
                         : "border border-[#d3d3d3] bg-transparent text-[#777]"
                     }`}
                   >
@@ -248,13 +248,13 @@ export default function PatternsMainPage() {
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
-              className="text-xs font-semibold text-[#9a9a9a]"
+              className="text-xs font-semibold text-ufo-text-dim"
             >
               {selectedSort} ▼
             </button>
 
             {isSortOpen ? (
-              <div className="absolute right-0 top-6 z-10 min-w-[88px] rounded-md border border-[#d9d9d9] bg-white py-1">
+              <div className="absolute right-0 top-6 z-10 min-w-[88px] rounded-md border border-ufo-border bg-white py-1">
                 {sortOptions.map((option) => (
                   <button
                     key={option}
@@ -263,7 +263,7 @@ export default function PatternsMainPage() {
                     className={`block w-full px-3 py-1 text-left text-xs ${
                       selectedSort === option
                         ? "font-semibold text-[#f09fa7]"
-                        : "text-[#6f6f6f]"
+                        : "text-ufo-text-secondary"
                     }`}
                   >
                     {option}
@@ -277,11 +277,11 @@ export default function PatternsMainPage() {
         <section className="px-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {isLoading ? (
-              <p className="col-span-2 py-12 text-center text-sm text-[#a4a4a4]">
+              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
                 불러오는 중...
               </p>
             ) : patternItems.length === 0 ? (
-              <p className="col-span-2 py-12 text-center text-sm text-[#a4a4a4]">
+              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
                 도안이 없습니다.
               </p>
             ) : (

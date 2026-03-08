@@ -26,7 +26,7 @@ const socialButtons: Array<{
   {
     provider: "google",
     label: "Google로 로그인",
-    className: "bg-[#ffffff] text-[#000000] border",
+    className: "bg-ufo-surface text-[#000000] border",
     logoSrc: "/login/google_logo.svg",
   },
   {
@@ -129,9 +129,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#ececec]">
+    <div className="min-h-screen bg-ufo-bg">
       <ToastMessage message={toastMessage} />
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-[#ffffff] pb-10 text-[#1f1f1f]">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -141,12 +141,12 @@ export default function LoginPage() {
             { type: "home", href: "/", ariaLabel: "홈" },
           ]}
         />
-        <section className="mx-auto w-full max-w-[430px] bg-[#ffffff] p-6 text-[#1f1f1f]">
+        <section className="mx-auto w-full max-w-[430px] bg-ufo-surface p-6 text-ufo-text">
           <div className="mb-10">
-            <h1 className="mt-6 text-3xl text-[#ffa8a8] text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
+            <h1 className="mt-6 text-3xl text-ufo-brand-pale text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
           </div>
 
-          <div className="bg-white/75 p-4 border-t border-[#dddddd] shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+          <div className="bg-white/75 p-4 border-t border-ufo-border-light shadow-[0_1px_0_rgba(0,0,0,0.04)]">
             <p className="mb-5 text-sm text-[#6e6e6e] text-center">
               소셜 아이디로 뜨친 만들기
             </p>

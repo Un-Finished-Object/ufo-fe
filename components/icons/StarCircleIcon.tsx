@@ -5,8 +5,8 @@ type StarCircleIconProps = {
 };
 
 export default function StarCircleIcon({
-  starColor = "#ffffff",
-  circleColor = "#59cbe5",
+  starColor = "var(--color-ufo-surface)",
+  circleColor = "var(--color-ufo-cyan)",
   className = "h-4 w-4",
 }: StarCircleIconProps) {
   return (

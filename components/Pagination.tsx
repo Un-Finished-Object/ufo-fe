@@ -37,7 +37,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-[#a4a4a4] disabled:opacity-30"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-ufo-text-muted disabled:opacity-30"
         aria-label="이전 페이지"
       >
         ‹
@@ -45,7 +45,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
       {pages.map((page, idx) =>
         page === "..." ? (
-          <span key={`ellipsis-${idx}`} className="flex h-8 w-6 items-center justify-center text-sm text-[#a4a4a4]">
+          <span key={`ellipsis-${idx}`} className="flex h-8 w-6 items-center justify-center text-sm text-ufo-text-muted">
             …
           </span>
         ) : (
@@ -55,8 +55,8 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             onClick={() => onPageChange(page)}
             className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium ${
               currentPage === page
-                ? "bg-[#ffaba6] text-white"
-                : "text-[#6f6f6f] hover:bg-[#fff0ef]"
+                ? "bg-ufo-brand text-white"
+                : "text-ufo-text-secondary hover:bg-[#fff0ef]"
             }`}
             aria-current={currentPage === page ? "page" : undefined}
           >
@@ -69,7 +69,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-[#a4a4a4] disabled:opacity-30"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-ufo-text-muted disabled:opacity-30"
         aria-label="다음 페이지"
       >
         ›
