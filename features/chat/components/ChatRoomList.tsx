@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ChatRoom } from "@/features/chat/types";
+import { chatStore } from "@/src/stores/chatStore";
 
 type ChatRoomListProps = {
   title: string;
@@ -24,6 +27,8 @@ function SettingsIcon() {
 }
 
 function ChatRoomItem({ room }: { room: ChatRoom }) {
+  const unreadCount = chatStore((state) => state.unreadCountByRoom[room.patternId] ?? room.unreadCount);
+
   return (
     <li className="border-b border-[#e5e5e5]">
       <Link
@@ -39,9 +44,11 @@ function ChatRoomItem({ room }: { room: ChatRoom }) {
           <p className="mt-1 text-xs leading-none text-[#f29aa4]">{room.statusText}</p>
         </div>
 
-        <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-[#ff2d2d] px-2 py-1 text-base font-semibold leading-none text-white">
-          {room.unreadCount}
-        </span>
+        {unreadCount > 0 ? (
+          <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-[#ff2d2d] px-2 py-1 text-base font-semibold leading-none text-white">
+            {unreadCount}
+          </span>
+        ) : null}
       </Link>
     </li>
   );

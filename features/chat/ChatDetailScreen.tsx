@@ -1,11 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
-import { getMockMessages, getRoomMeta } from "@/features/chat/mock-data";
-import type { ChatMessage, ChatRoomMeta } from "@/features/chat/types";
+import { getRoomMeta } from "@/features/chat/mock-data";
+import type { ChatMessage } from "@/features/chat/types";
+import { chatMessagesQueryKey, useChatMessagesQuery } from "@/src/hooks/queries/useChatMessagesQuery";
+import { chatStore } from "@/src/stores/chatStore";
 
 type ChatDetailScreenProps = {
   patternId: string;
@@ -25,78 +28,50 @@ function BackIcon() {
   );
 }
 
-function formatCurrentTime() {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
-
 export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
-  const [chatState, setChatState] = useState<{
-    patternId: string | null;
-    roomMeta: ChatRoomMeta | null;
-    messages: ChatMessage[];
-    errorMessage: string | null;
-  }>({
-    patternId: null,
-    roomMeta: null,
-    messages: [],
-    errorMessage: null,
-  });
+  const roomId = patternId;
+  const roomMeta = getRoomMeta(roomId);
+  const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const setCurrentRoomId = chatStore((state) => state.setCurrentRoomId);
+  const subscribeRoom = chatStore((state) => state.subscribeRoom);
+  const unsubscribeRoom = chatStore((state) => state.unsubscribeRoom);
+  const resetUnreadCount = chatStore((state) => state.resetUnreadCount);
+  const messagesQuery = useChatMessagesQuery(roomId);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const nextRoomMeta = getRoomMeta(patternId);
-
-      if (!nextRoomMeta) {
-        setChatState({
-          patternId,
-          roomMeta: { title: "알 수 없는 채팅방", participants: "0명" },
-          messages: [],
-          errorMessage: "채팅방 정보를 찾을 수 없습니다.",
-        });
-        return;
-      }
-
-      setChatState({
-        patternId,
-        roomMeta: nextRoomMeta,
-        messages: getMockMessages(patternId),
-        errorMessage: null,
-      });
-    }, 150);
+    setCurrentRoomId(roomId);
+    subscribeRoom(roomId);
+    resetUnreadCount(roomId);
 
     return () => {
-      window.clearTimeout(timer);
+      unsubscribeRoom(roomId);
+      setCurrentRoomId(null);
     };
-  }, [patternId]);
+  }, [resetUnreadCount, roomId, setCurrentRoomId, subscribeRoom, unsubscribeRoom]);
 
-  const isLoading = chatState.patternId !== patternId;
-  const roomMeta = isLoading ? null : chatState.roomMeta;
-  const errorMessage = isLoading ? null : chatState.errorMessage;
-  const messages = isLoading ? [] : chatState.messages;
-  const canSend = useMemo(() => messageText.trim().length > 0 && !isSending, [messageText, isSending]);
+  const canSend = useMemo(
+    () => messageText.trim().length > 0 && !isSending && !messagesQuery.isPending,
+    [isSending, messageText, messagesQuery.isPending]
+  );
 
   const handleSubmit = () => {
     if (!canSend) {
       return;
     }
 
-    const newMessage: ChatMessage = {
-      id: `local-${Date.now()}`,
-      sender: "me",
-      time: formatCurrentTime(),
-      lines: [messageText.trim()],
+    const nextMessage: ChatMessage = {
+      messageId: `local-${Date.now()}`,
+      senderId: "me",
+      text: messageText.trim(),
+      createdAt: new Date().toISOString(),
     };
 
-    setChatState((previous) => ({
-      ...previous,
-      messages: [...previous.messages, newMessage],
-      errorMessage: null,
-    }));
+    queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) => [
+      ...previousMessages,
+      nextMessage,
+    ]);
     setMessageText("");
     setIsSending(true);
 
@@ -104,6 +79,12 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
       setIsSending(false);
     }, 120);
   };
+
+  const errorMessage = roomMeta
+    ? messagesQuery.isError
+      ? "메시지를 불러오지 못했습니다."
+      : null
+    : "채팅방 정보를 찾을 수 없습니다.";
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -120,7 +101,7 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
               </Link>
 
               <div>
-                <h1 className="text-base font-semibold text-[#2d2d2d]">{roomMeta?.title ?? "채팅방"}</h1>
+                <h1 className="text-base font-semibold text-[#2d2d2d]">{roomMeta?.title ?? "알 수 없는 채팅방"}</h1>
                 <p className="text-sm text-[#787878]">{roomMeta?.participants ?? "0명"}</p>
               </div>
             </div>
@@ -140,7 +121,11 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
         </header>
 
         <section className="flex-1 space-y-5 overflow-y-auto px-4 py-6" aria-label="채팅 메시지 목록">
-          <ChatMessageList messages={messages} isLoading={isLoading} errorMessage={errorMessage} />
+          <ChatMessageList
+            messages={messagesQuery.data ?? []}
+            isLoading={messagesQuery.isPending}
+            errorMessage={errorMessage}
+          />
         </section>
 
         <footer className="sticky bottom-0 border-t border-[#f0b2b2] bg-white p-4">

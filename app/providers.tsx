@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useAccessTokenRefresh } from "@/hooks/useAccessTokenRefresh";
 import { createQueryClient } from "@/lib/query/client";
+import ChatConnectionProvider from "@/src/providers/ChatConnectionProvider";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -21,7 +22,7 @@ export default function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthRefreshManager />
-      {children}
+      <ChatConnectionProvider>{children}</ChatConnectionProvider>
     </QueryClientProvider>
   );
 }

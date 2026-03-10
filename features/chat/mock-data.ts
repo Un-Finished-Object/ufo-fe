@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatRoom, ChatRoomMeta } from "@/features/chat/types";
+import type { ChatRoom, ChatRoomMeta } from "@/features/chat/types";
 
 export const chatFilterChips = ["전체", "즐겨찾기", "안읽음", "진행중", "FO", "예정"];
 
@@ -67,55 +67,6 @@ export const roomMetaByPatternId: Record<string, ChatRoomMeta> = {
   "pattern-2003": { title: "포근한 니트 베스트", participants: "58명" },
 };
 
-const messagesByPatternId: Record<string, ChatMessage[]> = {
-  "pattern-1001": [
-    {
-      id: "m-1",
-      sender: "other",
-      senderName: "한정판 콩국수",
-      time: "18:26",
-      lines: [
-        "뜨뜨개 님에게 답장",
-        "3번째 줄에서 막혔는데 혹시 이 부분 알려주실 분 계신가용 ㅠㅠㅠㅠ",
-        "엇 혹시 해결하셨나요 ???!",
-        "제가 알려드릴 수 있을 것 같아요 !",
-      ],
-    },
-    {
-      id: "m-2",
-      sender: "other",
-      senderName: "한정판 콩국수",
-      time: "18:26",
-      lines: [
-        "뜨뜨개 님에게 답장",
-        "3번째 줄에서 막혔는데 혹시 이 부분 알려주실 분 계신가용 ㅠㅠㅠㅠ",
-        "엇 혹시 해결하셨나요 ???!",
-        "제가 알려드릴 수 있을 것 같아요 !",
-      ],
-    },
-    {
-      id: "m-3",
-      sender: "me",
-      time: "19:30",
-      lines: ["대체실 구매하실분 있나요???"],
-    },
-  ],
-  "pattern-1002": [
-    {
-      id: "m-10",
-      sender: "other",
-      senderName: "뜨개연필",
-      time: "12:02",
-      lines: ["이 패턴 시작하신 분들 계신가요?"],
-    },
-  ],
-};
-
 export function getRoomMeta(patternId: string): ChatRoomMeta | null {
   return roomMetaByPatternId[patternId] ?? null;
-}
-
-export function getMockMessages(patternId: string): ChatMessage[] {
-  const messages = messagesByPatternId[patternId] ?? [];
-  return messages.map((message) => ({ ...message, lines: [...message.lines] }));
 }
