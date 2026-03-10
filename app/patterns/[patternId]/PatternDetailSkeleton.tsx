@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PatternPurchaseBar from "@/components/PatternPurchaseBar";
 import TopBar from "@/components/TopBar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthState } from "@/hooks/useAuthState";
 
 type PatternDetailData = {
   id: string;
@@ -52,7 +52,7 @@ export default function PatternDetailSkeleton({
   pattern,
 }: PatternDetailSkeletonProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const [activeTab, setActiveTab] = useState<"description" | "alternative">("description");
   const profileHref = isAuthenticated ? "/my" : "/login";
   const chatRoomTitle = `${pattern.title} 실시간 채팅방`;

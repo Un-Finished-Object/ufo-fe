@@ -1,12 +1,15 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import CreditBadge from "@/components/CreditBadge";
 import TopBar from "@/components/TopBar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useMeQuery } from "@/hooks/queries/useMeQuery";
+import { useWalletQuery } from "@/hooks/queries/useWalletQuery";
 import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
+import { userQueryKeys } from "@/lib/queries/user";
 
 const profile = {
   sinceText: "우리 뜨친된지 199일 ♡",
@@ -44,12 +47,54 @@ function MenuSection({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+function LoadingState() {
+  return (
+    <section className="px-8 py-14">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-ufo-border bg-white px-6 py-12 text-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-border-light border-t-ufo-brand-pale" />
+        <p className="mt-4 text-sm font-medium text-ufo-text-secondary">
+          회원 정보를 불러오고 있어요.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="px-8 py-14">
+      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
+        <p className="text-base font-semibold text-ufo-text">회원 정보를 불러오지 못했어요.</p>
+        <p className="mt-2 text-sm text-ufo-text-secondary">
+          잠시 후 다시 시도하거나 새로고침해 주세요.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-5 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
+        >
+          다시 시도
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function MyPage() {
   const router = useRouter();
-  const { clearAuth, userProfile, creditBalance } = useAuth();
-  const nickname = userProfile?.nickname || "회원";
-  const email = userProfile?.email || "";
-  const profileImageSrc = userProfile?.profileImage?.trim() ? userProfile.profileImage : null;
+  const queryClient = useQueryClient();
+  const meQuery = useMeQuery();
+  const walletQuery = useWalletQuery({ enabled: Boolean(meQuery.data) });
+
+  useEffect(() => {
+    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+      router.replace("/login?error=unauthorized");
+    }
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
+
+  const nickname = meQuery.data?.nickname || "회원";
+  const email = meQuery.data?.email || "";
+  const profileImageSrc = meQuery.data?.profileImage?.trim() ? meQuery.data.profileImage : null;
 
   const handleLogout = useCallback(async () => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -65,10 +110,73 @@ export default function MyPage() {
         });
       }
     } finally {
-      clearAuth();
+      queryClient.setQueryData(userQueryKeys.me, null);
+      queryClient.setQueryData(userQueryKeys.wallet, null);
       router.replace("/login");
     }
-  }, [clearAuth, router]);
+  }, [queryClient, router]);
+
+  const handleRetry = useCallback(() => {
+    void meQuery.refetch();
+
+    if (meQuery.data) {
+      void walletQuery.refetch();
+    }
+  }, [meQuery, walletQuery]);
+
+  const isLoading = meQuery.isPending || (Boolean(meQuery.data) && walletQuery.isPending);
+  const isError = meQuery.isError || walletQuery.isError;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+          <TopBar
+            left="back"
+            leftHref="/"
+            title="마이페이지"
+            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+            showBottomBorder
+          />
+          <LoadingState />
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+          <TopBar
+            left="back"
+            leftHref="/"
+            title="마이페이지"
+            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+            showBottomBorder
+          />
+          <ErrorState onRetry={handleRetry} />
+        </main>
+      </div>
+    );
+  }
+
+  if (!meQuery.data) {
+    return (
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+          <TopBar
+            left="back"
+            leftHref="/"
+            title="마이페이지"
+            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+            showBottomBorder
+          />
+          <LoadingState />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -110,7 +218,7 @@ export default function MyPage() {
                   <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{email}</p>
                   <div className="pt-3">
                     <CreditBadge
-                      credits={creditBalance ?? 0}
+                      credits={walletQuery.data ?? 0}
                       badgeColor="#39d2f0"
                       circleColor="#ffffff"
                       starColor="#39d2f0"

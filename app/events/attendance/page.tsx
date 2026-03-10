@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import AttendanceCalendar from "@/components/AttendanceCalendar";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthState } from "@/hooks/useAuthState";
 
 export default function AttendancePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (

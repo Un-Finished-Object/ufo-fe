@@ -1,12 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import { meQueryOptions, walletQueryOptions } from "@/lib/queries/user";
 
 export default function AuthCompletePage() {
   const router = useRouter();
-  const { setAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let isMounted = true;
@@ -20,10 +22,7 @@ export default function AuthCompletePage() {
       }
 
       try {
-        const refreshResponse = await fetch(`${apiBase}/v1/auth/token/refresh`, {
-          method: "POST",
-          credentials: "include",
-        });
+        const refreshResponse = await refreshAccessToken({ apiBase });
 
         if (!refreshResponse.ok) {
           router.replace("/login?error=oauth_failed");
@@ -34,7 +33,13 @@ export default function AuthCompletePage() {
           return;
         }
 
-        setAuthenticated();
+        const me = await queryClient.fetchQuery(meQueryOptions());
+        if (!me) {
+          router.replace("/login?error=oauth_failed");
+          return;
+        }
+
+        void queryClient.prefetchQuery(walletQueryOptions());
         router.replace("/");
       } catch {
         router.replace("/login?error=oauth_failed");
@@ -46,7 +51,7 @@ export default function AuthCompletePage() {
     return () => {
       isMounted = false;
     };
-  }, [router, setAuthenticated]);
+  }, [queryClient, router]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f4f5f7] px-4">

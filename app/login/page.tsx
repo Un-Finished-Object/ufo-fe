@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -7,7 +8,8 @@ import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
 import ToastMessage from "@/components/ToastMessage";
-import { useAuth } from "@/contexts/AuthContext";
+import { useMeQuery } from "@/hooks/queries/useMeQuery";
+import { meQueryOptions, walletQueryOptions } from "@/lib/queries/user";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -26,13 +28,13 @@ const socialButtons: Array<{
   {
     provider: "google",
     label: "Google로 로그인",
-    className: "bg-ufo-surface text-[#000000] border",
+    className: "border bg-ufo-surface text-black",
     logoSrc: "/login/google_logo.svg",
   },
   {
     provider: "kakao",
     label: "카카오로 로그인",
-    className: "bg-[#fee500] text-[#000000]",
+    className: "bg-[#fee500] text-black",
     logoSrc: "/login/kakao_logo.svg",
   },
   {
@@ -45,7 +47,8 @@ const socialButtons: Array<{
 
 export default function LoginPage() {
   const router = useRouter();
-  const { status, setAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const meQuery = useMeQuery();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const errorMessage = error ? errorMessages[error] : null;
@@ -63,10 +66,10 @@ export default function LoginPage() {
   }, [toastMessage]);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (meQuery.data) {
       router.replace("/");
     }
-  }, [router, status]);
+  }, [meQuery.data, router]);
 
   useEffect(() => {
     const handleOAuthMessage = (event: MessageEvent<unknown>) => {
@@ -81,7 +84,8 @@ export default function LoginPage() {
 
       const messageType = (data as { type?: string }).type;
       if (messageType === "oauth-success") {
-        setAuthenticated();
+        void queryClient.fetchQuery(meQueryOptions()).catch(() => null);
+        void queryClient.prefetchQuery(walletQueryOptions());
         router.replace("/");
         return;
       }
@@ -96,7 +100,7 @@ export default function LoginPage() {
     return () => {
       window.removeEventListener("message", handleOAuthMessage);
     };
-  }, [router, setAuthenticated]);
+  }, [queryClient, router]);
 
   const handleSocialLogin = (provider: Provider) => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -124,7 +128,7 @@ export default function LoginPage() {
     popup.focus();
   };
 
-  if (status !== "unauthenticated") {
+  if (meQuery.data) {
     return null;
   }
 

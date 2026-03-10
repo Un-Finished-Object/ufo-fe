@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/contexts/AuthContext";
 import localFont from "next/font/local";
+import Providers from "@/app/providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,7 +19,7 @@ const pretendard = localFont({
   variable: "--font-pretendard",
   weight: "100 900",
   display: "swap"
-})
+});
 
 export const metadata: Metadata = {
   title: "Un-Finished Object",
@@ -34,9 +34,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable}>
       <body
-        className={`antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
 import SearchBar from "@/components/SearchBar";
 import NavBar from "@/components/NavBar";
 import HeartIcon from "@/components/icons/HeartIcon";
+import { useAuthState } from "@/hooks/useAuthState";
 
 type StylePost = {
   id: number;
@@ -27,7 +27,7 @@ const stylePosts: StylePost[] = [
 
 export default function StylesMainPage() {
   const [query, setQuery] = useState("");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (

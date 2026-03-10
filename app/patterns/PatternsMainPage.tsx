@@ -7,7 +7,7 @@ import Pagination from "@/components/Pagination";
 import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthState } from "@/hooks/useAuthState";
 
 type PatternItem = {
   id: number;
@@ -64,7 +64,7 @@ const sortApiMap: Record<string, string> = {
 };
 
 export default function PatternsMainPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const [query, setQuery] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] =
     useState<(typeof mainCategories)[number]>("ALL");

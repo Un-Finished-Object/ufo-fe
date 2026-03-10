@@ -9,12 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
+    "@tanstack/eslint-plugin-query": "^5.91.4",
     "@types/node": "^20.19.35",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

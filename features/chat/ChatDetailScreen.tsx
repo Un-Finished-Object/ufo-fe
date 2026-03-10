@@ -33,31 +33,40 @@ function formatCurrentTime() {
 }
 
 export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
-  const [roomMeta, setRoomMeta] = useState<ChatRoomMeta | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatState, setChatState] = useState<{
+    patternId: string | null;
+    roomMeta: ChatRoomMeta | null;
+    messages: ChatMessage[];
+    errorMessage: string | null;
+  }>({
+    patternId: null,
+    roomMeta: null,
+    messages: [],
+    errorMessage: null,
+  });
   const [messageText, setMessageText] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    setErrorMessage(null);
-
     const timer = window.setTimeout(() => {
       const nextRoomMeta = getRoomMeta(patternId);
 
       if (!nextRoomMeta) {
-        setRoomMeta({ title: "알 수 없는 채팅방", participants: "0명" });
-        setMessages([]);
-        setErrorMessage("채팅방 정보를 찾을 수 없습니다.");
-        setIsLoading(false);
+        setChatState({
+          patternId,
+          roomMeta: { title: "알 수 없는 채팅방", participants: "0명" },
+          messages: [],
+          errorMessage: "채팅방 정보를 찾을 수 없습니다.",
+        });
         return;
       }
 
-      setRoomMeta(nextRoomMeta);
-      setMessages(getMockMessages(patternId));
-      setIsLoading(false);
+      setChatState({
+        patternId,
+        roomMeta: nextRoomMeta,
+        messages: getMockMessages(patternId),
+        errorMessage: null,
+      });
     }, 150);
 
     return () => {
@@ -65,6 +74,10 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
     };
   }, [patternId]);
 
+  const isLoading = chatState.patternId !== patternId;
+  const roomMeta = isLoading ? null : chatState.roomMeta;
+  const errorMessage = isLoading ? null : chatState.errorMessage;
+  const messages = isLoading ? [] : chatState.messages;
   const canSend = useMemo(() => messageText.trim().length > 0 && !isSending, [messageText, isSending]);
 
   const handleSubmit = () => {
@@ -79,9 +92,12 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
       lines: [messageText.trim()],
     };
 
-    setMessages((previous) => [...previous, newMessage]);
+    setChatState((previous) => ({
+      ...previous,
+      messages: [...previous.messages, newMessage],
+      errorMessage: null,
+    }));
     setMessageText("");
-    setErrorMessage(null);
     setIsSending(true);
 
     window.setTimeout(() => {

@@ -8,7 +8,7 @@ import NavBar from "@/components/NavBar";
 import PatternCard from "@/components/PatternCard";
 import SearchBar from "@/components/SearchBar";
 import TopBar from "@/components/TopBar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthState } from "@/hooks/useAuthState";
 import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 
 type BestItem = {
@@ -55,6 +55,8 @@ type BannerItem = {
   id: number;
   title: string;
   count: string;
+  href?: string;
+  imageSrc?: string;
 };
 
 
@@ -129,7 +131,7 @@ export default function Home() {
   const [bestItems, setBestItems] = useState<BestItem[]>(fallbackBestItems);
   const [newItems, setNewItems] = useState<BestItem[]>(fallbackNewItems);
   const [recommendItems, setRecommendItems] = useState<CuratedItem[]>(curatedItems);
-  const { isAuthenticated, status } = useAuth();
+  const { authStatus, isAuthenticated } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
   const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 
@@ -290,7 +292,11 @@ export default function Home() {
           </div>
         </section>
 
-        <MainForYouSection items={recommendItems} isAuthenticated={isAuthenticated} authStatus={status} />
+        <MainForYouSection
+          items={recommendItems}
+          isAuthenticated={isAuthenticated}
+          authStatus={authStatus}
+        />
 
         <section className="px-4 pt-8">
           <h2 className="mb-4 text-xl font-bold tracking-tight">NEW</h2>

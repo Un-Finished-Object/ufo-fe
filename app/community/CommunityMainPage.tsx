@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
 import SearchBar from "@/components/SearchBar";
 import NavBar from "@/components/NavBar";
+import { useAuthState } from "@/hooks/useAuthState";
 
 export default function CommunityMainPage() {
   const [query, setQuery] = useState("");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (

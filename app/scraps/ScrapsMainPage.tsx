@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
 import SearchBar from "@/components/SearchBar";
 import NavBar from "@/components/NavBar";
 import PatternCard from "@/components/PatternCard";
+import { useAuthState } from "@/hooks/useAuthState";
 
 type ScrapTab = "pattern" | "style";
 
@@ -44,7 +44,7 @@ const styleScraps: ScrapItem[] = [
 export default function ScrapsMainPage() {
   const [query, setQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<ScrapTab>("pattern");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
   const items = selectedTab === "pattern" ? patternScraps : styleScraps;
 

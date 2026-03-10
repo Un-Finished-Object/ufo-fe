@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import PatternCard from "@/components/PatternCard";
 import ToastMessage from "@/components/ToastMessage";
+import type { AuthStatus } from "@/hooks/useAuthState";
 import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
-import type { AuthStatus } from "@/contexts/AuthContext";
 
 type CuratedItem = {
   id: number;

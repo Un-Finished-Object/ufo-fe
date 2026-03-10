@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type PopupMessageType = "oauth-success" | "oauth-failed";
 
@@ -26,10 +27,7 @@ export default function AuthPopupCompletePage() {
       }
 
       try {
-        const refreshResponse = await fetch(`${apiBase}/v1/auth/token/refresh`, {
-          method: "POST",
-          credentials: "include",
-        });
+        const refreshResponse = await refreshAccessToken({ apiBase });
 
         if (!refreshResponse.ok) {
           notifyOpener("oauth-failed");
