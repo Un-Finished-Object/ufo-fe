@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useSyncExternalStore } from "react";
+import { clearAccessToken } from "@/lib/auth/accessToken";
 import { ACCESS_TOKEN_REFRESH_INTERVAL_MS, refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { userQueryKeys } from "@/lib/queries/user";
 
@@ -27,6 +28,7 @@ export function useAccessTokenRefresh() {
         }
 
         if (response.status === 401 || response.status === 403) {
+          clearAccessToken();
           queryClient.setQueryData(userQueryKeys.me, null);
           queryClient.setQueryData(userQueryKeys.wallet, null);
         }

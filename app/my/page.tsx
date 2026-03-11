@@ -8,6 +8,7 @@ import CreditBadge from "@/components/CreditBadge";
 import TopBar from "@/components/TopBar";
 import { useMeQuery } from "@/hooks/queries/useMeQuery";
 import { useWalletQuery } from "@/hooks/queries/useWalletQuery";
+import { clearAccessToken } from "@/lib/auth/accessToken";
 import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 import { userQueryKeys } from "@/lib/queries/user";
 
@@ -110,6 +111,7 @@ export default function MyPage() {
         });
       }
     } finally {
+      clearAccessToken();
       queryClient.setQueryData(userQueryKeys.me, null);
       queryClient.setQueryData(userQueryKeys.wallet, null);
       router.replace("/login");
