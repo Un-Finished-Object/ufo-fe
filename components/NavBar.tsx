@@ -26,7 +26,7 @@ export default function NavBar() {
       <div className="mx-auto w-full max-w-[430px] bg-ufo-surface">
         <section className="border-b border-ufo-border-light" aria-label="Main tabs">
           <div className="px-7">
-            <div className="flex items-center text-sm text-[#9e9e9e]">
+            <div className="flex items-center text-sm text-ufo-text-dim">
               {tabs.map((tab) => (
                 <Link
                   key={tab.href}

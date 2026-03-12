@@ -28,11 +28,11 @@ function BackIcon() {
       width="34" 
       height="34" 
       viewBox="0 0 34 34" 
-      fill="none" 
-      className="h-6 w-6 fill-none stroke-ufo-brand" 
+      fill="currentColor" 
+      className="h-6 w-6 text-ufo-brand" 
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M11.0854 18.4166L19.0187 26.35L17 28.3333L5.66663 17L17 5.66663L19.0187 7.64996L11.0854 15.5833H28.3333V18.4166H11.0854Z" fill="#FFABA6"/>
+      <path d="M11.0854 18.4166L19.0187 26.35L17 28.3333L5.66663 17L17 5.66663L19.0187 7.64996L11.0854 15.5833H28.3333V18.4166H11.0854Z" />
     </svg>
   );
 }

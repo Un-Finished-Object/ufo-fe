@@ -202,8 +202,8 @@ export default function PatternsMainPage() {
                 onClick={() => handleMainCategoryClick(category)}
                 className={`h-7 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
                   selectedMainCategory === category
-                    ? "bg-ufo-brand-soft text-[#212121]"
-                    : "border border-[#d3d3d3] bg-transparent text-[#777]"
+                    ? "bg-ufo-brand-soft text-ufo-text"
+                    : "border border-ufo-border bg-transparent text-ufo-text-secondary"
                 }`}
               >
                 {category}
@@ -219,7 +219,7 @@ export default function PatternsMainPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedClothingSubCategory(null)}
-                  className="whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 py-1.5 text-xs leading-none font-semibold text-[#212121]"
+                  className="whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 py-1.5 text-xs leading-none font-semibold text-ufo-text"
                 >
                   {selectedClothingSubCategory}
                 </button>
@@ -231,8 +231,8 @@ export default function PatternsMainPage() {
                     onClick={() => handleClothingSubCategoryClick(subCategory)}
                     className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs leading-none font-semibold ${
                       selectedClothingSubCategory === subCategory
-                        ? "bg-ufo-brand-soft text-[#212121]"
-                        : "border border-[#d3d3d3] bg-transparent text-[#777]"
+                        ? "bg-ufo-brand-soft text-ufo-text"
+                        : "border border-ufo-border bg-transparent text-ufo-text-secondary"
                     }`}
                   >
                     {subCategory}
@@ -262,7 +262,7 @@ export default function PatternsMainPage() {
                     onClick={() => handleSortSelect(option)}
                     className={`block w-full px-3 py-1 text-left text-xs ${
                       selectedSort === option
-                        ? "font-semibold text-[#f09fa7]"
+                        ? "font-semibold text-ufo-brand"
                         : "text-ufo-text-secondary"
                     }`}
                   >

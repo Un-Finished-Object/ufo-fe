@@ -23,10 +23,10 @@ const userMenuItems = ["로그아웃", "회원탈퇴"];
 
 function EditIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white" aria-hidden="true">
       <path
         d="M14.7 5.3L18.7 9.3M7 17L6 21L10 20L19.4 10.6C20.2 9.8 20.2 8.5 19.4 7.7L16.3 4.6C15.5 3.8 14.2 3.8 13.4 4.6L7 11V17Z"
-        stroke="#FFFFFF"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -192,7 +192,7 @@ export default function MyPage() {
         />
 
         <section className="px-8 py-9">
-          <article className="rounded-2xl bg-[#ee9f9f] px-4 py-4 text-white">
+          <article className="rounded-2xl bg-ufo-brand px-4 py-4 text-white">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3">
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white/30 shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
@@ -219,13 +219,7 @@ export default function MyPage() {
                   </p>
                   <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{email}</p>
                   <div className="pt-3">
-                    <CreditBadge
-                      credits={walletQuery.data ?? 0}
-                      badgeColor="#39d2f0"
-                      circleColor="#ffffff"
-                      starColor="#39d2f0"
-                      textColor="#ffffff"
-                    />
+                    <CreditBadge credits={walletQuery.data ?? 0} />
                   </div>
                 </div>
               </div>
@@ -245,7 +239,7 @@ export default function MyPage() {
 
             <button
               type="button"
-              className="mt-3 w-full rounded-xl bg-[#f3ece8] px-4 py-2 text-l font-semibold tracking-[-0.02em] text-[#888888]"
+              className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-l font-semibold tracking-[-0.02em] text-ufo-text-neutral"
             >
               내가 구매한 대체실 정보 보기
             </button>

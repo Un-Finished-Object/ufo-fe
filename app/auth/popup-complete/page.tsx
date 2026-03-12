@@ -49,10 +49,10 @@ export default function AuthPopupCompletePage() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f4f5f7] px-4">
-      <section className="flex w-full max-w-[430px] flex-col items-center justify-center rounded-2xl bg-white py-14 shadow-sm">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f1cad1] border-t-[#eb9ca7]" />
-        <p className="mt-4 text-sm font-medium text-[#4c4c4c]">Signing you in…</p>
+    <main className="flex min-h-screen items-center justify-center bg-ufo-bg px-4">
+      <section className="flex w-full max-w-[430px] flex-col items-center justify-center rounded-2xl bg-ufo-surface py-14 shadow-sm">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-brand-soft border-t-ufo-brand" />
+        <p className="mt-4 text-sm font-medium text-ufo-text">Signing you in…</p>
       </section>
     </main>
   );

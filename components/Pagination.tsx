@@ -56,7 +56,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium ${
               currentPage === page
                 ? "bg-ufo-brand text-white"
-                : "text-ufo-text-secondary hover:bg-[#fff0ef]"
+                : "text-ufo-text-secondary hover:bg-ufo-brand-pale"
             }`}
             aria-current={currentPage === page ? "page" : undefined}
           >

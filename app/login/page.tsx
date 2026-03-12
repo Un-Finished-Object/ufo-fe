@@ -34,13 +34,13 @@ const socialButtons: Array<{
   {
     provider: "kakao",
     label: "카카오로 로그인",
-    className: "bg-[#fee500] text-black",
+    className: "bg-ufo-kakao text-black",
     logoSrc: "/login/kakao_logo.svg",
   },
   {
     provider: "naver",
     label: "네이버로 로그인",
-    className: "bg-[#03a94d] text-white",
+    className: "bg-ufo-naver text-white",
     logoSrc: "/login/naver_logo.svg",
   },
 ];
@@ -151,7 +151,7 @@ export default function LoginPage() {
           </div>
 
           <div className="bg-white/75 p-4 border-t border-ufo-border-light shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-            <p className="mb-5 text-sm text-[#6e6e6e] text-center">
+            <p className="mb-5 text-center text-sm text-ufo-text-secondary">
               소셜 아이디로 뜨친 만들기
             </p>
             <div className="flex flex-col gap-3">
@@ -184,7 +184,7 @@ export default function LoginPage() {
           </div>
 
           {errorMessage ? (
-            <p className="mt-4 rounded-xl bg-[#fdecee] px-3 py-2 text-center text-sm text-[#d04949]">
+            <p className="mt-4 rounded-xl bg-ufo-brand-pale px-3 py-2 text-center text-sm text-ufo-error">
               {errorMessage}
             </p>
           ) : null}

@@ -216,13 +216,13 @@ export default function AttendanceCalendar() {
   return (
     <>
       <div className="px-4 py-6">
-        <div className="rounded-xl border border-[#ffa8a8] bg-[#fff1ed] px-4 py-5">
+        <div className="rounded-xl border border-ufo-brand bg-ufo-brand-pale px-4 py-5">
           {/* Month navigation header */}
           <div className="mb-6 flex items-center justify-between">
             <button
               type="button"
               onClick={goPrevMonth}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-[#fff0ef]"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-ufo-brand-pale"
               aria-label="이전 달"
             >
               <ChevronLeft />
@@ -240,7 +240,7 @@ export default function AttendanceCalendar() {
             <button
               type="button"
               onClick={goNextMonth}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-[#fff0ef]"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-brand hover:bg-ufo-brand-pale"
               aria-label="다음 달"
             >
               <ChevronRight />
@@ -252,7 +252,7 @@ export default function AttendanceCalendar() {
             {DAY_LABELS.map((label, i) => (
               <div
                 key={label}
-                className={i === 0 ? "text-[#ff8a80]" : i === 6 ? "text-[#82b1ff]" : ""}
+                className={i === 0 ? "text-red-300" : i === 6 ? "text-blue-300" : ""}
               >
                 {label}
               </div>
@@ -279,22 +279,26 @@ export default function AttendanceCalendar() {
                         todayCell
                           ? "font-bold text-ufo-brand"
                           : future
-                          ? "text-[#d0d0d0]"
+                          ? "text-gray-300"
                           : dayOfWeek === 0
-                          ? "text-[#ff8a80]"
+                          ? "text-red-300"
                           : dayOfWeek === 6
-                          ? "text-[#82b1ff]"
+                          ? "text-blue-300"
                           : "text-ufo-text"
                       }`}
                     >
                       {day}
                     </span>
                     {attended ? (
-                      <StarCircleIcon circleColor="#48eaff" starColor="#ffffff" className="h-6 w-6" />
+                      <StarCircleIcon
+                        circleClassName="text-ufo-credit"
+                        starClassName="text-ufo-surface"
+                        className="h-6 w-6"
+                      />
                     ) : (
                       <span
                         className={`inline-block h-6 w-6 rounded-full border-2 ${
-                          future ? "border-[#eeeeee]" : "border-ufo-border"
+                          future ? "border-gray-200" : "border-ufo-border"
                         }`}
                       />
                     )}
@@ -307,7 +311,11 @@ export default function AttendanceCalendar() {
           {/* Legend */}
           <div className="mt-8 flex items-center justify-center gap-6 text-xs text-ufo-text-muted">
             <span className="flex items-center gap-1.5">
-              <StarCircleIcon circleColor="#48eaff" starColor="#ffffff" className="h-4 w-4" />
+              <StarCircleIcon
+                circleClassName="text-ufo-credit"
+                starClassName="text-ufo-surface"
+                className="h-4 w-4"
+              />
               출석 완료
             </span>
             <span className="flex items-center gap-1.5">
@@ -331,7 +339,7 @@ export default function AttendanceCalendar() {
             ? "확인 중..."
             : "출석체크";
           const style = checkedInToday
-            ? "bg-[#f5f5f5] text-ufo-text-muted"
+            ? "bg-gray-100 text-ufo-text-muted"
             : disabled
             ? "bg-ufo-brand/60 text-white"
             : "bg-ufo-brand text-white";
@@ -392,7 +400,7 @@ export default function AttendanceCalendar() {
                     type="button"
                     onClick={() => selectMonth(i)}
                     className={`rounded-xl py-3 text-sm font-semibold transition-colors ${
-                      isSelected ? "bg-ufo-brand text-white" : "bg-[#f5f5f5] text-ufo-text"
+                      isSelected ? "bg-ufo-brand text-white" : "bg-gray-100 text-ufo-text"
                     }`}
                   >
                     {label}

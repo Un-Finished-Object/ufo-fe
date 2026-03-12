@@ -15,7 +15,7 @@ function SearchIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-5 w-5 fill-none stroke-[#f3a2aa]"
+      className="h-5 w-5 fill-none stroke-ufo-brand"
       strokeWidth="2"
     >
       <circle cx="11" cy="11" r="6" />
@@ -44,7 +44,7 @@ export default function SearchBar({
         role="search"
         aria-label="검색"
       >
-        <label className="flex h-10 items-center gap-2 rounded-full bg-[#fff1ed] px-4 text-sm text-[#cba8ac]">
+        <label className="flex h-10 items-center gap-2 rounded-full bg-ufo-brand-pale px-4 text-sm text-ufo-text-muted">
           <SearchIcon />
           <span className="sr-only">검색어</span>
           <input
@@ -54,7 +54,7 @@ export default function SearchBar({
             placeholder={placeholder}
             disabled={disabled}
             autoFocus={autoFocus}
-            className="w-full bg-transparent text-sm text-[#4d4d4d] placeholder:text-[#cba8ac] focus:outline-none"
+            className="w-full bg-transparent text-sm text-ufo-text placeholder:text-ufo-text-muted focus:outline-none"
           />
         </label>
       </form>

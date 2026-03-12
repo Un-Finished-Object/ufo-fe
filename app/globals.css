@@ -11,17 +11,20 @@
   --color-ufo-bg: #ececec;
   --color-ufo-surface: #ffffff;
   --color-ufo-text: #1f1f1f;
-  --color-ufo-border: #d9d9d9;
-  --color-ufo-border-light: #dddddd;
-  --color-ufo-brand: #ffaba6;
-  --color-ufo-brand-soft: #ffb5b3;
-  --color-ufo-brand-pale: #ffa8a8;
-  --color-ufo-cyan: #59cbe5;
   --color-ufo-text-muted: #a4a4a4;
   --color-ufo-text-subtle: #8f8f8f;
   --color-ufo-text-secondary: #6f6f6f;
   --color-ufo-text-neutral: #8c8c8c;
   --color-ufo-text-dim: #9a9a9a;
+  --color-ufo-border: #ffa8a8;
+  --color-ufo-border-light: #dddddd;
+  --color-ufo-brand: #ffaba6;
+  --color-ufo-brand-soft: #fecbc8;
+  --color-ufo-brand-pale: #fff1ed;
+  --color-ufo-credit: #49eaff;
+  --color-ufo-kakao: #fee500;
+  --color-ufo-naver: #03a94d;
+  --color-ufo-error: #d04949;
   --font-sans: var(--font-pretendard);
   --font-mono: var(--font-geist-mono);
 }

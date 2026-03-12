@@ -219,8 +219,8 @@ export default function MainForYouSection({
             type="button"
             onClick={openModal}
             disabled={isSettingDisabled}
-            className={`rounded-md px-2 py-1.5 text-xs text-[#ffffff] ${
-              isSettingDisabled ? "bg-[#9f9f9f]" : "bg-[#252525]"
+            className={`rounded-md px-2 py-1.5 text-xs text-white ${
+              isSettingDisabled ? "bg-ufo-text-dim" : "bg-ufo-text"
             }`}
             aria-label="관심사 설정"
             aria-disabled={isSettingDisabled}
@@ -234,14 +234,14 @@ export default function MainForYouSection({
             <button
               key={tag}
               type="button"
-              className="shrink-0 rounded-md bg-[#fecbc8] px-3 py-1.5 text-xs"
+              className="shrink-0 rounded-md bg-ufo-brand-soft px-3 py-1.5 text-xs"
             >
               {tag}
             </button>
           ))}
         </div>
 
-        <div className="bg-[#252525] px-4 py-5">
+        <div className="bg-ufo-text px-4 py-5">
           <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-4">
               {items.map((item) => (
@@ -253,7 +253,7 @@ export default function MainForYouSection({
                     author={item.author}
                     patternId={item.id}
                     titleClassName="truncate text-[11px] font-semibold text-white"
-                    authorClassName="text-[10px] text-[#8f9198]"
+                    authorClassName="text-[10px] text-ufo-text-muted"
                   />
                 </article>
               ))}
@@ -269,7 +269,7 @@ export default function MainForYouSection({
           aria-modal="true"
           aria-label="관심사 설정"
         >
-          <div className="w-full max-w-[430px] bg-[#252525] px-4 pb-6 pt-5">
+          <div className="w-full max-w-[430px] bg-ufo-text px-4 pb-6 pt-5">
             <div className="mb-4 flex items-start justify-between">
               <h3 className="ml-2 text-l leading-tight font-bold text-white">관심사를 알려주세요!</h3>
               <button
@@ -281,10 +281,10 @@ export default function MainForYouSection({
                 닫기
               </button>
             </div>
-            <p className="ml-2 text-l font-medium text-[#ffffff]">
+            <p className="ml-2 text-l font-medium text-white">
               선택한 관심사를 바탕으로 도안을 추천해 드려요.
             </p>
-            <p className="ml-2 mb-5 mt-1 text-l text-[#fecbc8]">
+            <p className="ml-2 mb-5 mt-1 text-l text-ufo-brand-soft">
               *관심사는 최대 {MAX_INTEREST_COUNT}개까지 설정할 수 있습니다.
             </p>
 
@@ -307,7 +307,7 @@ export default function MainForYouSection({
                         onClick={() => toggleInterest(interest.label)}
                         disabled={disabled}
                         className={`${interest.className} rounded-md px-3 py-1.5 text-sm font-semibold transition-opacity ${
-                          selected ? "bg-[#fecbc8] text-[#222327]" : "bg-ufo-border text-[#49494d]"
+                          selected ? "bg-ufo-brand-soft text-ufo-text" : "bg-ufo-border text-ufo-text-secondary"
                         } ${disabled ? "opacity-45" : ""}`}
                         aria-pressed={selected}
                         aria-disabled={disabled}
@@ -324,7 +324,7 @@ export default function MainForYouSection({
             <button
               type="button"
               onClick={saveInterests}
-              className="mt-6 h-11 w-full rounded-xl bg-[#fecbc8] text-sm font-bold"
+              className="mt-6 h-11 w-full rounded-xl bg-ufo-brand-soft text-sm font-bold text-ufo-text"
             >
               관심사 설정
             </button>
