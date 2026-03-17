@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_ROUTES = ["/my", "/scraps", "/chats"];
+const PROTECTED_ROUTES = ["/my", "/scraps", "/chats", "/events"];
 const REFRESH_TOKEN_COOKIE = "refresh_token";
 
 export function proxy(request: NextRequest) {
