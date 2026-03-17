@@ -6,6 +6,7 @@ import TopBar from "@/components/TopBar";
 import SearchBar from "@/components/SearchBar";
 import NavBar from "@/components/NavBar";
 import PatternCard from "@/components/PatternCard";
+import SegmentedSwitch from "@/components/SegmentedSwitch";
 import { useAuthState } from "@/hooks/useAuthState";
 
 type ScrapTab = "pattern" | "style";
@@ -41,6 +42,11 @@ const styleScraps: ScrapItem[] = [
   { id: 9, title: "클래식 케이블 니트룩", author: "@cable_day", image: "/mock/pattern-card.svg" },
 ];
 
+const scrapTabOptions = [
+  { label: "도안 찜", value: "pattern" },
+  { label: "스타일 찜", value: "style" },
+] as const;
+
 export default function ScrapsMainPage() {
   const [query, setQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<ScrapTab>("pattern");
@@ -63,32 +69,11 @@ export default function ScrapsMainPage() {
         <NavBar />
 
         <section className="px-4 pt-3">
-          <div className="rounded-md bg-[#f7c7c7] p-1">
-            <div className="grid grid-cols-2 gap-1">
-              <button
-                type="button"
-                onClick={() => setSelectedTab("pattern")}
-                className={`h-8 rounded-md text-xs font-semibold ${
-                  selectedTab === "pattern"
-                    ? "bg-white text-[#2f2f2f]"
-                    : "bg-transparent text-[#8e6f6f]"
-                }`}
-              >
-                도안 찜
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedTab("style")}
-                className={`h-8 rounded-md text-xs font-semibold ${
-                  selectedTab === "style"
-                    ? "bg-white text-[#2f2f2f]"
-                    : "bg-transparent text-[#8e6f6f]"
-                }`}
-              >
-                스타일 찜
-              </button>
-            </div>
-          </div>
+          <SegmentedSwitch
+            options={scrapTabOptions}
+            value={selectedTab}
+            onChange={setSelectedTab}
+          />
         </section>
 
         <section className="px-4 pt-5">
