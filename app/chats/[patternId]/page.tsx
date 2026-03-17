@@ -1,4 +1,4 @@
-import ChatDetailScreen from "@/features/chat/ChatDetailScreen";
+import ChatDetailScreen from "./ChatDetailScreen";
 
 type ChatDetailPageProps = {
   params: Promise<{

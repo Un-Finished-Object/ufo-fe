@@ -1,5 +1,5 @@
-import ChatsMainPage from "./ChatsMainPage";
+import ChatsMainScreen from "./ChatsMainScreen";
 
 export default function ChatsPage() {
-  return <ChatsMainPage />;
+  return <ChatsMainScreen />;
 }

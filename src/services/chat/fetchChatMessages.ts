@@ -1,72 +1,77 @@
 import type { ChatMessage } from "@/src/types/chat";
+import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 
-const chatMessagesByRoomId: Record<string, ChatMessage[]> = {
-  "pattern-1001": [
-    {
-      messageId: "pattern-1001-message-1",
-      senderId: "뜨개연필",
-      text: "이 패턴 3단 시작하신 분 계신가요?",
-      createdAt: "2026-03-10T09:20:00.000Z",
-    },
-    {
-      messageId: "pattern-1001-message-2",
-      senderId: "실타래모음",
-      text: "저는 지금 소매 뜨는 중인데 꽤 재밌어요.",
-      createdAt: "2026-03-10T09:22:00.000Z",
-    },
-  ],
-  "pattern-1002": [
-    {
-      messageId: "pattern-1002-message-1",
-      senderId: "바늘콩",
-      text: "토끼 귀 부분에서 코 수가 안 맞아요.",
-      createdAt: "2026-03-10T10:05:00.000Z",
-    },
-    {
-      messageId: "pattern-1002-message-2",
-      senderId: "me",
-      text: "혹시 14단에서 한 코 빠뜨리신 건 아닐까요?",
-      createdAt: "2026-03-10T10:07:00.000Z",
-    },
-  ],
-  "pattern-1003": [
-    {
-      messageId: "pattern-1003-message-1",
-      senderId: "shawl-lover",
-      text: "실 대체 추천 있으신 분 있나요?",
-      createdAt: "2026-03-10T11:10:00.000Z",
-    },
-  ],
-  "pattern-2001": [
-    {
-      messageId: "pattern-2001-message-1",
-      senderId: "모헤어덕후",
-      text: "머플러 길이 어느 정도로 뜨고 계세요?",
-      createdAt: "2026-03-10T12:15:00.000Z",
-    },
-  ],
-  "room-1": [
-    {
-      messageId: "room-1-message-1",
-      senderId: "sample-user",
-      text: "room-1 mock message",
-      createdAt: "2026-03-10T08:00:00.000Z",
-    },
-  ],
-  "room-2": [
-    {
-      messageId: "room-2-message-1",
-      senderId: "sample-user",
-      text: "room-2 mock message",
-      createdAt: "2026-03-10T08:05:00.000Z",
-    },
-  ],
+type ChatMessageItem = {
+  messageId?: number;
+  clientMessageId?: string;
+  senderId?: number | string;
+  senderName?: string;
+  text?: string;
+  createdAt?: string | null;
 };
 
-export async function fetchChatMessages(roomId: string) {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+type ChatMessagesResponse = {
+  data?: {
+    lastMessageId?: number;
+    hasNext?: boolean;
+    nextMessageId?: number;
+    messages?: ChatMessageItem[];
+  };
+  error?: unknown;
+};
 
-  const messages = chatMessagesByRoomId[roomId] ?? [];
+function getApiBase() {
+  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+}
 
-  return messages.map((message) => ({ ...message }));
+export async function fetchChatMessages(
+  roomId: string,
+  { signal }: { signal?: AbortSignal } = {},
+) {
+  const apiBase = getApiBase();
+  const response = await fetchWithAuthRetry({
+    apiBase,
+    input: `${apiBase}/v1/chat/${roomId}/messages`,
+    init: {
+      method: "GET",
+      credentials: "include",
+      signal,
+    },
+  });
+
+  if (response.status === 401) {
+    return [] satisfies ChatMessage[];
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to load chat messages.");
+  }
+
+  const payload = (await response.json()) as ChatMessagesResponse;
+
+  if (payload.error || !payload.data || !Array.isArray(payload.data.messages)) {
+    throw new Error("Failed to load chat messages.");
+  }
+
+  return payload.data.messages
+    .filter(
+      (message): message is ChatMessageItem & { messageId: number; text: string } =>
+        typeof message.messageId === "number" &&
+        typeof message.text === "string",
+    )
+    .map((message) => ({
+      messageId: String(message.messageId),
+      clientMessageId: typeof message.clientMessageId === "string" ? message.clientMessageId : undefined,
+      senderId:
+        typeof message.senderId === "number"
+          ? String(message.senderId)
+          : typeof message.senderId === "string"
+            ? message.senderId
+            : null,
+      senderName: typeof message.senderName === "string" ? message.senderName : undefined,
+      text: message.text,
+      createdAt: typeof message.createdAt === "string" ? message.createdAt : null,
+      status: "confirmed",
+    } satisfies ChatMessage))
+    .sort((left, right) => Number(left.messageId) - Number(right.messageId));
 }

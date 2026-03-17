@@ -2,11 +2,16 @@ import type { ChatMessage } from "@/features/chat/types";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
+  currentUserId: string | null;
   isLoading: boolean;
   errorMessage: string | null;
 };
 
-function formatMessageTime(createdAt: string) {
+function formatMessageTime(createdAt: string | null) {
+  if (!createdAt) {
+    return "";
+  }
+
   const createdDate = new Date(createdAt);
 
   if (Number.isNaN(createdDate.getTime())) {
@@ -22,6 +27,7 @@ function formatMessageTime(createdAt: string) {
 
 export default function ChatMessageList({
   messages,
+  currentUserId,
   isLoading,
   errorMessage,
 }: ChatMessageListProps) {
@@ -40,23 +46,32 @@ export default function ChatMessageList({
   return (
     <>
       {messages.map((message) => {
-        const isMine = message.senderId === "me";
+        const isMine =
+          (currentUserId !== null && message.senderId === currentUserId) || message.status === "pending";
+        const senderName = message.senderName?.trim();
+        const messageMetaText = message.status === "pending"
+          ? "전송중"
+          : formatMessageTime(message.createdAt);
 
         return (
           <article
-            key={message.messageId}
+            key={message.clientMessageId ?? message.messageId ?? message.createdAt}
             className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
           >
             {!isMine ? (
               <div className="max-w-[78%]">
-                <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{message.senderId}</p>
+                {senderName ? (
+                  <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
+                ) : null}
                 <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
                   <p className="leading-6">{message.text}</p>
                 </div>
               </div>
             ) : null}
 
-            <p className="self-end pb-1 text-[11px] text-ufo-text-dim">{formatMessageTime(message.createdAt)}</p>
+            {messageMetaText ? (
+              <p className="self-end pb-1 text-[11px] text-ufo-text-dim">{messageMetaText}</p>
+            ) : null}
 
             {isMine ? (
               <div className="max-w-[72%] rounded-xl bg-[#fff1ed] px-4 py-3 text-sm text-ufo-text-secondary">

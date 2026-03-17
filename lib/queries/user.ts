@@ -3,6 +3,7 @@ import { fetchWithAuthRetry } from "@/lib/fetchWithAuthRetry";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export type UserProfile = {
+  userId: string | null;
   email: string;
   nickname: string;
   profileImage: string;
@@ -10,6 +11,9 @@ export type UserProfile = {
 
 type MeResponse = {
   data?: {
+    userId?: number;
+    user_id?: number;
+    id?: number;
     email?: string;
     nickname?: string;
     profileImage?: string;
@@ -61,6 +65,14 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
   }
 
   return {
+    userId:
+      typeof payload.data.userId === "number"
+        ? String(payload.data.userId)
+        : typeof payload.data.user_id === "number"
+          ? String(payload.data.user_id)
+          : typeof payload.data.id === "number"
+            ? String(payload.data.id)
+            : null,
     email: payload.data.email ?? "",
     nickname: payload.data.nickname ?? "",
     profileImage: payload.data.profileImage ?? payload.data.profileImageUrl ?? "",

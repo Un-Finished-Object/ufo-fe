@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import type { ChatRoom } from "@/features/chat/types";
-import { chatStore } from "@/src/stores/chatStore";
 
 type ChatRoomListProps = {
   title: string;
@@ -26,9 +25,11 @@ function SettingsIcon() {
   );
 }
 
-function ChatRoomItem({ room }: { room: ChatRoom }) {
-  const unreadCount = chatStore((state) => state.unreadCountByRoom[room.patternId] ?? room.unreadCount);
+function FavoriteIcon() {
+  return <span className="text-ufo-brand-soft" aria-hidden="true">★</span>;
+}
 
+function ChatRoomItem({ room }: { room: ChatRoom }) {
   return (
     <li className="border-b border-[#e5e5e5]">
       <Link
@@ -39,14 +40,18 @@ function ChatRoomItem({ room }: { room: ChatRoom }) {
         <div className="h-12 w-12 shrink-0 rounded-[6px] bg-[#f4e9e5]" aria-hidden="true" />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
-          <p className="mt-0.5 text-xs leading-none text-ufo-text-dim">{room.participants}</p>
-          <p className="mt-1 text-xs leading-none text-[#f29aa4]">{room.statusText}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
+            {room.favorite ? <FavoriteIcon /> : null}
+          </div>
+          <p className="mt-1 text-xs leading-none text-ufo-text-dim">
+            {room.favorite ? "즐겨찾기 채팅방" : room.isHidden ? "FO 보관 채팅방" : "채팅방"}
+          </p>
         </div>
 
-        {unreadCount > 0 ? (
+        {room.unreadCount > 0 ? (
           <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-[#ff2d2d] px-2 py-1 text-base font-semibold leading-none text-white">
-            {unreadCount}
+            {room.unreadCount}
           </span>
         ) : null}
       </Link>

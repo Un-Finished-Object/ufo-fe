@@ -3,8 +3,8 @@ export type { ChatMessage } from "@/src/types/chat";
 export type ChatRoom = {
   patternId: string;
   name: string;
-  participants: string;
-  statusText: string;
+  favorite: boolean;
+  isHidden: boolean;
   unreadCount: number;
 };
 

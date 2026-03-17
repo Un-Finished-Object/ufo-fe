@@ -1,13 +1,9 @@
-export type ChatConnectionStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "disconnected";
-
 export type ChatMessage = {
-  messageId: string;
-  senderId: string;
+  messageId: string | null;
+  clientMessageId?: string;
+  senderId?: string | null;
+  senderName?: string;
   text: string;
-  createdAt: string;
+  createdAt: string | null;
+  status?: "pending" | "confirmed";
 };

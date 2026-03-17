@@ -12,12 +12,12 @@ export function useChatMessagesQuery(roomId: string | null) {
   return useQuery<ChatMessage[]>({
     queryKey: chatMessagesQueryKey(roomId),
     enabled: roomId !== null,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (roomId === null) {
         return [];
       }
 
-      return fetchChatMessages(roomId);
+      return fetchChatMessages(roomId, { signal });
     },
   });
 }
