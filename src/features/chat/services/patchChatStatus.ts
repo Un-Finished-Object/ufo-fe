@@ -3,7 +3,7 @@ import type { ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
 
 type PatchChatStatusParams = {
   patternId: string;
-  favorites?: boolean;
+  favorite?: boolean;
   hidden?: boolean;
 };
 
@@ -22,7 +22,7 @@ function getApiBase() {
 
 export async function patchChatStatus({
   patternId,
-  favorites,
+  favorite,
   hidden,
 }: PatchChatStatusParams) {
   const apiBase = getApiBase();
@@ -36,7 +36,7 @@ export async function patchChatStatus({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ...(typeof favorites === "boolean" ? { favorites } : {}),
+        ...(typeof favorite === "boolean" ? { favorite } : {}),
         ...(typeof hidden === "boolean" ? { hidden } : {}),
       }),
     },

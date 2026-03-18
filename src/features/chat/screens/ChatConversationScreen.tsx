@@ -63,8 +63,8 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
 
   const chatStatus = chatStatusQuery.data ?? mapChatRoomToStatus(roomId, chatRoom);
   const updateChatStatusMutation = useMutation({
-    mutationFn: ({ favorites, hidden }: { favorites?: boolean; hidden?: boolean }) =>
-      patchChatStatus({ patternId: roomId, favorites, hidden }),
+    mutationFn: ({ favorite, hidden }: { favorite?: boolean; hidden?: boolean }) =>
+      patchChatStatus({ patternId: roomId, favorite, hidden }),
     onSuccess: (nextChatStatus) => {
       queryClient.setQueryData<ChatStatus | null>(chatStatusQueryKey(roomId), nextChatStatus);
       queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
@@ -83,7 +83,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
 
   const handleFavoriteClick = () => {
     const nextFavorite = !(chatStatus?.favorite ?? false);
-    updateChatStatusMutation.mutate({ favorites: nextFavorite });
+    updateChatStatusMutation.mutate({ favorite: nextFavorite });
   };
 
   const handleFoClick = () => {
