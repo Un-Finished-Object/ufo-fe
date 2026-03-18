@@ -11,6 +11,8 @@ type StompLifecycleHandlers = {
   onStompError?: (frame: IFrame, client: Client) => void;
 };
 
+type StompConnectListener = (frame: IFrame, client: Client) => void;
+
 export type CreateStompClientOptions = StompLifecycleHandlers & {
   brokerURL?: string;
   connectHeaders?: StompHeaders;
@@ -23,6 +25,7 @@ export type CreateStompClientOptions = StompLifecycleHandlers & {
 
 let stompClient: Client | null = null;
 let stompClientOptions: CreateStompClientOptions | null = null;
+const stompConnectListeners = new Set<StompConnectListener>();
 
 function getApiBase() {
   return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
@@ -103,6 +106,10 @@ function buildDebugLogger(debug?: StompConfig["debug"]) {
 
 function attachLifecycleHandlers(client: Client, options: CreateStompClientOptions) {
   client.onConnect = (frame) => {
+    stompConnectListeners.forEach((listener) => {
+      listener(frame, client);
+    });
+
     options.onConnect?.(frame, client);
   };
 
@@ -193,4 +200,12 @@ export async function deactivateStompClient() {
 
 export function getStompClientOptions() {
   return stompClientOptions;
+}
+
+export function addStompConnectListener(listener: StompConnectListener) {
+  stompConnectListeners.add(listener);
+
+  return () => {
+    stompConnectListeners.delete(listener);
+  };
 }

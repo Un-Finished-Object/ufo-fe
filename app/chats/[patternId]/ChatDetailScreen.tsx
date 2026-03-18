@@ -8,6 +8,7 @@ import ChatTopBar from "@/components/chat/ChatTopBar";
 import { getRoomMeta } from "@/features/chat/mock-data";
 import { useMeQuery } from "@/hooks/queries/useMeQuery";
 import type { ChatRoom } from "@/features/chat/types";
+import { useChatRoomSubscription } from "@/src/features/chat/hooks/useChatRoomSubscription";
 import { useChatMessagesQuery } from "@/src/hooks/queries/useChatMessagesQuery";
 import {
   chatStatusQueryKey,
@@ -39,6 +40,8 @@ export default function ChatDetailScreen({ patternId }: ChatDetailScreenProps) {
   const [messageText, setMessageText] = useState("");
   const messagesQuery = useChatMessagesQuery(roomId);
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
+
+  useChatRoomSubscription(roomId);
 
   useEffect(() => {
     const nextChatStatus = mapChatRoomToStatus(roomId, chatRoom);
