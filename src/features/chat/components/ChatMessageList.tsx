@@ -15,13 +15,13 @@ type ChatMessageListProps = {
 
 function formatMessageTime(createdAt: string | null) {
   if (!createdAt) {
-    return "";
+    return "??:??";
   }
 
   const createdDate = new Date(createdAt);
 
   if (Number.isNaN(createdDate.getTime())) {
-    return "";
+    return "??:??";
   }
 
   return new Intl.DateTimeFormat("ko-KR", {
@@ -56,31 +56,27 @@ export default function ChatMessageList({
   return (
     <>
       {messages.map((message) => {
-        const isMine =
-          (currentUserId !== null && message.senderId === currentUserId) ||
-          message.status === "pending" ||
-          message.status === "failed";
+        const isMine = currentUserId !== null && message.senderId === currentUserId;
+        const shouldTreatAsMine = isMine || message.status === "pending" || message.status === "failed";
         const isPending = message.status === "pending";
         const isFailed = message.status === "failed";
         const isLastConfirmedMessage =
           message.status === "confirmed" &&
           message.messageId !== null &&
           message.messageId === lastConfirmedMessageId;
-        const senderName = message.senderName?.trim();
+        const senderName = message.senderName?.trim() || "뜨친";
         const messageMetaText = isPending || isFailed ? null : formatMessageTime(message.createdAt);
 
         return (
           <div
             key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-            className={isMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
+            className={shouldTreatAsMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
             ref={isLastConfirmedMessage ? onLastConfirmedMessageRefChange : undefined}
           >
-            <article className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-              {!isMine ? (
+            <article className={`flex gap-2 ${shouldTreatAsMine ? "justify-end" : "justify-start"}`}>
+              {!shouldTreatAsMine ? (
                 <div className="max-w-[78%]">
-                  {senderName ? (
-                    <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
-                  ) : null}
+                  <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
                   <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
                     <p className="leading-6">{message.text}</p>
                   </div>
@@ -91,10 +87,10 @@ export default function ChatMessageList({
                 <p className="self-end pb-1 text-[11px] text-ufo-text-dim">{messageMetaText}</p>
               ) : null}
 
-              {isMine ? (
+              {shouldTreatAsMine ? (
                 <div className="flex max-w-[78%] items-end gap-2">
                   {isPending ? <ChatMessageSendingIndicator /> : null}
-                  <div className="max-w-full rounded-xl bg-[#fff1ed] px-4 py-3 text-sm text-ufo-text-secondary">
+                  <div className="max-w-full rounded-xl bg-ufo-brand-pale px-4 py-3 text-sm text-white">
                     <p className="leading-6">{message.text}</p>
                   </div>
                 </div>
