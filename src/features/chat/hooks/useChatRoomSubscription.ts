@@ -3,9 +3,9 @@
 import { type IMessage, type StompSubscription } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { chatMessagesQueryKey } from "@/src/hooks/queries/useChatMessagesQuery";
-import type { ChatMessage } from "@/src/types/chat";
-import { addStompConnectListener, getStompClient } from "@/src/lib/websocket/stompClient";
+import { chatMessagesQueryKey } from "@/features/chat/hooks/useChatMessagesQuery";
+import type { ChatMessage } from "@/features/chat/types";
+import { addStompConnectListener, getStompClient } from "@/features/chat/lib/stompClient";
 
 type ChatSubscriptionMessage = {
   messageId?: number | string | null;
