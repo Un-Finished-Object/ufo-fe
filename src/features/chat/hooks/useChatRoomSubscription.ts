@@ -7,80 +7,60 @@ import { chatMessagesQueryKey } from "@/features/chat/hooks/useChatMessagesQuery
 import type { ChatMessage } from "@/features/chat/types";
 import { addStompConnectListener, getStompClient } from "@/features/chat/lib/stompClient";
 
-type ChatSubscriptionMessage = {
-  messageId?: number | string | null;
+type MessageCreatedPayload = {
+  messageId?: number | null;
   clientMessageId?: string | null;
-  senderId?: number | string | null;
+  senderId?: number | null;
   senderName?: string | null;
   text?: string | null;
-  message?: string | null;
-  content?: string | null;
   createdAt?: string | null;
-  created_at?: string | null;
 };
 
-function normalizeChatMessage(payload: ChatSubscriptionMessage) {
-  const text = payload.text ?? payload.message ?? payload.content;
+type ChatSubscriptionEvent = {
+  eventType?: string | null;
+  roomId?: number | null;
+  payload?: MessageCreatedPayload | null;
+};
 
-  if (typeof text !== "string" || text.trim().length === 0) {
+function normalizeCreatedMessage(payload: MessageCreatedPayload) {
+  if (
+    typeof payload.messageId !== "number" ||
+    typeof payload.clientMessageId !== "string" ||
+    typeof payload.senderId !== "number" ||
+    typeof payload.senderName !== "string" ||
+    typeof payload.text !== "string" ||
+    typeof payload.createdAt !== "string"
+  ) {
     return null;
   }
 
   return {
-    messageId:
-      typeof payload.messageId === "number"
-        ? String(payload.messageId)
-        : typeof payload.messageId === "string"
-          ? payload.messageId
-          : null,
-    clientMessageId:
-      typeof payload.clientMessageId === "string" && payload.clientMessageId.length > 0
-        ? payload.clientMessageId
-        : undefined,
-    senderId:
-      typeof payload.senderId === "number"
-        ? String(payload.senderId)
-        : typeof payload.senderId === "string"
-          ? payload.senderId
-          : null,
-    senderName:
-      typeof payload.senderName === "string" && payload.senderName.length > 0
-        ? payload.senderName
-        : undefined,
-    text,
-    createdAt:
-      typeof payload.createdAt === "string"
-        ? payload.createdAt
-        : typeof payload.created_at === "string"
-          ? payload.created_at
-          : null,
+    messageId: String(payload.messageId),
+    clientMessageId: payload.clientMessageId,
+    senderId: String(payload.senderId),
+    senderName: payload.senderName,
+    text: payload.text,
+    createdAt: payload.createdAt,
     status: "confirmed",
   } satisfies ChatMessage;
 }
 
 function parseIncomingMessage(message: IMessage) {
   try {
-    const payload = JSON.parse(message.body) as ChatSubscriptionMessage;
-    return normalizeChatMessage(payload);
+    const event = JSON.parse(message.body) as ChatSubscriptionEvent;
+    const normalizedMessage = event.payload ? normalizeCreatedMessage(event.payload) : null;
+
+    if (event.eventType !== "MESSAGE_CREATED" || !normalizedMessage) {
+      return null;
+    }
+
+    return {
+      roomId: typeof event.roomId === "number" ? String(event.roomId) : null,
+      message: normalizedMessage,
+    };
   } catch {
     return null;
   }
-}
-
-function isSameMessage(left: ChatMessage, right: ChatMessage) {
-  if (left.messageId && right.messageId) {
-    return left.messageId === right.messageId;
-  }
-
-  if (left.clientMessageId && right.clientMessageId) {
-    return left.clientMessageId === right.clientMessageId;
-  }
-
-  return (
-    left.senderId === right.senderId &&
-    left.text === right.text &&
-    left.createdAt === right.createdAt
-  );
 }
 
 export function useChatRoomSubscription(roomId: string | null) {
@@ -95,14 +75,42 @@ export function useChatRoomSubscription(roomId: string | null) {
     let subscription: StompSubscription | null = null;
 
     const handleIncomingMessage = (message: IMessage) => {
-      const nextMessage = parseIncomingMessage(message);
+      const event = parseIncomingMessage(message);
 
-      if (!nextMessage) {
+      if (!event || event.roomId !== roomId || !event.message) {
         return;
       }
 
+      const nextMessage = event.message;
+
       queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) => {
-        if (previousMessages.some((messageItem) => isSameMessage(messageItem, nextMessage))) {
+        const matchedPendingMessage = previousMessages.find(
+          (messageItem) =>
+            messageItem.clientMessageId &&
+            messageItem.clientMessageId === nextMessage.clientMessageId,
+        );
+
+        if (matchedPendingMessage) {
+          return previousMessages.map((messageItem) =>
+            messageItem.clientMessageId === nextMessage.clientMessageId
+              ? {
+                  ...messageItem,
+                  messageId: nextMessage.messageId,
+                  senderId: nextMessage.senderId,
+                  senderName: nextMessage.senderName,
+                  text: nextMessage.text,
+                  createdAt: nextMessage.createdAt,
+                  status: "confirmed",
+                }
+              : messageItem,
+          );
+        }
+
+        const alreadyExists = previousMessages.some(
+          (messageItem) => messageItem.messageId && messageItem.messageId === nextMessage.messageId,
+        );
+
+        if (alreadyExists) {
           return previousMessages;
         }
 

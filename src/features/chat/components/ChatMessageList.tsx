@@ -1,3 +1,4 @@
+import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
 type ChatMessageListProps = {
@@ -5,6 +6,8 @@ type ChatMessageListProps = {
   currentUserId: string | null;
   isLoading: boolean;
   errorMessage: string | null;
+  onDeleteFailedMessage?: (message: ChatMessage) => void;
+  onResendFailedMessage?: (message: ChatMessage) => void;
 };
 
 function formatMessageTime(createdAt: string | null) {
@@ -30,6 +33,8 @@ export default function ChatMessageList({
   currentUserId,
   isLoading,
   errorMessage,
+  onDeleteFailedMessage,
+  onResendFailedMessage,
 }: ChatMessageListProps) {
   if (isLoading) {
     return <p className="px-4 py-6 text-sm text-ufo-text-dim">메시지를 불러오는 중입니다.</p>;
@@ -47,38 +52,65 @@ export default function ChatMessageList({
     <>
       {messages.map((message) => {
         const isMine =
-          (currentUserId !== null && message.senderId === currentUserId) || message.status === "pending";
+          (currentUserId !== null && message.senderId === currentUserId) ||
+          message.status === "pending" ||
+          message.status === "failed";
+        const isPending = message.status === "pending";
+        const isFailed = message.status === "failed";
         const senderName = message.senderName?.trim();
-        const messageMetaText = message.status === "pending"
-          ? "전송중"
-          : formatMessageTime(message.createdAt);
+        const messageMetaText = isPending || isFailed ? null : formatMessageTime(message.createdAt);
 
         return (
-          <article
+          <div
             key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-            className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
+            className={isMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
           >
-            {!isMine ? (
-              <div className="max-w-[78%]">
-                {senderName ? (
-                  <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
-                ) : null}
-                <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
-                  <p className="leading-6">{message.text}</p>
+            <article className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+              {!isMine ? (
+                <div className="max-w-[78%]">
+                  {senderName ? (
+                    <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
+                  ) : null}
+                  <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
+                    <p className="leading-6">{message.text}</p>
+                  </div>
                 </div>
+              ) : null}
+
+              {messageMetaText ? (
+                <p className="self-end pb-1 text-[11px] text-ufo-text-dim">{messageMetaText}</p>
+              ) : null}
+
+              {isMine ? (
+                <div className="flex max-w-[78%] items-end gap-2">
+                  {isPending ? <ChatMessageSendingIndicator /> : null}
+                  <div className="max-w-full rounded-xl bg-[#fff1ed] px-4 py-3 text-sm text-ufo-text-secondary">
+                    <p className="leading-6">{message.text}</p>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+
+            {isFailed ? (
+              <div className="flex items-center gap-3 pr-1 text-xs">
+                <span className="text-red-500">전송 실패</span>
+                <button
+                  type="button"
+                  onClick={() => onResendFailedMessage?.(message)}
+                  className="font-semibold text-ufo-brand"
+                >
+                  재전송
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteFailedMessage?.(message)}
+                  className="font-semibold text-ufo-text-dim"
+                >
+                  삭제
+                </button>
               </div>
             ) : null}
-
-            {messageMetaText ? (
-              <p className="self-end pb-1 text-[11px] text-ufo-text-dim">{messageMetaText}</p>
-            ) : null}
-
-            {isMine ? (
-              <div className="max-w-[72%] rounded-xl bg-[#fff1ed] px-4 py-3 text-sm text-ufo-text-secondary">
-                <p className="leading-6">{message.text}</p>
-              </div>
-            ) : null}
-          </article>
+          </div>
         );
       })}
     </>

@@ -64,7 +64,7 @@ export default function ChatInput({
       />
       <button
         type="submit"
-        className="ml-2 text-sm font-semibold text-[#4a82ff] disabled:text-[#a0b6f2]"
+        className="ml-2 shrink-0 whitespace-nowrap text-sm font-semibold text-[#4a82ff] disabled:text-[#a0b6f2]"
         aria-label="메시지 보내기"
         disabled={isSubmitDisabled || isSending || value.trim().length === 0}
       >

@@ -5,7 +5,7 @@ export type ChatMessage = {
   senderName?: string;
   text: string;
   createdAt: string | null;
-  status?: "pending" | "confirmed";
+  status?: "pending" | "confirmed" | "failed";
 };
 
 export type ChatRoom = {

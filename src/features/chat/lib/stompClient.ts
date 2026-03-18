@@ -13,6 +13,12 @@ type StompLifecycleHandlers = {
 
 type StompConnectListener = (frame: IFrame, client: Client) => void;
 
+type PublishStompMessageParams = {
+  destination: string;
+  body: string;
+  headers?: StompHeaders;
+};
+
 export type CreateStompClientOptions = StompLifecycleHandlers & {
   brokerURL?: string;
   connectHeaders?: StompHeaders;
@@ -208,4 +214,18 @@ export function addStompConnectListener(listener: StompConnectListener) {
   return () => {
     stompConnectListeners.delete(listener);
   };
+}
+
+export function publishStompMessage({ destination, body, headers }: PublishStompMessageParams) {
+  const client = getStompClient();
+
+  if (!client.connected) {
+    throw new Error("STOMP client is not connected.");
+  }
+
+  client.publish({
+    destination,
+    body,
+    headers,
+  });
 }

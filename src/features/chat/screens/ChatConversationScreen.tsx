@@ -6,6 +6,7 @@ import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
 import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
+import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
 import type { ChatRoom } from "@/features/chat/types";
 import { useChatRoomSubscription } from "@/features/chat/hooks/useChatRoomSubscription";
 import { useChatMessagesQuery } from "@/features/chat/hooks/useChatMessagesQuery";
@@ -38,6 +39,11 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const [messageText, setMessageText] = useState("");
   const messagesQuery = useChatMessagesQuery(roomId);
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
+  const sendChatMessage = useSendChatMessage({
+    roomId,
+    senderId: currentUserId,
+    senderName: meQuery.data?.nickname,
+  });
 
   useChatRoomSubscription(roomId);
 
@@ -91,7 +97,16 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
     updateChatStatusMutation.mutate({ hidden: nextHidden });
   };
 
-  const handleSendMessage = () => undefined;
+  const handleSendMessage = () => {
+    const nextMessageText = messageText.trim();
+
+    if (!nextMessageText) {
+      return;
+    }
+
+    sendChatMessage.sendMessage(nextMessageText);
+    setMessageText("");
+  };
 
   const errorMessage = messagesQuery.isError ? "메시지를 불러오지 못했습니다." : null;
 
@@ -127,6 +142,8 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
             currentUserId={currentUserId}
             isLoading={messagesQuery.isPending}
             errorMessage={errorMessage}
+            onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
+            onResendFailedMessage={sendChatMessage.resendFailedMessage}
           />
         </section>
 
@@ -134,7 +151,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
           <ChatInput
             value={messageText}
             isSending={false}
-            isSubmitDisabled
+            isSubmitDisabled={false}
             onChange={setMessageText}
             onSendMessage={handleSendMessage}
           />
