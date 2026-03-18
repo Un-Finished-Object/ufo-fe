@@ -1,3 +1,4 @@
+import { type RefCallback } from "react";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
@@ -6,6 +7,8 @@ type ChatMessageListProps = {
   currentUserId: string | null;
   isLoading: boolean;
   errorMessage: string | null;
+  lastConfirmedMessageId?: string | null;
+  onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
   onResendFailedMessage?: (message: ChatMessage) => void;
 };
@@ -33,6 +36,8 @@ export default function ChatMessageList({
   currentUserId,
   isLoading,
   errorMessage,
+  lastConfirmedMessageId = null,
+  onLastConfirmedMessageRefChange,
   onDeleteFailedMessage,
   onResendFailedMessage,
 }: ChatMessageListProps) {
@@ -57,6 +62,10 @@ export default function ChatMessageList({
           message.status === "failed";
         const isPending = message.status === "pending";
         const isFailed = message.status === "failed";
+        const isLastConfirmedMessage =
+          message.status === "confirmed" &&
+          message.messageId !== null &&
+          message.messageId === lastConfirmedMessageId;
         const senderName = message.senderName?.trim();
         const messageMetaText = isPending || isFailed ? null : formatMessageTime(message.createdAt);
 
@@ -64,6 +73,7 @@ export default function ChatMessageList({
           <div
             key={message.clientMessageId ?? message.messageId ?? message.createdAt}
             className={isMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
+            ref={isLastConfirmedMessage ? onLastConfirmedMessageRefChange : undefined}
           >
             <article className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
               {!isMine ? (

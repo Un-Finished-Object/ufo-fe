@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
 import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
+import { useChatReadReceipt } from "@/features/chat/hooks/useChatReadReceipt";
 import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
 import type { ChatRoom } from "@/features/chat/types";
 import { useChatRoomSubscription } from "@/features/chat/hooks/useChatRoomSubscription";
@@ -39,6 +40,8 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const [messageText, setMessageText] = useState("");
   const messagesQuery = useChatMessagesQuery(roomId);
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
+  const [messageListElement, setMessageListElement] = useState<HTMLElement | null>(null);
+  const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
   const sendChatMessage = useSendChatMessage({
     roomId,
     senderId: currentUserId,
@@ -109,6 +112,20 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   };
 
   const errorMessage = messagesQuery.isError ? "메시지를 불러오지 못했습니다." : null;
+  const lastConfirmedMessageId = useMemo(() => {
+    const confirmedMessages = (messagesQuery.data ?? []).filter(
+      (message) => message.status === "confirmed" && message.messageId !== null,
+    );
+
+    return confirmedMessages.at(-1)?.messageId ?? null;
+  }, [messagesQuery.data]);
+
+  useChatReadReceipt({
+    roomId,
+    lastConfirmedMessageId,
+    targetElement: messageListElement,
+    scrollContainer: scrollContainerElement,
+  });
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -136,12 +153,18 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
           ]}
         />
 
-        <section className="flex-1 space-y-5 overflow-y-auto px-4 py-6" aria-label="채팅 메시지 목록">
+        <section
+          ref={setScrollContainerElement}
+          className="flex-1 space-y-5 overflow-y-auto px-4 py-6"
+          aria-label="채팅 메시지 목록"
+        >
           <ChatMessageList
             messages={messagesQuery.data ?? []}
             currentUserId={currentUserId}
             isLoading={messagesQuery.isPending}
             errorMessage={errorMessage}
+            lastConfirmedMessageId={lastConfirmedMessageId}
+            onLastConfirmedMessageRefChange={setMessageListElement}
             onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
             onResendFailedMessage={sendChatMessage.resendFailedMessage}
           />
