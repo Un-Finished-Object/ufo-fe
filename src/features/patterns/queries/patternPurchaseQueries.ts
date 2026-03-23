@@ -103,14 +103,9 @@ export async function purchasePatternAccess({
   }
 
   const payload = (await response.json()) as PurchasePatternAccessResponse;
+  const expectedType = String(type) as PatternPurchaseTypeTemp;
 
-  // Revert this
-  /*
-  if (payload.error || !payload.data || payload.data.type !== type) {
-    throw new Error("Failed to purchase pattern access.");
-  }
-    */
-  if (payload.error || !payload.data || payload.data.type !== "1") {
+  if (payload.error || !payload.data || payload.data.type !== expectedType) {
     throw new Error("Failed to purchase pattern access.");
   }
 

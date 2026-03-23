@@ -3,8 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import SegmentedSwitch from "@/components/common/SegmentedSwitch";
+import { useEffect, useRef, useState } from "react";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import TopBar from "@/components/navigation/TopBar";
@@ -16,6 +15,7 @@ import {
   patternPurchaseQueryKey,
   patternPurchaseStatusQueryOptions,
   purchasePatternAccess,
+  type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
 
@@ -56,10 +56,162 @@ const detailRows = [
   { label: "게이지", key: "gauge" },
 ] as const;
 
+type DetailTabValue = "description" | "alternative";
+type PurchaseDialogType = "chat" | "alternative";
+
 const detailTabOptions = [
-  { label: "상세정보", value: "description" },
   { label: "대체실정보", value: "alternative" },
+  { label: "상세정보", value: "description" },
 ] as const;
+
+const alternativePreviewCards = [0, 1, 2] as const;
+
+type DetailTabSwitchProps = {
+  value: DetailTabValue;
+  onChange: (value: DetailTabValue) => void;
+};
+
+function DetailTabSwitch({ value, onChange }: DetailTabSwitchProps) {
+  return (
+    <div className="border-b border-ufo-border-light">
+      <div className="grid grid-cols-2">
+        {detailTabOptions.map((option) => {
+          const isActive = option.value === value;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className={`-mb-px flex h-11 items-center justify-center gap-1 border-b-2 text-sm font-semibold transition-colors ${
+                isActive
+                  ? "border-ufo-brand text-ufo-border"
+                  : "border-transparent text-ufo-text-muted"
+              }`}
+              aria-pressed={isActive}
+            >
+              <span>{option.label}</span>
+              {isActive ? (
+                <svg
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className="h-3 w-3"
+                >
+                  <path d="M4.47 6.22a.75.75 0 0 1 1.06 0L8 8.69l2.47-2.47a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 0-1.06Z" />
+                </svg>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+type AlternativePurchaseGateProps = {
+  credits: number;
+  disabled: boolean;
+  onPurchaseClick: () => void;
+};
+
+function AlternativePurchaseGate({
+  credits,
+  disabled,
+  onPurchaseClick,
+}: AlternativePurchaseGateProps) {
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
+  const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sentinel = bottomSentinelRef.current;
+
+      if (!sentinel) {
+        return;
+      }
+
+      const sentinelTop = sentinel.getBoundingClientRect().top;
+      const viewportHeight = window.innerHeight;
+      const hasUserScrolled = window.scrollY > 24;
+
+      setIsFooterVisible(hasUserScrolled && sentinelTop <= viewportHeight - 24);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
+  return (
+    <div className="pb-44">
+      <div aria-hidden="true" className="space-y-4 px-5 pb-4 pt-2">
+        {alternativePreviewCards.map((cardIndex) => (
+          <article
+            key={cardIndex}
+            className={`rounded-[18px] border border-ufo-text-muted/35 bg-ufo-brand-pale px-4 py-4 ${
+              cardIndex === 0 ? "" : "opacity-60 blur-[1.5px]"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <span className="block h-4 w-24 rounded-full bg-ufo-surface/90" />
+                <div className="mt-3 space-y-2">
+                  <span className="block h-2.5 w-full max-w-[168px] rounded-full bg-white/95" />
+                  <span className="block h-2.5 w-full max-w-[132px] rounded-full bg-white/75" />
+                </div>
+              </div>
+              <span className="mt-1 block h-10 w-10 rounded-full bg-white/85" />
+            </div>
+
+            <div className="mt-4 flex items-end justify-between">
+              <span className="block h-3 w-20 rounded-full bg-white/70" />
+              <span className="block h-4 w-16 rounded-full bg-ufo-border/60" />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
+
+      <div
+        className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center transition-all duration-500 ease-out ${
+          isFooterVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+        }`}
+      >
+        <div className="pointer-events-auto w-full max-w-[430px] bg-ufo-border px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8">
+          <p className="text-l leading-[1.25] tracking-[-0.02em] text-ufo-text">
+            더 많은 대체실 정보를 확인해보세요.
+          </p>
+          <p className="mt-3 text-[14px] leading-6 text-ufo-text-secondary">
+            아래 버튼을 클릭하시면, 해당 도안의 유용한 대체실 정보를 구매하실 수 있습니다.
+          </p>
+
+          <button
+            type="button"
+            onClick={onPurchaseClick}
+            disabled={disabled}
+            className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-ufo-surface px-3 text-sm font-bold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span>대체실 정보 평생소장하기</span>
+            <CreditBadge
+              credits={credits}
+              className="bg-transparent text-ufo-credit"
+              circleClassName="text-ufo-credit"
+              starClassName="text-ufo-surface"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function PatternDetailScreen({
   pattern,
@@ -69,8 +221,8 @@ export default function PatternDetailScreen({
   const queryClient = useQueryClient();
   const { authStatus, isAuthenticated } = useAuthState();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
-  const [activeTab, setActiveTab] = useState<"description" | "alternative">("description");
-  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
+  const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
   const [purchaseErrorMessage, setPurchaseErrorMessage] = useState<string | null>(null);
   const profileHref = isAuthenticated ? "/my" : "/login";
   const purchaseStatusQuery = useQuery({
@@ -78,7 +230,12 @@ export default function PatternDetailScreen({
     enabled: authStatus !== "loading" && isAuthenticated && pattern !== null,
   });
   const hasChatPurchase = purchaseStatusQuery.data?.chat === true;
+  const hasAlternativePurchase = purchaseStatusQuery.data?.alternative === true;
   const isResolvingChatPurchase =
+    pattern === null ||
+    authStatus === "loading" ||
+    (isAuthenticated && purchaseStatusQuery.isPending);
+  const isResolvingAlternativePurchase =
     pattern === null ||
     authStatus === "loading" ||
     (isAuthenticated && purchaseStatusQuery.isPending);
@@ -87,9 +244,19 @@ export default function PatternDetailScreen({
   const currentCreditText = walletQuery.isPending
     ? "불러오는 중..."
     : `${walletQuery.data ?? 0} 크레딧`;
+  const isPurchaseDialogOpen = purchaseDialogType !== null;
+  const purchaseDialogTitle =
+    purchaseDialogType === "alternative"
+      ? "대체실 정보를 구매하시겠습니까?"
+      : "채팅방에 입장하시겠습니까?";
+  const purchaseDialogErrorText =
+    purchaseDialogType === "alternative"
+      ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
+      : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
 
-  const purchaseChatMutation = useMutation({
-    mutationFn: () => purchasePatternAccess({ patternId: pattern?.id ?? 0, type: 1 }),
+  const purchaseAccessMutation = useMutation({
+    mutationFn: ({ type }: { type: PatternPurchaseType }) =>
+      purchasePatternAccess({ patternId: pattern?.id ?? 0, type }),
     onSuccess: (data) => {
       if (!pattern) {
         return;
@@ -99,23 +266,25 @@ export default function PatternDetailScreen({
         patternPurchaseQueryKey(pattern.id),
         (previous) => ({
           userId: data.userId ?? previous?.userId ?? null,
-          chat: true,
-          alternative: previous?.alternative ?? false,
+          chat: data.type === 1 ? true : previous?.chat ?? false,
+          alternative: data.type === 2 ? true : previous?.alternative ?? false,
         }),
       );
       void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
-      void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
+      if (data.type === 1) {
+        void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
+      }
       setPurchaseErrorMessage(null);
-      setIsPurchaseDialogOpen(false);
+      setPurchaseDialogType(null);
     },
     onError: (error) => {
       if (error instanceof Error && error.message === "Unauthorized") {
-        setIsPurchaseDialogOpen(false);
+        setPurchaseDialogType(null);
         router.replace("/login?error=unauthorized");
         return;
       }
 
-      setPurchaseErrorMessage("채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setPurchaseErrorMessage(purchaseDialogErrorText);
     },
   });
 
@@ -135,7 +304,25 @@ export default function PatternDetailScreen({
     }
 
     setPurchaseErrorMessage(null);
-    setIsPurchaseDialogOpen(true);
+    setPurchaseDialogType("chat");
+  };
+
+  const handleAlternativePurchaseClick = () => {
+    if (!pattern) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push("/login?toast=auth_required");
+      return;
+    }
+
+    if (hasAlternativePurchase) {
+      return;
+    }
+
+    setPurchaseErrorMessage(null);
+    setPurchaseDialogType("alternative");
   };
 
   if (!pattern) {
@@ -238,7 +425,7 @@ export default function PatternDetailScreen({
               <button
                 type="button"
                 onClick={handleChatRoomClick}
-                disabled={isResolvingChatPurchase || purchaseChatMutation.isPending}
+                disabled={isResolvingChatPurchase || purchaseAccessMutation.isPending}
                 className="flex h-10 w-full items-center justify-center rounded-xl border border-ufo-brand bg-ufo-brand-pale px-3 text-sm font-bold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="flex items-center gap-2 pb-0.5">
@@ -258,33 +445,39 @@ export default function PatternDetailScreen({
         </section>
 
         <section className="mt-6 px-4">
-          <SegmentedSwitch
-            options={detailTabOptions}
-            value={activeTab}
-            onChange={setActiveTab}
-          />
+          <DetailTabSwitch value={activeTab} onChange={setActiveTab} />
 
           <div className="mt-4">
             {activeTab === "description" ? (
-              <div className="overflow-hidden border-b">
+              <div className="overflow-hidden border border-ufo-text-muted/30 bg-ufo-brand-pale">
                 {detailRows.map((row) => (
                   <div
                     key={row.key}
-                    className="grid grid-cols-[104px_1fr] border-t bg-ufo-brand-pale last:border-b-0"
+                    className="grid min-h-[63px] grid-cols-[104px_1fr] border-t border-ufo-text-muted/30 first:border-t-0"
                   >
-                    <div className="flex min-h-[52px] items-center px-4 text-sm font-bold text-ufo-text">
+                    <div className="flex items-center px-4 text-sm font-bold text-ufo-text">
                       {row.label}
                     </div>
-                    <div className="flex min-h-[52px] items-center justify-end px-4 text-sm font-semibold text-ufo-text-dim">
+                    <div className="flex items-center justify-end px-4 text-sm font-semibold text-ufo-text-dim">
                       {pattern.details[row.key]}
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : isResolvingAlternativePurchase ? (
+              <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
+                구매 정보를 확인하고 있어요.
+              </div>
+            ) : hasAlternativePurchase ? (
               <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
                 대체실정보는 추후 API 연동 후 제공될 예정입니다.
               </div>
+            ) : (
+              <AlternativePurchaseGate
+                credits={pattern.credits}
+                disabled={purchaseAccessMutation.isPending}
+                onPurchaseClick={handleAlternativePurchaseClick}
+              />
             )}
           </div>
         </section>
@@ -292,7 +485,7 @@ export default function PatternDetailScreen({
 
       {isPurchaseDialogOpen ? (
         <YesOrNo
-          mainText="채팅방에 입장하시겠습니까?"
+          mainText={purchaseDialogTitle}
           subText={
             <>
               <span className="block">현재 크레딧 {currentCreditText}</span>
@@ -302,20 +495,22 @@ export default function PatternDetailScreen({
               ) : null}
             </>
           }
-          yesLabel={purchaseChatMutation.isPending ? "처리 중..." : "예"}
-          yesDisabled={purchaseChatMutation.isPending}
-          noDisabled={purchaseChatMutation.isPending}
+          yesLabel={purchaseAccessMutation.isPending ? "처리 중..." : "예"}
+          yesDisabled={purchaseAccessMutation.isPending}
+          noDisabled={purchaseAccessMutation.isPending}
           onNo={() => {
-            if (purchaseChatMutation.isPending) {
+            if (purchaseAccessMutation.isPending) {
               return;
             }
 
             setPurchaseErrorMessage(null);
-            setIsPurchaseDialogOpen(false);
+            setPurchaseDialogType(null);
           }}
           onYes={() => {
             setPurchaseErrorMessage(null);
-            purchaseChatMutation.mutate();
+            purchaseAccessMutation.mutate({
+              type: purchaseDialogType === "alternative" ? 2 : 1,
+            });
           }}
         />
       ) : null}
