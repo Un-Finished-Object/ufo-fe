@@ -128,10 +128,17 @@ export default function ScrapCollectionScreen() {
                       title={item.title}
                       author={item.author}
                       patternId={item.id}
+                      isScrapped={item.isScrapped}
                       heartVariant="filled"
-                      heartClassName="h-5 w-5 stroke-white fill-white"
                       titleClassName="truncate text-[11px] font-semibold leading-tight"
                       authorClassName="text-[9px] text-ufo-text-neutral"
+                      onScrapChange={(nextIsScrapped) => {
+                        if (!nextIsScrapped) {
+                          setPatternScraps((previous) =>
+                            previous.filter((pattern) => pattern.id !== item.id),
+                          );
+                        }
+                      }}
                     />
                   </article>
                 ))}

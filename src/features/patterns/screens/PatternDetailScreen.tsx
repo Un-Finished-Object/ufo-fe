@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
+import HeartIcon from "@/components/icons/HeartIcon";
 import TopBar from "@/components/navigation/TopBar";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
@@ -18,6 +19,7 @@ import {
   type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
+import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 
 export type PatternDetailData = {
   id: number;
@@ -224,6 +226,8 @@ export default function PatternDetailScreen({
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
   const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
   const [purchaseErrorMessage, setPurchaseErrorMessage] = useState<string | null>(null);
+  const [isScrapped, setIsScrapped] = useState(pattern?.isScrapped ?? false);
+  const [scrapCount, setScrapCount] = useState(pattern?.stats.scraps ?? 0);
   const profileHref = isAuthenticated ? "/my" : "/login";
   const purchaseStatusQuery = useQuery({
     ...patternPurchaseStatusQueryOptions(pattern?.id ?? 0),
@@ -253,6 +257,26 @@ export default function PatternDetailScreen({
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
       : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
+  const toggleScrapMutation = useMutation<
+    Awaited<ReturnType<typeof updatePatternScrap>>,
+    Error,
+    boolean
+  >({
+    mutationFn: (nextIsScrapped: boolean) =>
+      updatePatternScrap({
+        patternId: pattern?.id ?? 0,
+        shouldScrap: nextIsScrapped,
+      }),
+    onSuccess: (result) => {
+      setIsScrapped(result.scrapped);
+      setScrapCount(result.scrapCount);
+    },
+    onError: (error) => {
+      if (error.message === "Unauthorized") {
+        router.push("/login?toast=auth_required");
+      }
+    },
+  });
 
   const purchaseAccessMutation = useMutation({
     mutationFn: ({ type }: { type: PatternPurchaseType }) =>
@@ -325,6 +349,23 @@ export default function PatternDetailScreen({
     setPurchaseDialogType("alternative");
   };
 
+  const handleScrapClick = () => {
+    if (!pattern || toggleScrapMutation.isPending) {
+      return;
+    }
+
+    if (authStatus === "loading") {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push("/login?toast=auth_required");
+      return;
+    }
+
+    toggleScrapMutation.mutate(!isScrapped);
+  };
+
   if (!pattern) {
     return (
       <div className="min-h-screen bg-ufo-bg">
@@ -377,10 +418,29 @@ export default function PatternDetailScreen({
         </section>
 
         <section className="px-4">
-          <h1 className="text-xl font-black tracking-tight">{pattern.title}</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="min-w-0 flex-1 text-xl font-black tracking-tight">{pattern.title}</h1>
+            <button
+              type="button"
+              onClick={handleScrapClick}
+              disabled={toggleScrapMutation.isPending}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label={isScrapped ? "찜 해제" : "찜 추가"}
+              aria-pressed={isScrapped}
+            >
+              <HeartIcon
+                variant={isScrapped ? "filled" : "outline"}
+                className={
+                  isScrapped
+                    ? "h-6 w-6 stroke-ufo-brand fill-ufo-brand"
+                    : "h-6 w-6 stroke-ufo-brand"
+                }
+              />
+            </button>
+          </div>
           <p className="mt-1 text-sm font-medium text-ufo-text-neutral">{pattern.author}</p>
           <p className="mt-1 text-xs text-ufo-text-dim">
-            조회 {pattern.stats.views} · 찜 {pattern.stats.scraps}
+            조회 {pattern.stats.views} · 찜 {scrapCount}
           </p>
         </section>
 

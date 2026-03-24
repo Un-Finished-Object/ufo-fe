@@ -9,12 +9,14 @@ import PatternCard from "@/components/patterns/PatternCard";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 
 type PatternItem = {
   id: number;
   title: string;
   author: string;
   image: string;
+  isScrapped: boolean;
 };
 
 type PatternApiItem = {
@@ -22,6 +24,9 @@ type PatternApiItem = {
   title: string;
   thumbnailUrl: string | null;
   author: string;
+  my?: {
+    scrapped?: boolean;
+  };
 };
 
 type PatternsApiResponse = {
@@ -151,8 +156,13 @@ export default function PatternCatalogScreen() {
           );
         }
 
-        const response = await fetch(`${apiBase}/v1/patterns?${params.toString()}`, {
-          signal: controller.signal,
+        const response = await fetchWithAuthRetry({
+          apiBase,
+          input: `${apiBase}/v1/patterns?${params.toString()}`,
+          init: {
+            method: "GET",
+            signal: controller.signal,
+          },
         });
 
         if (!response.ok || !isMounted) return;
@@ -172,6 +182,7 @@ export default function PatternCatalogScreen() {
             title: item.title,
             author: item.author,
             image: item.thumbnailUrl ?? "/image/UFO.svg",
+            isScrapped: item.my?.scrapped === true,
           }));
 
         setPatternItems(items);
@@ -310,8 +321,8 @@ export default function PatternCatalogScreen() {
                     title={item.title}
                     author={item.author}
                     patternId={item.id}
+                    isScrapped={item.isScrapped}
                     heartVariant="outline"
-                    heartClassName="h-5 w-5 stroke-white"
                   />
                 </article>
               ))

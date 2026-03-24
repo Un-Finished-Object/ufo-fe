@@ -92,12 +92,8 @@ export default function PatternSearchScreen({
                     title={item.title}
                     author={item.author}
                     patternId={item.id}
-                    heartVariant={item.isScrapped ? "filled" : "outline"}
-                    heartClassName={
-                      item.isScrapped
-                        ? "h-5 w-5 stroke-white fill-white"
-                        : "h-5 w-5 stroke-white"
-                    }
+                    isScrapped={item.isScrapped}
+                    heartVariant="outline"
                   />
                 </article>
               ))

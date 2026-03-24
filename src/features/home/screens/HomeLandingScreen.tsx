@@ -101,8 +101,8 @@ export default function HomeLandingScreen() {
                       title={item.title}
                       author={item.author}
                       patternId={item.id}
+                      isScrapped={item.isScrapped}
                       heartVariant="outline"
-                      heartClassName="h-5 w-5 stroke-white"
                     />
                   </article>
                 ))}
@@ -132,8 +132,8 @@ export default function HomeLandingScreen() {
                     title={item.title}
                     author={item.author}
                     patternId={item.id}
+                    isScrapped={item.isScrapped}
                     heartVariant="outline"
-                    heartClassName="h-5 w-5 stroke-white"
                   />
                 </article>
               ))}

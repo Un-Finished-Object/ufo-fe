@@ -3,6 +3,7 @@ type PatternScrapItem = {
   title: string;
   author: string;
   image: string;
+  isScrapped: boolean;
 };
 
 type PatternScrapResponse = {
@@ -60,6 +61,7 @@ export async function fetchPatternScraps({ signal }: { signal?: AbortSignal } = 
       title: item.title,
       author: item.author,
       image: item.image ?? item.thumbnailUrl ?? "",
+      isScrapped: true,
     }));
 }
 
