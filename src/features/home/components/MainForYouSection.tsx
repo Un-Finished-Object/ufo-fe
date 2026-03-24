@@ -1,10 +1,15 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import PatternCard from "@/components/patterns/PatternCard";
 import ToastMessage from "@/components/common/ToastMessage";
 import type { AuthStatus } from "@/features/auth/hooks/useAuthState";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import {
+  homeQueryKeys,
+  saveUserInterests,
+  userInterestsQueryOptions,
+} from "@/features/home/queries/homeQueries";
 
 type CuratedItem = {
   id: number;
@@ -17,6 +22,7 @@ type MainForYouSectionProps = {
   items: CuratedItem[];
   isAuthenticated: boolean;
   authStatus: AuthStatus;
+  authCacheKey: string;
 };
 
 const MAX_INTEREST_COUNT = 4;
@@ -54,17 +60,21 @@ export default function MainForYouSection({
   items,
   isAuthenticated,
   authStatus,
+  authCacheKey,
 }: MainForYouSectionProps) {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [draftInterests, setDraftInterests] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const firstInterestButtonRef = useRef<HTMLButtonElement | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didFetchRef = useRef(false);
-
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE;
   const isSettingDisabled = !isAuthenticated || authStatus === "loading";
+  const previousAuthCacheKeyRef = useRef(authCacheKey);
+  const interestsQuery = useQuery({
+    ...userInterestsQueryOptions(authCacheKey),
+    enabled: authStatus === "authenticated",
+  });
+  const selectedInterests = authStatus === "authenticated" ? interestsQuery.data ?? [] : [];
 
   useEffect(() => {
     if (isModalOpen && firstInterestButtonRef.current) {
@@ -81,56 +91,28 @@ export default function MainForYouSection({
   }, []);
 
   useEffect(() => {
-    if (authStatus !== "authenticated") {
-      didFetchRef.current = false;
-      queueMicrotask(() => {
-        setSelectedInterests([]);
-      });
+    const previousAuthCacheKey = previousAuthCacheKeyRef.current;
+
+    if (previousAuthCacheKey === authCacheKey) {
       return;
     }
 
-    if (!apiBase || didFetchRef.current) {
-      return;
-    }
+    queryClient.removeQueries({
+      queryKey: homeQueryKeys.interests(previousAuthCacheKey),
+    });
+    previousAuthCacheKeyRef.current = authCacheKey;
+  }, [authCacheKey, queryClient]);
 
-    let isMounted = true;
-    didFetchRef.current = true;
-
-    const fetchInterests = async () => {
-      try {
-        const response = await fetchWithAuthRetry({
-          apiBase,
-          input: `${apiBase}/v1/users/me/interests`,
-          init: {
-            method: "GET",
-          },
-        });
-
-        if (!response.ok || !isMounted) {
-          return;
-        }
-
-        const payload = (await response.json()) as {
-          data?: { keywords?: string[] };
-          error?: unknown;
-        };
-
-        if (payload.error || !payload.data) {
-          return;
-        }
-
-        setSelectedInterests(Array.isArray(payload.data.keywords) ? payload.data.keywords : []);
-      } catch {
-        // Keep empty interests on network or parsing failures.
-      }
-    };
-
-    void fetchInterests();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [apiBase, authStatus]);
+  const saveInterestsMutation = useMutation({
+    mutationFn: () => saveUserInterests(draftInterests),
+    onSuccess: (keywords) => {
+      queryClient.setQueryData(homeQueryKeys.interests(authCacheKey), keywords);
+      closeModal();
+    },
+    onError: () => {
+      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    },
+  });
 
   const showToast = (message: string) => {
     if (toastTimerRef.current) {
@@ -170,44 +152,12 @@ export default function MainForYouSection({
   };
 
   const saveInterests = async () => {
-    if (!apiBase) {
+    if (authStatus !== "authenticated") {
       showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
       return;
     }
 
-    try {
-      const response = await fetchWithAuthRetry({
-        apiBase,
-        input: `${apiBase}/v1/users/me/interests`,
-        init: {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ keywords: draftInterests }),
-        },
-      });
-
-      if (!response.ok) {
-        showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-        return;
-      }
-
-      const payload = (await response.json()) as {
-        data?: { keywords?: string[] };
-        error?: unknown;
-      };
-
-      if (payload.error || !payload.data) {
-        showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-        return;
-      }
-
-      setSelectedInterests(Array.isArray(payload.data.keywords) ? payload.data.keywords : []);
-      closeModal();
-    } catch {
-      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-    }
+    saveInterestsMutation.mutate();
   };
 
   return (
@@ -330,6 +280,7 @@ export default function MainForYouSection({
             <button
               type="button"
               onClick={saveInterests}
+              disabled={saveInterestsMutation.isPending}
               className="mt-6 h-11 w-full rounded-xl bg-ufo-brand-soft text-sm font-bold text-ufo-text"
             >
               관심사 설정

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/common/Footer";
 import NavBar from "@/components/navigation/NavBar";
@@ -64,6 +65,7 @@ const sortApiMap: Record<string, string> = {
 };
 
 export default function PatternCatalogScreen() {
+  const router = useRouter();
   const { isAuthenticated } = useAuthState();
   const [query, setQuery] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] =
@@ -85,6 +87,15 @@ export default function PatternCatalogScreen() {
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
   const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+  const handleSearchSubmit = () => {
+    const keyword = query.trim();
+
+    if (!keyword) {
+      return;
+    }
+
+    router.push(`/patterns/search?keyword=${encodeURIComponent(keyword)}&page=1`);
+  };
 
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
     setSelectedMainCategory(category);
@@ -190,7 +201,13 @@ export default function PatternCatalogScreen() {
             { type: "profile", href: profileHref, ariaLabel: "프로필" },
           ]}
         />
-        <SearchBar value={query} onChange={setQuery} />
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={handleSearchSubmit}
+          showSubmitButton
+          submitDisabled={query.trim().length === 0}
+        />
         <NavBar />
 
         <section className="mb-3 mt-2 px-4">

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Footer from "@/components/common/Footer";
 import MainTopSlider from "@/features/home/components/MainTopSlider";
 import MainForYouSection from "@/features/home/components/MainForYouSection";
@@ -9,47 +11,11 @@ import PatternCard from "@/components/patterns/PatternCard";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
-
-type BestItem = {
-  id: number;
-  title: string;
-  author: string;
-  image: string;
-};
-
-type BestPatternApiItem = {
-  id: number;
-  title: string;
-  thumbnailUrl: string | null;
-  author: string;
-};
-
-type BestPatternsResponse = {
-  data?: {
-    items?: BestPatternApiItem[];
-  };
-  error?: unknown;
-};
-
-type CuratedItem = {
-  id: number;
-  title: string;
-  author: string;
-  image: string;
-};
-
-type RecommendApiItem = {
-  id: number;
-  title: string;
-  thumbnailUrl: string | null;
-  author: string;
-};
-
-type RecommendResponse = {
-  data?: { items?: RecommendApiItem[] };
-  error?: unknown;
-};
+import {
+  bestPatternsQueryOptions,
+  newPatternsQueryOptions,
+  recommendPatternsQueryOptions,
+} from "@/features/home/queries/homeQueries";
 
 type BannerItem = {
   id: number;
@@ -69,8 +35,6 @@ const bannerPosts: BannerItem[] = [
   { id: 5, title: "커뮤니티 추천 작품을\n둘러보기", count: "5 / 5" },
 ];
 
-const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
-
 function EmptyPatternSection({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
@@ -80,114 +44,28 @@ function EmptyPatternSection({ message }: { message: string }) {
 }
 
 export default function HomeLandingScreen() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [bestItems, setBestItems] = useState<BestItem[]>([]);
-  const [newItems, setNewItems] = useState<BestItem[]>([]);
-  const [recommendItems, setRecommendItems] = useState<CuratedItem[]>([]);
-  const { authStatus, isAuthenticated } = useAuthState();
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const profileHref = isAuthenticated ? "/my" : "/login";
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
+  const bestPatternsQuery = useQuery(bestPatternsQueryOptions());
+  const newPatternsQuery = useQuery(newPatternsQueryOptions());
+  const recommendPatternsQuery = useQuery(recommendPatternsQueryOptions(authCacheKey));
+  const bestItems = bestPatternsQuery.data ?? [];
+  const newItems = newPatternsQuery.data ?? [];
+  const recommendItems = recommendPatternsQuery.data ?? [];
+  const handleSearchSubmit = () => {
+    const keyword = query.trim();
 
-  useEffect(() => {
-    const controller = new AbortController();
+    if (!keyword) {
+      return;
+    }
 
-    const fetchPatterns = async (sort: "views" | "news", limit: number): Promise<BestItem[]> => {
-      try {
-        const params = new URLSearchParams({
-          category: "all",
-          sort,
-          page: "1",
-        });
-
-        const response = await fetch(`${apiBase}/v1/patterns?${params.toString()}`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          return [];
-        }
-
-        const payload = (await response.json()) as BestPatternsResponse;
-        if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-          return [];
-        }
-
-        const mappedItems = payload.data.items
-          .filter(
-            (item): item is BestPatternApiItem =>
-              typeof item.id === "number" &&
-              typeof item.title === "string" &&
-              typeof item.author === "string",
-          )
-          .map((item) => ({
-            id: item.id,
-            title: item.title,
-            author: item.author,
-            image: item.thumbnailUrl || PATTERN_FALLBACK_IMAGE,
-          }))
-          .slice(0, limit);
-
-        return mappedItems;
-      } catch {
-        return [];
-      }
-    };
-
-    const fetchBestPatterns = async () => {
-      const mappedItems = await fetchPatterns("views", 5);
-      setBestItems(mappedItems);
-    };
-
-    const fetchNewPatterns = async () => {
-      const mappedItems = await fetchPatterns("news", 10);
-      setNewItems(mappedItems);
-    };
-
-    const fetchRecommendPatterns = async () => {
-      try {
-        const response = await fetchWithAuthRetry({
-          apiBase,
-          input: `${apiBase}/v1/patterns/recommend`,
-          init: {
-            method: "GET",
-            signal: controller.signal,
-          },
-        });
-
-        if (!response.ok) return;
-
-        const payload = (await response.json()) as RecommendResponse;
-        if (payload.error || !payload.data || !Array.isArray(payload.data.items)) return;
-
-        const mapped = payload.data.items
-          .filter(
-            (item): item is RecommendApiItem =>
-              typeof item.id === "number" &&
-              typeof item.title === "string" &&
-              typeof item.author === "string",
-          )
-          .map((item) => ({
-            id: item.id,
-            title: item.title,
-            author: item.author,
-            image: item.thumbnailUrl || PATTERN_FALLBACK_IMAGE,
-          }));
-
-        setRecommendItems(mapped);
-      } catch {
-        setRecommendItems([]);
-      }
-    };
-
-    void fetchBestPatterns();
-    void fetchNewPatterns();
-    void fetchRecommendPatterns();
-
-    return () => {
-      controller.abort();
-    };
-  }, [apiBase]);
+    router.push(`/patterns/search?keyword=${encodeURIComponent(keyword)}&page=1`);
+  };
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -200,7 +78,13 @@ export default function HomeLandingScreen() {
             { type: "profile", href: profileHref, ariaLabel: "프로필" },
           ]}
         />
-        <SearchBar value={query} onChange={setQuery} />
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={handleSearchSubmit}
+          showSubmitButton
+          submitDisabled={query.trim().length === 0}
+        />
         <NavBar />
         <MainTopSlider posts={bannerPosts} />
 
@@ -233,6 +117,7 @@ export default function HomeLandingScreen() {
           items={recommendItems}
           isAuthenticated={isAuthenticated}
           authStatus={authStatus}
+          authCacheKey={authCacheKey}
         />
 
         <section className="px-4 pt-8">
