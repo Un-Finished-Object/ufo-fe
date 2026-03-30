@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ufo-bg: #ececec;
+  --color-ufo-surface: #ffffff;
+  --color-ufo-text: #1f1f1f;
+  --color-ufo-text-muted: #a4a4a4;
+  --color-ufo-text-subtle: #8f8f8f;
+  --color-ufo-text-secondary: #6f6f6f;
+  --color-ufo-text-neutral: #8c8c8c;
+  --color-ufo-text-dim: #9a9a9a;
+  --color-ufo-border: #ffa8a8;
+  --color-ufo-border-light: #dddddd;
+  --color-ufo-brand: #ffaba6;
+  --color-ufo-brand-soft: #fecbc8;
+  --color-ufo-brand-pale: #fff1ed;
+  --color-ufo-credit: #49eaff;
+  --color-ufo-kakao: #fee500;
+  --color-ufo-naver: #03a94d;
+  --color-ufo-error: #d04949;
+  --font-sans: var(--font-pretendard);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI",
+  Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+}
