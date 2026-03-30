@@ -61,12 +61,6 @@ async function getPatternDetailUrl(patternId: number) {
     return `${apiProxyTarget}/v1/patterns/${patternId}`;
   }
 
-  const configuredApiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-
-  if (configuredApiBase.startsWith("http://") || configuredApiBase.startsWith("https://")) {
-    return `${configuredApiBase}/v1/patterns/${patternId}`;
-  }
-
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
@@ -76,7 +70,7 @@ async function getPatternDetailUrl(patternId: number) {
   }
 
   return new URL(
-    `${configuredApiBase}/v1/patterns/${patternId}`,
+    `/v1/patterns/${patternId}`,
     `${protocol}://${host}`,
   ).toString();
 }

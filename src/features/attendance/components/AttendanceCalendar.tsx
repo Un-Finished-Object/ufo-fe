@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/common/ToastMessage";
+import { buildApiUrl } from "@/lib/api/client";
 
 type StatusResponse = {
   data?: { rewarded?: Record<string, boolean> };
@@ -48,8 +49,6 @@ export default function AttendanceCalendar() {
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
 
   const todayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-
   const [monthDates, setMonthDates] = useState<string[]>([]);
   const [isFetchingMonth, setIsFetchingMonth] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -81,8 +80,7 @@ export default function AttendanceCalendar() {
         });
 
         const response = await fetchWithAuthRetry({
-          apiBase,
-          input: `${apiBase}/v1/attendance/status?${params.toString()}`,
+          input: buildApiUrl(`/v1/attendance/status?${params.toString()}`),
           init: {
             signal: controller.signal,
             cache: "no-store",
@@ -121,7 +119,7 @@ export default function AttendanceCalendar() {
       isMounted = false;
       controller.abort();
     };
-  }, [apiBase, currentMonth, currentYear, todayStr, viewMonth, viewYear]);
+  }, [currentMonth, currentYear, todayStr, viewMonth, viewYear]);
 
   const showToast = (msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -135,8 +133,7 @@ export default function AttendanceCalendar() {
     setIsCheckingIn(true);
     try {
       const response = await fetchWithAuthRetry({
-        apiBase,
-        input: `${apiBase}/v1/attendance/check`,
+        input: buildApiUrl("/v1/attendance/check"),
         init: {
           method: "POST",
         },

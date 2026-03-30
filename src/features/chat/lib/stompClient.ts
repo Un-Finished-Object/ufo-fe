@@ -33,10 +33,6 @@ let stompClient: Client | null = null;
 let stompClientOptions: CreateStompClientOptions | null = null;
 const stompConnectListeners = new Set<StompConnectListener>();
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 function getBrokerURL(override?: string) {
   const brokerURL = override ?? process.env.NEXT_PUBLIC_STOMP_BROKER_URL;
 
@@ -78,9 +74,7 @@ async function resolveConnectHeaders(options: CreateStompClientOptions) {
 
   if (!accessToken) {
     try {
-      const refreshResponse = await refreshAccessToken({
-        apiBase: getApiBase(),
-      });
+      const refreshResponse = await refreshAccessToken();
 
       if (refreshResponse.ok) {
         accessToken = getAccessToken();

@@ -14,15 +14,8 @@ export default function AuthCompletePage() {
     let isMounted = true;
 
     const finalizeLogin = async () => {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-
-      if (!apiBase) {
-        router.replace("/login?error=network");
-        return;
-      }
-
       try {
-        const refreshResponse = await refreshAccessToken({ apiBase });
+        const refreshResponse = await refreshAccessToken();
 
         if (!refreshResponse.ok) {
           router.replace("/login?error=oauth_failed");

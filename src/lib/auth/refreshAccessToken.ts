@@ -1,9 +1,9 @@
+import { buildApiUrl } from "@/lib/api/client";
 import { setAccessToken } from "@/lib/auth/accessToken";
 
 export const ACCESS_TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
 type RefreshAccessTokenParams = {
-  apiBase?: string;
   signal?: AbortSignal;
 };
 
@@ -53,10 +53,9 @@ async function syncAccessToken(response: Response) {
 }
 
 export async function refreshAccessToken({
-  apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api",
   signal,
 }: RefreshAccessTokenParams = {}) {
-  const response = await fetch(`${apiBase}/v1/auth/token/refresh`, {
+  const response = await fetch(buildApiUrl("/v1/auth/token/refresh"), {
     method: "POST",
     credentials: "include",
     signal,

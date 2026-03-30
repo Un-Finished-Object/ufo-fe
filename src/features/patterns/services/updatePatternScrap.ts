@@ -1,4 +1,5 @@
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 
 type UpdatePatternScrapResponse = {
   data?: {
@@ -13,10 +14,6 @@ export type UpdatePatternScrapResult = {
   scrapCount: number;
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export async function updatePatternScrap({
   patternId,
   shouldScrap,
@@ -24,10 +21,8 @@ export async function updatePatternScrap({
   patternId: number;
   shouldScrap: boolean;
 }) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/patterns/${patternId}/scrap`,
+    input: buildApiUrl(`/v1/patterns/${patternId}/scrap`),
     init: {
       method: shouldScrap ? "POST" : "DELETE",
     },
