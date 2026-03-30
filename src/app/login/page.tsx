@@ -10,6 +10,7 @@ import TopBar from "@/components/navigation/TopBar";
 import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { meQueryOptions, walletQueryOptions } from "@/features/auth/queries/userQueries";
+import { buildApiUrl } from "@/lib/api/client";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -103,16 +104,10 @@ function LoginPageContent() {
   }, [queryClient, router]);
 
   const handleSocialLogin = (provider: Provider) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-
-    if (!apiBase) {
-      // eslint-disable-next-line react-hooks/immutability
-      window.location.href = "/login?error=network";
-      return;
-    }
-
     const redirectUri = `${window.location.origin}/auth/popup-complete`;
-    const oauthStartUrl = `${apiBase}/v1/auth/login/${provider}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const oauthStartUrl = buildApiUrl(
+      `/v1/auth/login/${provider}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,
+    );
     const popup = window.open(
       oauthStartUrl,
       "ufo-social-login",
@@ -147,7 +142,7 @@ function LoginPageContent() {
         />
         <section className="mx-auto w-full max-w-[430px] bg-ufo-surface p-6 text-ufo-text">
           <div className="mb-10">
-            <h1 className="mt-6 text-3xl text-ufo-brand-pale text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
+            <h1 className="mt-6 text-3xl text-ufo-border text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
           </div>
 
           <div className="bg-white/75 p-4 border-t border-ufo-border-light shadow-[0_1px_0_rgba(0,0,0,0.04)]">
