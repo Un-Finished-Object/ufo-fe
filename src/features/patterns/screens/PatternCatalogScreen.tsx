@@ -10,6 +10,7 @@ import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 
 type PatternItem = {
   id: number;
@@ -91,7 +92,6 @@ export default function PatternCatalogScreen() {
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
   const handleSearchSubmit = () => {
     const keyword = query.trim();
 
@@ -157,8 +157,7 @@ export default function PatternCatalogScreen() {
         }
 
         const response = await fetchWithAuthRetry({
-          apiBase,
-          input: `${apiBase}/v1/patterns?${params.toString()}`,
+          input: buildApiUrl(`/v1/patterns?${params.toString()}`),
           init: {
             method: "GET",
             signal: controller.signal,
@@ -199,7 +198,7 @@ export default function PatternCatalogScreen() {
       isMounted = false;
       controller.abort();
     };
-  }, [apiBase, selectedMainCategory, selectedClothingSubCategory, selectedSort, currentPage]);
+  }, [selectedMainCategory, selectedClothingSubCategory, selectedSort, currentPage]);
 
   return (
     <div className="min-h-screen bg-ufo-bg">

@@ -17,17 +17,8 @@ export default function AuthPopupCompletePage() {
 
   useEffect(() => {
     const finalizePopupLogin = async () => {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-
-      if (!apiBase) {
-        notifyOpener("oauth-failed");
-        window.close();
-        router.replace("/login?error=network");
-        return;
-      }
-
       try {
-        const refreshResponse = await refreshAccessToken({ apiBase });
+        const refreshResponse = await refreshAccessToken();
 
         if (!refreshResponse.ok) {
           notifyOpener("oauth-failed");

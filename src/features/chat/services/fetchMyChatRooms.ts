@@ -1,5 +1,6 @@
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import type { ChatRoom } from "@/features/chat/types";
+import { buildApiUrl } from "@/lib/api/client";
 
 type MyChatItem = {
   chatId?: number;
@@ -16,15 +17,9 @@ type MyChatsResponse = {
   error?: unknown;
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/users/me/chats`,
+    input: buildApiUrl("/v1/users/me/chats"),
     init: {
       method: "GET",
       credentials: "include",

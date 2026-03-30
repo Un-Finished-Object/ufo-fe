@@ -1,3 +1,5 @@
+import { buildApiUrl } from "@/lib/api/client";
+
 type StyleFeedItem = {
   id: number;
   author: string;
@@ -22,8 +24,7 @@ type StyleFeedResponse = {
 const STYLE_FEED_ENDPOINT = "/v1/styles";
 
 export async function fetchStyleFeed({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-  const response = await fetch(`${apiBase}${STYLE_FEED_ENDPOINT}`, {
+  const response = await fetch(buildApiUrl(STYLE_FEED_ENDPOINT), {
     method: "GET",
     signal,
     credentials: "include",

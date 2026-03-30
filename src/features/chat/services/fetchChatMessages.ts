@@ -1,11 +1,15 @@
 import type { ChatMessage } from "@/features/chat/types";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 
 type ChatMessageItem = {
   messageId?: number;
   clientMessageId?: string;
   senderId?: number | string;
   senderName?: string;
+  sender_name?: string;
+  userName?: string;
+  user_name?: string;
   text?: string;
   createdAt?: string | null;
 };
@@ -20,18 +24,22 @@ type ChatMessagesResponse = {
   error?: unknown;
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+function getSenderName(message: ChatMessageItem) {
+  return (
+    message.senderName ??
+    message.sender_name ??
+    message.userName ??
+    message.user_name ??
+    undefined
+  );
 }
 
 export async function fetchChatMessages(
   roomId: string,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/chat/${roomId}/messages`,
+    input: buildApiUrl(`/v1/chat/${roomId}/messages`),
     init: {
       method: "GET",
       credentials: "include",
@@ -59,19 +67,23 @@ export async function fetchChatMessages(
         typeof message.messageId === "number" &&
         typeof message.text === "string",
     )
-    .map((message) => ({
-      messageId: String(message.messageId),
-      clientMessageId: typeof message.clientMessageId === "string" ? message.clientMessageId : undefined,
-      senderId:
-        typeof message.senderId === "number"
-          ? String(message.senderId)
-          : typeof message.senderId === "string"
-            ? message.senderId
-            : null,
-      senderName: typeof message.senderName === "string" ? message.senderName : undefined,
-      text: message.text,
-      createdAt: typeof message.createdAt === "string" ? message.createdAt : null,
-      status: "confirmed",
-    } satisfies ChatMessage))
+    .map((message) => {
+      const senderName = getSenderName(message);
+
+      return {
+        messageId: String(message.messageId),
+        clientMessageId: typeof message.clientMessageId === "string" ? message.clientMessageId : undefined,
+        senderId:
+          typeof message.senderId === "number"
+            ? String(message.senderId)
+            : typeof message.senderId === "string"
+              ? message.senderId
+              : null,
+        senderName: typeof senderName === "string" ? senderName : undefined,
+        text: message.text,
+        createdAt: typeof message.createdAt === "string" ? message.createdAt : null,
+        status: "confirmed",
+      } satisfies ChatMessage;
+    })
     .sort((left, right) => Number(left.messageId) - Number(right.messageId));
 }

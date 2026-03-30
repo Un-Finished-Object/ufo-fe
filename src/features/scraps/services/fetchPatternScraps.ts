@@ -1,3 +1,5 @@
+import { buildApiUrl } from "@/lib/api/client";
+
 type PatternScrapItem = {
   id: number;
   title: string;
@@ -23,8 +25,7 @@ type PatternScrapResponse = {
 const PATTERN_SCRAPS_ENDPOINT = "/v1/users/me/scraps/patterns";
 
 export async function fetchPatternScraps({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-  const response = await fetch(`${apiBase}${PATTERN_SCRAPS_ENDPOINT}`, {
+  const response = await fetch(buildApiUrl(PATTERN_SCRAPS_ENDPOINT), {
     method: "GET",
     signal,
     credentials: "include",

@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 type PatternSort = "views" | "news";
@@ -55,10 +56,6 @@ export type HomePatternItem = {
 
 const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 function mapPatternItems(items: PatternApiItem[] | RecommendApiItem[], limit?: number) {
   const mappedItems = items
     .filter(
@@ -90,8 +87,6 @@ export async function fetchHomePatterns(
   limit: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const apiBase = getApiBase();
-
   try {
     const params = new URLSearchParams({
       category: "all",
@@ -100,8 +95,7 @@ export async function fetchHomePatterns(
     });
 
     const response = await fetchWithAuthRetry({
-      apiBase,
-      input: `${apiBase}/v1/patterns?${params.toString()}`,
+      input: buildApiUrl(`/v1/patterns?${params.toString()}`),
       init: {
         method: "GET",
         signal,
@@ -127,12 +121,9 @@ export async function fetchHomePatterns(
 export async function fetchRecommendedPatterns(
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const apiBase = getApiBase();
-
   try {
     const response = await fetchWithAuthRetry({
-      apiBase,
-      input: `${apiBase}/v1/patterns/recommend`,
+      input: buildApiUrl("/v1/patterns/recommend"),
       init: {
         method: "GET",
         signal,
@@ -158,12 +149,9 @@ export async function fetchRecommendedPatterns(
 export async function fetchUserInterests(
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const apiBase = getApiBase();
-
   try {
     const response = await fetchWithAuthRetry({
-      apiBase,
-      input: `${apiBase}/v1/users/me/interests`,
+      input: buildApiUrl("/v1/users/me/interests"),
       init: {
         method: "GET",
         signal,
@@ -187,10 +175,8 @@ export async function fetchUserInterests(
 }
 
 export async function saveUserInterests(keywords: string[]) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/users/me/interests`,
+    input: buildApiUrl("/v1/users/me/interests"),
     init: {
       method: "PATCH",
       headers: {

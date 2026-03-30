@@ -1,4 +1,5 @@
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 
 type PatternSearchApiItem = {
   id: number;
@@ -35,10 +36,6 @@ export type PatternSearchResult = {
 
 const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export async function fetchPatternSearchResults({
   keyword,
   page,
@@ -58,14 +55,12 @@ export async function fetchPatternSearchResults({
     };
   }
 
-  const apiBase = getApiBase();
   const params = new URLSearchParams({
     keyword: trimmedKeyword,
     page: String(page),
   });
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/patterns/search?${params.toString()}`,
+    input: buildApiUrl(`/v1/patterns/search?${params.toString()}`),
     init: {
       method: "GET",
       signal,

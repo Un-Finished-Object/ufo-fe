@@ -1,5 +1,6 @@
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import type { ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
+import { buildApiUrl } from "@/lib/api/client";
 
 type PatchChatStatusParams = {
   patternId: string;
@@ -16,19 +17,13 @@ type PatchChatStatusResponse = {
   error?: unknown;
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export async function patchChatStatus({
   patternId,
   favorite,
   hidden,
 }: PatchChatStatusParams) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/chat/${patternId}/status`,
+    input: buildApiUrl(`/v1/chat/${patternId}/status`),
     init: {
       method: "PATCH",
       credentials: "include",

@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export type PatternPurchaseType = 1 | 2;
@@ -29,10 +30,6 @@ type PurchasePatternAccessResponse = {
   error?: unknown;
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export function patternPurchaseQueryKey(patternId: number) {
   return ["patternPurchase", patternId] as const;
 }
@@ -41,10 +38,8 @@ export async function fetchPatternPurchaseStatus(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/patterns/${patternId}/purchase`,
+    input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "GET",
       credentials: "include",
@@ -80,10 +75,8 @@ export async function purchasePatternAccess({
   patternId: number;
   type: PatternPurchaseType;
 }) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/patterns/${patternId}/purchase`,
+    input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "POST",
       credentials: "include",

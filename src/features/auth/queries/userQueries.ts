@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export type UserProfile = {
@@ -34,15 +35,9 @@ export const userQueryKeys = {
   wallet: ["wallet"] as const,
 };
 
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-}
-
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/users/me`,
+    input: buildApiUrl("/v1/users/me"),
     init: {
       method: "GET",
       credentials: "include",
@@ -80,10 +75,8 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
 }
 
 export async function fetchWallet({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = getApiBase();
   const response = await fetchWithAuthRetry({
-    apiBase,
-    input: `${apiBase}/v1/credits/wallet`,
+    input: buildApiUrl("/v1/credits/wallet"),
     init: {
       method: "GET",
       credentials: "include",

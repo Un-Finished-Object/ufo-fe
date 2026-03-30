@@ -2,14 +2,12 @@ import { clearAccessToken, getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type FetchWithAuthRetryParams = {
-  apiBase: string;
   input: RequestInfo | URL;
   init?: RequestInit;
   skipRefresh?: boolean;
 };
 
 async function buildRequestInit(
-  apiBase: string,
   init: RequestInit | undefined,
   skipRefresh: boolean,
 ) {
@@ -18,7 +16,6 @@ async function buildRequestInit(
   if (!skipRefresh && !accessToken) {
     try {
       const refreshResponse = await refreshAccessToken({
-        apiBase,
         signal: init?.signal ?? undefined,
       });
 
@@ -43,12 +40,11 @@ async function buildRequestInit(
 }
 
 export async function fetchWithAuthRetry({
-  apiBase,
   input,
   init,
   skipRefresh = false,
 }: FetchWithAuthRetryParams) {
-  const firstRequestInit = await buildRequestInit(apiBase, init, skipRefresh);
+  const firstRequestInit = await buildRequestInit(init, skipRefresh);
   const firstResponse = await fetch(input, firstRequestInit);
 
   if (skipRefresh || firstResponse.status !== 401) {
@@ -56,7 +52,6 @@ export async function fetchWithAuthRetry({
   }
 
   const refreshResponse = await refreshAccessToken({
-    apiBase,
     signal: init?.signal ?? undefined,
   });
 
@@ -68,6 +63,6 @@ export async function fetchWithAuthRetry({
     return firstResponse;
   }
 
-  const retryRequestInit = await buildRequestInit(apiBase, init, true);
+  const retryRequestInit = await buildRequestInit(init, true);
   return fetch(input, retryRequestInit);
 }

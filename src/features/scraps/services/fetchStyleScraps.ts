@@ -1,3 +1,5 @@
+import { buildApiUrl } from "@/lib/api/client";
+
 type StyleScrapItem = {
   id: number;
   title: string;
@@ -22,8 +24,7 @@ type StyleScrapResponse = {
 const STYLE_SCRAPS_ENDPOINT = "/v1/users/me/scraps/styles";
 
 export async function fetchStyleScraps({ signal }: { signal?: AbortSignal } = {}) {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-  const response = await fetch(`${apiBase}${STYLE_SCRAPS_ENDPOINT}`, {
+  const response = await fetch(buildApiUrl(STYLE_SCRAPS_ENDPOINT), {
     method: "GET",
     signal,
     credentials: "include",
