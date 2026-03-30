@@ -11,15 +11,16 @@ import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { clearAccessToken } from "@/lib/auth/accessToken";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
+import { buildApiUrl } from "@/lib/api/client";
 
 const profile = {
   sinceText: "우리 뜨친된지 199일 ♡",
 };
 
-const helpMenuItems = ["내가 작성한 글", "내가 작성한 댓글", "고객센터", "공지사항", "1:1 문의"];
-const accountMenuItems = ["주문 조회"];
-const policyMenuItems = ["개인정보 처리방침", "서비스 이용약관", "위치기반서비스 이용약관"];
-const userMenuItems = ["로그아웃", "회원탈퇴"];
+type MenuItem = {
+  label: string;
+  onClick?: () => void | Promise<void>;
+};
 
 function EditIcon() {
   return (
@@ -35,15 +36,25 @@ function EditIcon() {
   );
 }
 
-function MenuSection({ title, items }: { title: string; items: string[] }) {
+function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
   return (
-    <section className="border-t border-ufo-border px-6 py-4">
-      <h2 className="pb-3 text-lg font-medium text-ufo-text-muted">{title}</h2>
-      <ul className="space-y-3 text-[31px] leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle">
+    <section>
+      <h2 className="ml-8 pb-2 text-md font-medium text-ufo-text-muted">{title}</h2>
+      <div className="border-t border-ufo-border py-4">
+      <ul className="space-y-3 text-lg leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle ml-10">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item.label}>
+            {item.onClick ? (
+              <button type="button" onClick={item.onClick} className="text-inherit">
+                {item.label}
+              </button>
+            ) : (
+              item.label
+            )}
+          </li>
         ))}
       </ul>
+      </div>
     </section>
   );
 }
@@ -98,18 +109,13 @@ export default function MyPage() {
   const profileImageSrc = meQuery.data?.profileImage?.trim() ? meQuery.data.profileImage : null;
 
   const handleLogout = useCallback(async () => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-
     try {
-      if (apiBase) {
-        await fetchWithAuthRetry({
-          apiBase,
-          input: `${apiBase}/v1/auth/logout`,
-          init: {
-            method: "POST",
-          },
-        });
-      }
+      await fetchWithAuthRetry({
+        input: buildApiUrl("/v1/auth/logout"),
+        init: {
+          method: "POST",
+        },
+      });
     } finally {
       clearAccessToken();
       queryClient.setQueryData(userQueryKeys.me, null);
@@ -128,6 +134,16 @@ export default function MyPage() {
 
   const isLoading = meQuery.isPending || (Boolean(meQuery.data) && walletQuery.isPending);
   const isError = meQuery.isError || walletQuery.isError;
+  const helpMenuItems: MenuItem[] = [
+    { label: "FAQ" },
+    { label: "공지사항" },
+    { label: "1:1 문의" },
+    { label: "주문 조회" },
+    { label: "개인정보 처리방침" },
+    { label: "서비스 이용약관" },
+    { label: "로그아웃", onClick: handleLogout },
+    { label: "회원탈퇴" },
+  ];
 
   if (isLoading) {
     return (
@@ -241,35 +257,12 @@ export default function MyPage() {
               type="button"
               className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-l font-semibold tracking-[-0.02em] text-ufo-text-neutral"
             >
-              내가 구매한 대체실 정보 보기
+              나의 활동 보기
             </button>
           </article>
         </section>
 
         <MenuSection title="도움말" items={helpMenuItems} />
-        <MenuSection title="계정 관리" items={accountMenuItems} />
-        <section className="border-t border-ufo-border px-6 py-4">
-          <ul className="space-y-3 text-[31px] leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle">
-            {policyMenuItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <section className="border-t border-ufo-border px-6 py-4 pb-16">
-          <ul className="space-y-3 text-[31px] leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle">
-            {userMenuItems.map((item) => (
-              <li key={item}>
-                {item === "로그아웃" ? (
-                  <button type="button" onClick={handleLogout} className="text-inherit">
-                    {item}
-                  </button>
-                ) : (
-                  item
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
       </main>
     </div>
   );
