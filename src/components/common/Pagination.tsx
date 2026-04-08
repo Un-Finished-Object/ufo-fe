@@ -1,79 +1,47 @@
 type PaginationProps = {
   currentPage: number;
-  totalPages: number;
+  nextPage: number;
   onPageChange: (page: number) => void;
 };
 
-function getPageNumbers(current: number, total: number): (number | "...")[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
+function getPageNumbers(currentPage: number, nextPage: number) {
+  const lastPage = currentPage + Math.max(nextPage, 0);
+  const visibleCount = Math.min(lastPage, 5);
+  const initialStartPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(lastPage, initialStartPage + visibleCount - 1);
+  const startPage = Math.max(1, endPage - visibleCount + 1);
 
-  const pages: (number | "...")[] = [1];
-
-  if (current > 3) pages.push("...");
-
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-
-  if (current < total - 2) pages.push("...");
-
-  pages.push(total);
-  return pages;
+  return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  if (totalPages <= 1) return null;
+export default function Pagination({ currentPage, nextPage, onPageChange }: PaginationProps) {
+  const pages = getPageNumbers(currentPage, nextPage);
 
-  const pages = getPageNumbers(currentPage, totalPages);
+  if (pages.length <= 1) return null;
 
   return (
-    <nav
-      className="flex items-center justify-center gap-1 py-6"
-      aria-label="페이지 탐색"
-    >
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-ufo-text-muted disabled:opacity-30"
-        aria-label="이전 페이지"
-      >
-        ‹
-      </button>
+    <nav className="flex items-center justify-center gap-1 py-6" aria-label="페이지 탐색">
+      {pages.map((page) => {
+        const isCurrentPage = currentPage === page;
 
-      {pages.map((page, idx) =>
-        page === "..." ? (
-          <span key={`ellipsis-${idx}`} className="flex h-8 w-6 items-center justify-center text-sm text-ufo-text-muted">
-            …
-          </span>
-        ) : (
+        return (
           <button
             key={page}
             type="button"
-            onClick={() => onPageChange(page)}
+            onClick={isCurrentPage ? undefined : () => onPageChange(page)}
+            disabled={isCurrentPage}
             className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium ${
-              currentPage === page
+              isCurrentPage
                 ? "bg-ufo-brand text-white"
                 : "text-ufo-text-secondary hover:bg-ufo-brand-pale"
             }`}
-            aria-current={currentPage === page ? "page" : undefined}
+            aria-current={isCurrentPage ? "page" : undefined}
+            aria-label={isCurrentPage ? `현재 페이지 ${page}` : `${page}페이지로 이동`}
           >
             {page}
           </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-ufo-text-muted disabled:opacity-30"
-        aria-label="다음 페이지"
-      >
-        ›
-      </button>
+        );
+      })}
     </nav>
   );
 }
