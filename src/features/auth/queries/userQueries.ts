@@ -8,6 +8,7 @@ export type UserProfile = {
   email: string;
   nickname: string;
   profileImage: string;
+  joinDate: number | null;
 };
 
 type MeResponse = {
@@ -19,6 +20,7 @@ type MeResponse = {
     nickname?: string;
     profileImage?: string;
     profileImageUrl?: string;
+    joinDate?: number | string;
   };
   error?: unknown;
 };
@@ -59,6 +61,13 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     throw new Error("Failed to load user information.");
   }
 
+  const joinDate =
+    typeof payload.data.joinDate === "number"
+      ? payload.data.joinDate
+      : typeof payload.data.joinDate === "string"
+        ? Number(payload.data.joinDate)
+        : null;
+
   return {
     userId:
       typeof payload.data.userId === "number"
@@ -71,6 +80,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     email: payload.data.email ?? "",
     nickname: payload.data.nickname ?? "",
     profileImage: payload.data.profileImage ?? payload.data.profileImageUrl ?? "",
+    joinDate: Number.isFinite(joinDate) ? joinDate : null,
   } satisfies UserProfile;
 }
 

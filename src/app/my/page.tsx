@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import CreditBadge from "@/components/credits/CreditBadge";
+import EditIcon from "@/components/icons/EditIcon";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
@@ -13,28 +14,10 @@ import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 
-const profile = {
-  sinceText: "우리 뜨친된지 199일 ♡",
-};
-
 type MenuItem = {
   label: string;
   onClick?: () => void | Promise<void>;
 };
-
-function EditIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white" aria-hidden="true">
-      <path
-        d="M14.7 5.3L18.7 9.3M7 17L6 21L10 20L19.4 10.6C20.2 9.8 20.2 8.5 19.4 7.7L16.3 4.6C15.5 3.8 14.2 3.8 13.4 4.6L7 11V17Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
   return (
@@ -107,6 +90,8 @@ export default function MyPage() {
   const nickname = meQuery.data?.nickname || "회원";
   const email = meQuery.data?.email || "";
   const profileImageSrc = meQuery.data?.profileImage?.trim() ? meQuery.data.profileImage : null;
+  const joinDateText = meQuery.data?.joinDate ?? "-";
+  const sinceText = `우리 뜨친된지 ${joinDateText}일 ♡`;
 
   const handleLogout = useCallback(async () => {
     try {
@@ -132,11 +117,20 @@ export default function MyPage() {
     }
   }, [meQuery, walletQuery]);
 
+  const handleAttendanceClick = useCallback(() => {
+    router.push("/events/attendance");
+  }, [router]);
+
+  const handleEditProfileClick = useCallback(() => {
+    router.push("/my/edit");
+  }, [router]);
+
   const isLoading = meQuery.isPending || (Boolean(meQuery.data) && walletQuery.isPending);
   const isError = meQuery.isError || walletQuery.isError;
   const helpMenuItems: MenuItem[] = [
     { label: "FAQ" },
     { label: "공지사항" },
+    { label: "출석체크", onClick: handleAttendanceClick },
     { label: "1:1 문의" },
     { label: "주문 조회" },
     { label: "개인정보 처리방침" },
@@ -241,16 +235,16 @@ export default function MyPage() {
               </div>
               <button
                 type="button"
+                onClick={handleEditProfileClick}
                 className="flex h-8 w-8 items-center justify-center rounded-full"
                 aria-label="프로필 수정"
               >
-                <EditIcon />
+                <EditIcon className="h-[18px] w-[18px] text-white" />
               </button>
             </div>
 
             <div className="mt-3 flex items-center justify-between border-b border-white/70 pb-2 text-l font-medium tracking-[-0.02em]">
-              <span>{profile.sinceText}</span>
-              <span aria-hidden="true">&gt;</span>
+              <span>{sinceText}</span>
             </div>
 
             <button
