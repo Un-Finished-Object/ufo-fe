@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ChatTopBarActionType = "favorite" | "search" | "fo";
 
@@ -97,32 +97,27 @@ function renderRightIcon(type: ChatTopBarActionType, active = false) {
 export default function ChatTopBar({
   title,
   subtitle = null,
-  leftHref,
   onLeftClick,
   right = [],
 }: ChatTopBarProps) {
+  const router = useRouter();
   const leftAriaLabel = "뒤로가기";
   const rightActions = right.slice(0, 3);
+  const handleBackClick = onLeftClick ?? (() => router.back());
 
   return (
     <header className="sticky top-0 z-50 w-full">
       <div className="mx-auto w-full max-w-[430px] border-b border-ufo-border-light bg-ufo-surface">
         <div className="flex h-14 items-center gap-2 px-4">
           <div className="flex items-center">
-            {leftHref ? (
-              <Link href={leftHref} className="rounded-full p-1" aria-label={leftAriaLabel}>
-                <BackIcon />
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={onLeftClick}
-                className="rounded-full p-1"
-                aria-label={leftAriaLabel}
-              >
-                <BackIcon />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleBackClick}
+              className="rounded-full p-1"
+              aria-label={leftAriaLabel}
+            >
+              <BackIcon />
+            </button>
           </div>
 
           <div className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap">
