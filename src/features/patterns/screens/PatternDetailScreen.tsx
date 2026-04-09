@@ -19,33 +19,16 @@ import {
   type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
+import {
+  PatternDetailQueryError,
+  patternDetailQueryKey,
+  patternDetailQueryOptions,
+  type PatternDetailData,
+} from "@/features/patterns/queries/patternDetailQueries";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 
-export type PatternDetailData = {
-  id: number;
-  title: string;
-  author: string;
-  credits: number;
-  image: string;
-  isScrapped: boolean;
-  stats: {
-    views: number;
-    scraps: number;
-  };
-  details: {
-    category: string;
-    size: string;
-    measurement: string;
-    needle: string;
-    yarn: string;
-    amount: string;
-    gauge: string;
-  };
-};
-
 type PatternDetailScreenProps = {
-  pattern: PatternDetailData | null;
-  errorMessage?: string | null;
+  patternId: number;
 };
 
 const detailRows = [
@@ -216,19 +199,20 @@ function AlternativePurchaseGate({
 }
 
 export default function PatternDetailScreen({
-  pattern,
-  errorMessage = null,
+  patternId,
 }: PatternDetailScreenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const patternDetailQuery = useQuery(patternDetailQueryOptions(patternId));
+  const pattern = patternDetailQuery.data ?? null;
   const { authStatus, isAuthenticated } = useAuthState();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
   const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
   const [purchaseErrorMessage, setPurchaseErrorMessage] = useState<string | null>(null);
-  const [isScrapped, setIsScrapped] = useState(pattern?.isScrapped ?? false);
-  const [scrapCount, setScrapCount] = useState(pattern?.stats.scraps ?? 0);
   const profileHref = isAuthenticated ? "/my" : "/login";
+  const isScrapped = pattern?.isScrapped ?? false;
+  const scrapCount = pattern?.stats.scraps ?? 0;
   const purchaseStatusQuery = useQuery({
     ...patternPurchaseStatusQueryOptions(pattern?.id ?? 0),
     enabled: authStatus !== "loading" && isAuthenticated && pattern !== null,
@@ -257,6 +241,7 @@ export default function PatternDetailScreen({
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
       : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
+
   const toggleScrapMutation = useMutation<
     Awaited<ReturnType<typeof updatePatternScrap>>,
     Error,
@@ -268,8 +253,20 @@ export default function PatternDetailScreen({
         shouldScrap: nextIsScrapped,
       }),
     onSuccess: (result) => {
-      setIsScrapped(result.scrapped);
-      setScrapCount(result.scrapCount);
+      queryClient.setQueryData<PatternDetailData | undefined>(
+        patternDetailQueryKey(patternId),
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+                isScrapped: result.scrapped,
+                stats: {
+                  ...previous.stats,
+                  scraps: result.scrapCount,
+                },
+              }
+            : previous,
+      );
     },
     onError: (error) => {
       if (error.message === "Unauthorized") {
@@ -366,7 +363,37 @@ export default function PatternDetailScreen({
     toggleScrapMutation.mutate(!isScrapped);
   };
 
+  if (patternDetailQuery.isPending) {
+    return (
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
+          <TopBar
+            left="back"
+            onLeftClick={() => router.back()}
+            showBottomBorder
+            right={[
+              { type: "chat", href: "/chats", ariaLabel: "채팅" },
+              { type: "profile", href: profileHref, ariaLabel: "프로필" },
+            ]}
+          />
+
+          <section className="px-4 py-16">
+            <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
+              <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오고 있어요.</p>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   if (!pattern) {
+    const errorMessage =
+      patternDetailQuery.error instanceof PatternDetailQueryError &&
+      patternDetailQuery.error.status === 404
+        ? "요청하신 도안을 찾을 수 없어요."
+        : "잠시 후 다시 시도해주세요.";
+
     return (
       <div className="min-h-screen bg-ufo-bg">
         <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
@@ -383,9 +410,7 @@ export default function PatternDetailScreen({
           <section className="px-4 py-16">
             <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
               <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오지 못했어요.</p>
-              <p className="mt-2 text-sm text-ufo-text-secondary">
-                {errorMessage ?? "잠시 후 다시 시도해주세요."}
-              </p>
+              <p className="mt-2 text-sm text-ufo-text-secondary">{errorMessage}</p>
             </div>
           </section>
         </main>
