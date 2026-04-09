@@ -5,6 +5,13 @@ type PaginationProps = {
 };
 
 function getPageNumbers(currentPage: number, nextPage: number) {
+  if (nextPage <= 0) {
+    const visibleCount = Math.min(currentPage, 3);
+    const startPage = Math.max(1, currentPage - visibleCount + 1);
+
+    return Array.from({ length: currentPage - startPage + 1 }, (_, index) => startPage + index);
+  }
+
   const lastPage = currentPage + Math.max(nextPage, 0);
   const visibleCount = Math.min(lastPage, 5);
   const initialStartPage = Math.max(1, currentPage - 2);
