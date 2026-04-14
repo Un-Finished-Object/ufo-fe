@@ -4,7 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
-import { meQueryOptions, walletQueryOptions } from "@/features/auth/queries/userQueries";
+import {
+  meQueryOptions,
+  walletQueryOptions,
+} from "@/features/auth/queries/userQueries";
 
 export default function AuthCompletePage() {
   const router = useRouter();
@@ -15,7 +18,7 @@ export default function AuthCompletePage() {
 
     const finalizeLogin = async () => {
       try {
-        const refreshResponse = await refreshAccessToken();
+        const refreshResponse = await refreshAccessToken({ mode: "required" });
 
         if (!refreshResponse.ok) {
           router.replace("/login?error=oauth_failed");
@@ -26,13 +29,19 @@ export default function AuthCompletePage() {
           return;
         }
 
-        const me = await queryClient.fetchQuery(meQueryOptions());
+        const me = await queryClient.fetchQuery({
+          ...meQueryOptions(),
+          staleTime: 0,
+        });
         if (!me) {
           router.replace("/login?error=oauth_failed");
           return;
         }
 
-        void queryClient.prefetchQuery(walletQueryOptions());
+        void queryClient.prefetchQuery({
+          ...walletQueryOptions(),
+          staleTime: 0,
+        });
         router.replace("/");
       } catch {
         router.replace("/login?error=oauth_failed");

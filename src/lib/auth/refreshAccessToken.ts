@@ -1,10 +1,14 @@
 import { buildApiUrl } from "@/lib/api/client";
-import { setAccessToken } from "@/lib/auth/accessToken";
+import { clearAccessToken, setAccessToken } from "@/lib/auth/accessToken";
 
 export const ACCESS_TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;
+
+type RefreshMode = "auto" | "required";
 
 type RefreshAccessTokenParams = {
   signal?: AbortSignal;
+  mode?: RefreshMode;
 };
 
 type RefreshResponsePayload = {
@@ -52,18 +56,47 @@ async function syncAccessToken(response: Response) {
   }
 }
 
+let refreshRequestPromise: Promise<Response> | null = null;
+let lastAutoRefreshFailureAt = 0;
+
 export async function refreshAccessToken({
   signal,
+  mode = "auto",
 }: RefreshAccessTokenParams = {}) {
-  const response = await fetch(buildApiUrl("/v1/auth/token/refresh"), {
-    method: "POST",
-    credentials: "include",
-    signal,
-  });
-
-  if (response.ok) {
-    await syncAccessToken(response);
+  if (
+    mode === "auto" &&
+    lastAutoRefreshFailureAt > 0 &&
+    Date.now() - lastAutoRefreshFailureAt < AUTO_REFRESH_COOLDOWN_MS
+  ) {
+    return new Response(null, { status: 401 });
   }
 
-  return response;
+  if (refreshRequestPromise) {
+    return refreshRequestPromise;
+  }
+
+  refreshRequestPromise = (async () => {
+    const response = await fetch(buildApiUrl("/v1/auth/token/refresh"), {
+      method: "POST",
+      credentials: "include",
+      signal,
+    });
+
+    if (response.ok) {
+      await syncAccessToken(response);
+      lastAutoRefreshFailureAt = 0;
+      return response;
+    }
+
+    if (mode === "auto" && (response.status === 401 || response.status === 403)) {
+      lastAutoRefreshFailureAt = Date.now();
+      clearAccessToken();
+    }
+
+    return response;
+  })().finally(() => {
+    refreshRequestPromise = null;
+  });
+
+  return refreshRequestPromise;
 }

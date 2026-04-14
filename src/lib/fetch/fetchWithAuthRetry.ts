@@ -7,27 +7,10 @@ type FetchWithAuthRetryParams = {
   skipRefresh?: boolean;
 };
 
-async function buildRequestInit(
-  init: RequestInit | undefined,
-  skipRefresh: boolean,
-) {
-  let accessToken = getAccessToken();
-
-  if (!skipRefresh && !accessToken) {
-    try {
-      const refreshResponse = await refreshAccessToken({
-        signal: init?.signal ?? undefined,
-      });
-
-      if (refreshResponse.ok) {
-        accessToken = getAccessToken();
-      }
-    } catch {
-      // Keep the original request flow when refresh preflight fails.
-    }
-  }
-
+function buildRequestInit(init: RequestInit | undefined) {
+  const accessToken = getAccessToken();
   const headers = new Headers(init?.headers);
+
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
@@ -44,7 +27,7 @@ export async function fetchWithAuthRetry({
   init,
   skipRefresh = false,
 }: FetchWithAuthRetryParams) {
-  const firstRequestInit = await buildRequestInit(init, skipRefresh);
+  const firstRequestInit = buildRequestInit(init);
   const firstResponse = await fetch(input, firstRequestInit);
 
   if (skipRefresh || firstResponse.status !== 401) {
@@ -53,6 +36,7 @@ export async function fetchWithAuthRetry({
 
   const refreshResponse = await refreshAccessToken({
     signal: init?.signal ?? undefined,
+    mode: "auto",
   });
 
   if (!refreshResponse.ok) {
@@ -63,6 +47,6 @@ export async function fetchWithAuthRetry({
     return firstResponse;
   }
 
-  const retryRequestInit = await buildRequestInit(init, true);
+  const retryRequestInit = buildRequestInit(init);
   return fetch(input, retryRequestInit);
 }

@@ -9,8 +9,12 @@ import Footer from "@/components/common/Footer";
 import TopBar from "@/components/navigation/TopBar";
 import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
-import { meQueryOptions, walletQueryOptions } from "@/features/auth/queries/userQueries";
+import {
+  meQueryOptions,
+  walletQueryOptions,
+} from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
+import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -85,9 +89,32 @@ function LoginPageContent() {
 
       const messageType = (data as { type?: string }).type;
       if (messageType === "oauth-success") {
-        void queryClient.fetchQuery(meQueryOptions()).catch(() => null);
-        void queryClient.prefetchQuery(walletQueryOptions());
-        router.replace("/");
+        void (async () => {
+          try {
+            const refreshResponse = await refreshAccessToken({ mode: "required" });
+            if (!refreshResponse.ok) {
+              router.replace("/login?error=oauth_failed");
+              return;
+            }
+
+            const me = await queryClient.fetchQuery({
+              ...meQueryOptions(),
+              staleTime: 0,
+            });
+            if (!me) {
+              router.replace("/login?error=oauth_failed");
+              return;
+            }
+
+            void queryClient.prefetchQuery({
+              ...walletQueryOptions(),
+              staleTime: 0,
+            });
+            router.replace("/");
+          } catch {
+            router.replace("/login?error=oauth_failed");
+          }
+        })();
         return;
       }
 
