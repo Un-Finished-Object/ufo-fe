@@ -1,12 +1,13 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { chatRoomFilters } from "@/features/chat/constants";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
-import { useMyChatRoomsQuery } from "@/features/chat/hooks/useMyChatRoomsQuery";
+import { myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
 
 function LoadingState() {
   return <p className="px-4 py-8 text-sm text-ufo-text-dim">채팅방 목록을 불러오는 중입니다.</p>;
@@ -33,7 +34,7 @@ export default function ChatRoomDirectoryScreen() {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const meQuery = useMeQuery();
-  const myChatRoomsQuery = useMyChatRoomsQuery();
+  const myChatRoomsQuery = useQuery(myChatRoomsQueryOptions());
 
   const filteredMyRooms = useMemo(
     () =>

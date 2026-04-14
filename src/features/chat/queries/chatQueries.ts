@@ -1,6 +1,7 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { queryOptions } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
+import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 
 type MyChatItem = {
   chatId?: number;
@@ -15,6 +16,12 @@ type MyChatsResponse = {
     chats?: MyChatItem[];
   };
   error?: unknown;
+};
+
+export const myChatRoomsQueryKey = ["myChatRooms"] as const;
+
+type MyChatRoomsQueryOptionsParams = {
+  enabled?: boolean;
 };
 
 export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
@@ -57,4 +64,12 @@ export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}
       isHidden: chat.isHidden,
       unreadCount: chat.unRead,
     } satisfies ChatRoom));
+}
+
+export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = {}) {
+  return queryOptions({
+    queryKey: myChatRoomsQueryKey,
+    enabled: params.enabled ?? true,
+    queryFn: ({ signal }) => fetchMyChatRooms({ signal }),
+  });
 }

@@ -11,7 +11,7 @@ import TopBar from "@/components/navigation/TopBar";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
-import { myChatRoomsQueryKey } from "@/features/chat/hooks/useMyChatRoomsQuery";
+import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
 import {
   patternPurchaseQueryKey,
   patternPurchaseStatusQueryOptions,

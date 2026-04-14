@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAccessToken } from "@/features/auth/hooks/useAccessToken";
 import { useAccessTokenRefresh } from "@/features/auth/hooks/useAccessTokenRefresh";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import ChatRealtimeManager from "@/features/chat/components/ChatRealtimeManager";
+import ChatRealtimeToastHost from "@/features/chat/components/ChatRealtimeToastHost";
 import { createQueryClient } from "@/lib/query/client";
 import { activateStompClient, deactivateStompClient } from "@/features/chat/lib/stompClient";
 
@@ -63,6 +65,8 @@ export default function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthRefreshManager />
       <WebSocketConnectionManager />
+      <ChatRealtimeManager />
+      <ChatRealtimeToastHost />
       {children}
     </QueryClientProvider>
   );
