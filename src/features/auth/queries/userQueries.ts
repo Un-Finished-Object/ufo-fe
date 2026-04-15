@@ -1,6 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
+import { getAccessToken } from "@/lib/auth/accessToken";
+import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export type UserProfile = {
@@ -38,6 +40,17 @@ export const userQueryKeys = {
 };
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
+  if (!getAccessToken()) {
+    const refreshResponse = await refreshAccessToken({
+      signal,
+      mode: "auto",
+    });
+
+    if (!refreshResponse.ok) {
+      return null;
+    }
+  }
+
   const response = await fetchWithAuthRetry({
     input: buildApiUrl("/v1/users/me"),
     init: {
@@ -45,6 +58,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
       credentials: "include",
       signal,
     },
+    skipRefresh: true,
   });
 
   if (response.status === 401) {

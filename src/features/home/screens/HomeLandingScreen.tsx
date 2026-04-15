@@ -53,7 +53,10 @@ export default function HomeLandingScreen() {
     : "guest";
   const bestPatternsQuery = useQuery(bestPatternsQueryOptions());
   const newPatternsQuery = useQuery(newPatternsQueryOptions());
-  const recommendPatternsQuery = useQuery(recommendPatternsQueryOptions(authCacheKey));
+  const recommendPatternsQuery = useQuery({
+    ...recommendPatternsQueryOptions(authCacheKey),
+    enabled: authStatus !== "loading",
+  });
   const bestItems = bestPatternsQuery.data ?? [];
   const newItems = newPatternsQuery.data ?? [];
   const recommendItems = recommendPatternsQuery.data ?? [];
