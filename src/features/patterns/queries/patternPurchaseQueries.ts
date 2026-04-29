@@ -3,9 +3,7 @@ import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
-export type PatternPurchaseType = 1 | 2;
-// Remove this after api changes
-export type PatternPurchaseTypeTemp = "1" | "2";
+export type PatternPurchaseType = "chat" | "yarn";
 
 export type PatternPurchaseStatus = {
   userId: number | null;
@@ -25,7 +23,7 @@ type PatternPurchaseStatusResponse = {
 type PurchasePatternAccessResponse = {
   data?: {
     userId?: number;
-    type?: PatternPurchaseTypeTemp;
+    type?: unknown;
   };
   error?: unknown;
 };
@@ -96,9 +94,8 @@ export async function purchasePatternAccess({
   }
 
   const payload = (await response.json()) as PurchasePatternAccessResponse;
-  const expectedType = String(type) as PatternPurchaseTypeTemp;
 
-  if (payload.error || !payload.data || payload.data.type !== expectedType) {
+  if (payload.error || !payload.data) {
     throw new Error("Failed to purchase pattern access.");
   }
 
