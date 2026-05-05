@@ -125,6 +125,10 @@ export default function MyPage() {
     router.push("/my/edit");
   }, [router]);
 
+  const handleMyActivityClick = useCallback(() => {
+    router.push("/my/activity");
+  }, [router]);
+
   const isLoading = meQuery.isPending || (Boolean(meQuery.data) && walletQuery.isPending);
   const isError = meQuery.isError || walletQuery.isError;
   const helpMenuItems: MenuItem[] = [
@@ -249,6 +253,7 @@ export default function MyPage() {
 
             <button
               type="button"
+              onClick={handleMyActivityClick}
               className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-l font-semibold tracking-[-0.02em] text-ufo-text-neutral"
             >
               나의 활동 보기
