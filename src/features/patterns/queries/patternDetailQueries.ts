@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { formatPatternCategory } from "@/features/patterns/lib/patternCategories";
 
 type PatternDetailResponse = {
   data?: {
@@ -67,18 +68,6 @@ function getSafeText(value?: string | null) {
   return trimmedValue ? trimmedValue : "-";
 }
 
-function formatCategory(category?: string, subCategory?: string) {
-  const values = [category, subCategory]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-
-  if (values.length === 0) {
-    return "-";
-  }
-
-  return values.join(" > ");
-}
-
 export function patternDetailQueryKey(patternId: number) {
   return ["patternDetail", patternId] as const;
 }
@@ -126,7 +115,7 @@ export async function fetchPatternDetail(
       scraps: payload.data.stats?.scraps ?? 0,
     },
     details: {
-      category: formatCategory(
+      category: formatPatternCategory(
         payload.data.meta?.category,
         payload.data.meta?.subCategory,
       ),

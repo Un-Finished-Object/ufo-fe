@@ -10,6 +10,10 @@ import PatternCard from "@/components/patterns/PatternCard";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import {
+  patternCategoryApiMap,
+  patternSubCategoryApiMap,
+} from "@/features/patterns/lib/patternCategories";
 import { patternCatalogQueryOptions } from "@/features/patterns/queries/patternCatalogQueries";
 
 const mainCategories = ["ALL", "의류", "가방/파우치", "목도리/장갑/모자", "기타"] as const;
@@ -21,22 +25,6 @@ const clothingSubCategories = [
   "기타",
 ] as const;
 const sortOptions = ["최신순", "인기순", "찜 순"] as const;
-
-const categoryApiMap: Record<string, string> = {
-  ALL: "all",
-  "의류": "apparel",
-  "가방/파우치": "bags",
-  "목도리/장갑/모자": "accessories",
-  "기타": "others",
-};
-
-const subCategoryApiMap: Record<string, string> = {
-  "가디건/자켓/볼레로": "outer",
-  "스웨터": "sweater",
-  "조끼/민소매/뷔스티에": "vest",
-  "원피스": "dress",
-  "기타": "others",
-};
 
 const sortApiMap: Record<string, string> = {
   "최신순": "news",
@@ -62,11 +50,11 @@ export default function PatternCatalogScreen() {
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
-  const selectedCategory = categoryApiMap[selectedMainCategory] ?? "all";
+  const selectedCategory = patternCategoryApiMap[selectedMainCategory] ?? "all";
   const selectedSortValue = sortApiMap[selectedSort] ?? "views";
   const selectedSubCategory =
     selectedMainCategory === "의류" && selectedClothingSubCategory
-      ? subCategoryApiMap[selectedClothingSubCategory] ?? "others"
+      ? patternSubCategoryApiMap[selectedClothingSubCategory] ?? "others"
       : undefined;
   const patternCatalogQuery = useQuery(
     patternCatalogQueryOptions({
