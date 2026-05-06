@@ -10,6 +10,10 @@ type ChatMessageItem = {
   sender_name?: string;
   userName?: string;
   user_name?: string;
+  replySenderName?: string | null;
+  reply_sender_name?: string | null;
+  replyMessageId?: number | string | null;
+  reply_message_id?: number | string | null;
   text?: string;
   createdAt?: string | null;
 };
@@ -32,6 +36,14 @@ function getSenderName(message: ChatMessageItem) {
     message.user_name ??
     undefined
   );
+}
+
+function getReplySenderName(message: ChatMessageItem) {
+  return message.replySenderName ?? message.reply_sender_name ?? null;
+}
+
+function getReplyMessageId(message: ChatMessageItem) {
+  return message.replyMessageId ?? message.reply_message_id ?? null;
 }
 
 export async function fetchChatMessages(
@@ -69,6 +81,8 @@ export async function fetchChatMessages(
     )
     .map((message) => {
       const senderName = getSenderName(message);
+      const replySenderName = getReplySenderName(message);
+      const replyMessageId = getReplyMessageId(message);
 
       return {
         messageId: String(message.messageId),
@@ -80,6 +94,13 @@ export async function fetchChatMessages(
               ? message.senderId
               : null,
         senderName: typeof senderName === "string" ? senderName : undefined,
+        replySenderName: typeof replySenderName === "string" ? replySenderName : null,
+        replyMessageId:
+          typeof replyMessageId === "number"
+            ? String(replyMessageId)
+            : typeof replyMessageId === "string"
+              ? replyMessageId
+              : null,
         text: message.text,
         createdAt: typeof message.createdAt === "string" ? message.createdAt : null,
         status: "confirmed",

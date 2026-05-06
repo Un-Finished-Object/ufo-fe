@@ -3,6 +3,8 @@ export type ChatMessage = {
   clientMessageId?: string;
   senderId?: string | null;
   senderName?: string;
+  replySenderName?: string | null;
+  replyMessageId?: string | null;
   text: string;
   createdAt: string | null;
   status?: "pending" | "confirmed" | "failed";

@@ -15,6 +15,8 @@ type UseSendChatMessageParams = {
 type SendMessageParams = {
   text: string;
   clientMessageId: string;
+  replyMessageId?: string | null;
+  replySenderName?: string | null;
 };
 
 type PendingMessageContext = {
@@ -33,11 +35,15 @@ function buildPendingMessage({
   clientMessageId,
   senderId,
   senderName,
+  replyMessageId,
+  replySenderName,
   text,
 }: {
   clientMessageId: string;
   senderId?: string | null;
   senderName?: string;
+  replyMessageId?: string | null;
+  replySenderName?: string | null;
   text: string;
 }) {
   return {
@@ -45,10 +51,27 @@ function buildPendingMessage({
     clientMessageId,
     senderId: senderId ?? null,
     senderName,
+    replyMessageId: replyMessageId ?? null,
+    replySenderName: replySenderName ?? null,
     text,
     createdAt: null,
     status: "pending",
   } satisfies ChatMessage;
+}
+
+type SendMessageOptions = {
+  replyMessageId?: string | null;
+  replySenderName?: string | null;
+};
+
+function normalizeReplyMessageId(replyMessageId?: string | null) {
+  if (!replyMessageId) {
+    return null;
+  }
+
+  const nextReplyMessageId = Number(replyMessageId);
+
+  return Number.isFinite(nextReplyMessageId) ? nextReplyMessageId : null;
 }
 
 export function useSendChatMessage({
@@ -65,22 +88,25 @@ export function useSendChatMessage({
   }, [queryClient, roomId]);
 
   const mutation = useMutation<void, Error, SendMessageParams, PendingMessageContext>({
-    mutationFn: async ({ text, clientMessageId }) => {
+    mutationFn: async ({ text, clientMessageId, replyMessageId }) => {
       await Promise.resolve(
         sendChatMessage({
           roomId: Number(roomId),
           text,
           clientMessageId,
+          replyMessageId: normalizeReplyMessageId(replyMessageId),
         }),
       );
     },
-    onMutate: async ({ text, clientMessageId }) => {
+    onMutate: async ({ text, clientMessageId, replyMessageId, replySenderName }) => {
       queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) => [
         ...previousMessages,
         buildPendingMessage({
           clientMessageId,
           senderId,
           senderName,
+          replyMessageId,
+          replySenderName,
           text,
         }),
       ]);
@@ -105,7 +131,7 @@ export function useSendChatMessage({
     },
   });
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback((text: string, options: SendMessageOptions = {}) => {
     const normalizedText = text.trim();
 
     if (normalizedText.length === 0) {
@@ -117,12 +143,14 @@ export function useSendChatMessage({
     mutation.mutate({
       text: normalizedText,
       clientMessageId,
+      replyMessageId: options.replyMessageId ?? null,
+      replySenderName: options.replySenderName ?? null,
     });
 
     return clientMessageId;
   }, [mutation]);
 
-  const sendMessageAsync = useCallback(async (text: string) => {
+  const sendMessageAsync = useCallback(async (text: string, options: SendMessageOptions = {}) => {
     const normalizedText = text.trim();
 
     if (normalizedText.length === 0) {
@@ -134,6 +162,8 @@ export function useSendChatMessage({
     await mutation.mutateAsync({
       text: normalizedText,
       clientMessageId,
+      replyMessageId: options.replyMessageId ?? null,
+      replySenderName: options.replySenderName ?? null,
     });
 
     return clientMessageId;
@@ -145,7 +175,10 @@ export function useSendChatMessage({
     }
 
     removeMessageByClientMessageId(message.clientMessageId);
-    return sendMessage(message.text);
+    return sendMessage(message.text, {
+      replyMessageId: message.replyMessageId ?? null,
+      replySenderName: message.replySenderName ?? null,
+    });
   }, [removeMessageByClientMessageId, sendMessage]);
 
   const removeFailedMessage = useCallback((message: ChatMessage) => {

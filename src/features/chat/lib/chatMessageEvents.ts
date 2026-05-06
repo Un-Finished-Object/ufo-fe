@@ -8,8 +8,11 @@ type MessageCreatedPayload = {
   messageId?: number | null;
   clientMessageId?: string | null;
   senderId?: number | null;
+  senderProfile?: string | null;
   senderName?: string | null;
   text?: string | null;
+  replySenderName?: string | null;
+  replyMessageId?: number | null;
   createdAt?: string | null;
 };
 
@@ -41,6 +44,8 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
     clientMessageId: payload.clientMessageId,
     senderId: String(payload.senderId),
     senderName: payload.senderName,
+    replySenderName: typeof payload.replySenderName === "string" ? payload.replySenderName : null,
+    replyMessageId: typeof payload.replyMessageId === "number" ? String(payload.replyMessageId) : null,
     text: payload.text,
     createdAt: payload.createdAt,
     status: "confirmed",
@@ -89,6 +94,8 @@ export function applyIncomingChatMessage(
               messageId: nextMessage.messageId,
               senderId: nextMessage.senderId,
               senderName: nextMessage.senderName,
+              replySenderName: nextMessage.replySenderName ?? null,
+              replyMessageId: nextMessage.replyMessageId ?? null,
               text: nextMessage.text,
               createdAt: nextMessage.createdAt,
               status: "confirmed",

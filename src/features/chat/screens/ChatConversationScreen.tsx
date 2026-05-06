@@ -9,7 +9,7 @@ import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useChatReadReceipt } from "@/features/chat/hooks/useChatReadReceipt";
 import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
-import type { ChatRoom } from "@/features/chat/types";
+import type { ChatMessage, ChatRoom } from "@/features/chat/types";
 import { useChatMessagesQuery } from "@/features/chat/hooks/useChatMessagesQuery";
 import {
   chatStatusQueryKey,
@@ -23,6 +23,12 @@ import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStor
 
 type ChatConversationScreenProps = {
   patternId: string;
+};
+
+type ReplyTarget = {
+  messageId: string;
+  senderName: string;
+  text: string;
 };
 
 export default function ChatConversationScreen({ patternId }: ChatConversationScreenProps) {
@@ -39,6 +45,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const queryClient = useQueryClient();
   const chatStatusQuery = useChatStatusQuery(roomId);
   const [messageText, setMessageText] = useState("");
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [isFoConfirmOpen, setIsFoConfirmOpen] = useState(false);
   const messagesQuery = useChatMessagesQuery(roomId);
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
@@ -126,8 +133,33 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
       return;
     }
 
-    sendChatMessage.sendMessage(nextMessageText);
+    sendChatMessage.sendMessage(
+      nextMessageText,
+      replyTarget
+        ? {
+            replyMessageId: replyTarget.messageId,
+            replySenderName: replyTarget.senderName,
+          }
+        : undefined,
+    );
     setMessageText("");
+    setReplyTarget(null);
+  };
+
+  const handleReplyMessageSelect = (message: ChatMessage) => {
+    if (message.messageId === null) {
+      return;
+    }
+
+    setReplyTarget({
+      messageId: message.messageId,
+      senderName: message.senderName?.trim() || "뜨친",
+      text: message.text,
+    });
+  };
+
+  const handleReplyCancel = () => {
+    setReplyTarget(null);
   };
 
   const errorMessage = messagesQuery.isError ? "메시지를 불러오지 못했습니다." : null;
@@ -198,16 +230,19 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
             lastConfirmedMessageId={lastConfirmedMessageId}
             onLastConfirmedMessageRefChange={setMessageListElement}
             onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
+            onReplyMessageSelect={handleReplyMessageSelect}
             onResendFailedMessage={sendChatMessage.resendFailedMessage}
           />
         </section>
 
-        <footer className="sticky bottom-0 border-t border-[#f0b2b2] bg-white p-4">
+        <footer className="sticky bottom-0 border-t border-ufo-border-light bg-white p-4">
           <ChatInput
             value={messageText}
             isSending={false}
             isSubmitDisabled={false}
+            replyPreview={replyTarget ? { senderName: replyTarget.senderName, text: replyTarget.text } : null}
             onChange={setMessageText}
+            onCancelReply={handleReplyCancel}
             onSendMessage={handleSendMessage}
           />
         </footer>
