@@ -12,37 +12,15 @@ type RefreshAccessTokenParams = {
 };
 
 type RefreshResponsePayload = {
-  data?: {
-    accessToken?: string;
-    access_token?: string;
-    token?: string;
+  data: {
+    accessToken: string;
+    tokenType: string;
+    expiresIn: number;
   };
-  accessToken?: string;
-  access_token?: string;
-  token?: string;
   error?: unknown;
 };
 
-function getAccessTokenFromPayload(payload: RefreshResponsePayload) {
-  return (
-    payload.data?.accessToken ??
-    payload.data?.access_token ??
-    payload.data?.token ??
-    payload.accessToken ??
-    payload.access_token ??
-    payload.token ??
-    null
-  );
-}
-
 async function syncAccessToken(response: Response) {
-  const authorizationHeader = response.headers.get("Authorization") ?? response.headers.get("authorization");
-
-  if (authorizationHeader?.startsWith("Bearer ")) {
-    setAccessToken(authorizationHeader.slice("Bearer ".length));
-    return;
-  }
-
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
     return;
@@ -50,7 +28,7 @@ async function syncAccessToken(response: Response) {
 
   try {
     const payload = (await response.clone().json()) as RefreshResponsePayload;
-    setAccessToken(getAccessTokenFromPayload(payload));
+    setAccessToken(payload.data.accessToken);
   } catch {
     // Ignore malformed refresh payloads and keep the existing in-memory token.
   }
@@ -88,8 +66,11 @@ export async function refreshAccessToken({
       return response;
     }
 
-    if (mode === "auto" && (response.status === 401 || response.status === 403)) {
-      lastAutoRefreshFailureAt = Date.now();
+    if (response.status === 401 || response.status === 403) {
+      if (mode === "auto") {
+        lastAutoRefreshFailureAt = Date.now();
+      }
+
       clearAccessToken();
     }
 

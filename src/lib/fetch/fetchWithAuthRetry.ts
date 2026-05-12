@@ -1,4 +1,4 @@
-import { clearAccessToken, getAccessToken } from "@/lib/auth/accessToken";
+import { getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type FetchWithAuthRetryParams = {
@@ -40,10 +40,6 @@ export async function fetchWithAuthRetry({
   });
 
   if (!refreshResponse.ok) {
-    if (refreshResponse.status === 401 || refreshResponse.status === 403) {
-      clearAccessToken();
-    }
-
     return firstResponse;
   }
 
