@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/common/Footer";
@@ -9,34 +10,11 @@ import PatternCard from "@/components/patterns/PatternCard";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
-import { buildApiUrl } from "@/lib/api/client";
-
-type PatternItem = {
-  id: number;
-  title: string;
-  author: string;
-  image: string;
-  isScrapped: boolean;
-};
-
-type PatternApiItem = {
-  id: number;
-  title: string;
-  thumbnailUrl: string | null;
-  author: string;
-  my?: {
-    scrapped?: boolean;
-  };
-};
-
-type PatternsApiResponse = {
-  data?: {
-    items?: PatternApiItem[];
-    totalPages?: number;
-  };
-  error?: unknown;
-};
+import {
+  patternCategoryApiMap,
+  patternSubCategoryApiMap,
+} from "@/features/patterns/lib/patternCategories";
+import { patternCatalogQueryOptions } from "@/features/patterns/queries/patternCatalogQueries";
 
 const mainCategories = ["ALL", "의류", "가방/파우치", "목도리/장갑/모자", "기타"] as const;
 const clothingSubCategories = [
@@ -47,22 +25,6 @@ const clothingSubCategories = [
   "기타",
 ] as const;
 const sortOptions = ["최신순", "인기순", "찜 순"] as const;
-
-const categoryApiMap: Record<string, string> = {
-  ALL: "all",
-  "의류": "apparel",
-  "가방/파우치": "bags",
-  "목도리/장갑/모자": "accessories",
-  "기타": "others",
-};
-
-const subCategoryApiMap: Record<string, string> = {
-  "가디건/자켓/볼레로": "outer",
-  "스웨터": "sweater",
-  "조끼/민소매/뷔스티에": "vest",
-  "원피스": "dress",
-  "기타": "others",
-};
 
 const sortApiMap: Record<string, string> = {
   "최신순": "news",
@@ -83,15 +45,28 @@ export default function PatternCatalogScreen() {
     useState<(typeof sortOptions)[number]>("인기순");
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const [patternItems, setPatternItems] = useState<PatternItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
 
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
+  const selectedCategory = patternCategoryApiMap[selectedMainCategory] ?? "all";
+  const selectedSortValue = sortApiMap[selectedSort] ?? "views";
+  const selectedSubCategory =
+    selectedMainCategory === "의류" && selectedClothingSubCategory
+      ? patternSubCategoryApiMap[selectedClothingSubCategory] ?? "others"
+      : undefined;
+  const patternCatalogQuery = useQuery(
+    patternCatalogQueryOptions({
+      category: selectedCategory,
+      sort: selectedSortValue,
+      page: currentPage,
+      subCategory: selectedSubCategory,
+    }),
+  );
+  const patternItems = patternCatalogQuery.data?.items ?? [];
+  const nextPage = patternCatalogQuery.data?.nextPage ?? 0;
+
   const handleSearchSubmit = () => {
     const keyword = query.trim();
 
@@ -135,70 +110,6 @@ export default function PatternCatalogScreen() {
     window.addEventListener("mousedown", handleOutsideClick);
     return () => window.removeEventListener("mousedown", handleOutsideClick);
   }, [isSortOpen]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
-    setIsLoading(true);
-
-    const fetchPatterns = async () => {
-      try {
-        const params = new URLSearchParams({
-          category: categoryApiMap[selectedMainCategory] ?? "all",
-          sort: sortApiMap[selectedSort] ?? "views",
-          page: String(currentPage),
-        });
-
-        if (selectedMainCategory === "의류" && selectedClothingSubCategory) {
-          params.set(
-            "subCategory",
-            subCategoryApiMap[selectedClothingSubCategory] ?? "others",
-          );
-        }
-
-        const response = await fetchWithAuthRetry({
-          input: buildApiUrl(`/v1/patterns?${params.toString()}`),
-          init: {
-            method: "GET",
-            signal: controller.signal,
-          },
-        });
-
-        if (!response.ok || !isMounted) return;
-
-        const payload = (await response.json()) as PatternsApiResponse;
-        if (payload.error || !payload.data || !isMounted) return;
-
-        const items = (payload.data.items ?? [])
-          .filter(
-            (item): item is PatternApiItem =>
-              typeof item.id === "number" &&
-              typeof item.title === "string" &&
-              typeof item.author === "string",
-          )
-          .map((item) => ({
-            id: item.id,
-            title: item.title,
-            author: item.author,
-            image: item.thumbnailUrl ?? "/image/UFO.svg",
-            isScrapped: item.my?.scrapped === true,
-          }));
-
-        setPatternItems(items);
-        setTotalPages(payload.data.totalPages ?? 1);
-      } catch {
-        // ignore abort / network errors
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    void fetchPatterns();
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [selectedMainCategory, selectedClothingSubCategory, selectedSort, currentPage]);
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -303,9 +214,13 @@ export default function PatternCatalogScreen() {
 
         <section className="px-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-            {isLoading ? (
+            {patternCatalogQuery.isPending ? (
               <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
                 불러오는 중...
+              </p>
+            ) : patternCatalogQuery.isError ? (
+              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
+                도안을 불러오지 못했습니다.
               </p>
             ) : patternItems.length === 0 ? (
               <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
@@ -331,7 +246,7 @@ export default function PatternCatalogScreen() {
 
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          nextPage={nextPage}
           onPageChange={setCurrentPage}
         />
         <Footer />

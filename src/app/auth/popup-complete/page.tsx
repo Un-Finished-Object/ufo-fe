@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type PopupMessageType = "oauth-success" | "oauth-failed";
 
@@ -16,27 +15,17 @@ export default function AuthPopupCompletePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const finalizePopupLogin = async () => {
-      try {
-        const refreshResponse = await refreshAccessToken();
-
-        if (!refreshResponse.ok) {
-          notifyOpener("oauth-failed");
-          window.close();
-          router.replace("/login?error=oauth_failed");
-          return;
-        }
-
+    const finalizePopupLogin = () => {
+      if (window.opener && !window.opener.closed) {
         notifyOpener("oauth-success");
         window.close();
-      } catch {
-        notifyOpener("oauth-failed");
-        window.close();
-        router.replace("/login?error=oauth_failed");
+        return;
       }
+
+      router.replace("/auth/complete");
     };
 
-    void finalizePopupLogin();
+    finalizePopupLogin();
   }, [router]);
 
   return (

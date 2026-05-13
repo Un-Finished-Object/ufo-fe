@@ -11,7 +11,12 @@ import TopBar from "@/components/navigation/TopBar";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
-import { myChatRoomsQueryKey } from "@/features/chat/hooks/useMyChatRoomsQuery";
+import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
+import {
+  patternAlternativesQueryKey,
+  patternAlternativesQueryOptions,
+  type PatternAlternativeItem,
+} from "@/features/patterns/queries/patternAlternativeQueries";
 import {
   patternPurchaseQueryKey,
   patternPurchaseStatusQueryOptions,
@@ -19,33 +24,16 @@ import {
   type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
+import {
+  PatternDetailQueryError,
+  patternDetailQueryKey,
+  patternDetailQueryOptions,
+  type PatternDetailData,
+} from "@/features/patterns/queries/patternDetailQueries";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 
-export type PatternDetailData = {
-  id: number;
-  title: string;
-  author: string;
-  credits: number;
-  image: string;
-  isScrapped: boolean;
-  stats: {
-    views: number;
-    scraps: number;
-  };
-  details: {
-    category: string;
-    size: string;
-    measurement: string;
-    needle: string;
-    yarn: string;
-    amount: string;
-    gauge: string;
-  };
-};
-
 type PatternDetailScreenProps = {
-  pattern: PatternDetailData | null;
-  errorMessage?: string | null;
+  patternId: number;
 };
 
 const detailRows = [
@@ -67,6 +55,8 @@ const detailTabOptions = [
 ] as const;
 
 const alternativePreviewCards = [0, 1, 2] as const;
+
+const currencyFormatter = new Intl.NumberFormat("ko-KR");
 
 type DetailTabSwitchProps = {
   value: DetailTabValue;
@@ -215,26 +205,82 @@ function AlternativePurchaseGate({
   );
 }
 
+function formatAlternativeNumber(value: number | null, unit: string) {
+  if (value === null) {
+    return "-";
+  }
+
+  return `${currencyFormatter.format(value)}${unit}`;
+}
+
+function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
+  return (
+    <article className="rounded-[18px] border border-ufo-text-muted/35 bg-ufo-brand-pale px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-black tracking-tight text-ufo-text">{item.yarnName}</p>
+          <p className="mt-2 text-sm font-medium text-ufo-text-secondary">{item.subComponent}</p>
+        </div>
+        <div className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-ufo-text-secondary">
+          {formatAlternativeNumber(item.cost, "원")}
+        </div>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+        <div className="rounded-xl bg-white/85 px-3 py-3">
+          <dt className="text-xs font-semibold text-ufo-text-muted">무게</dt>
+          <dd className="mt-1 font-bold text-ufo-text">
+            {formatAlternativeNumber(item.weight, "g")}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-white/85 px-3 py-3">
+          <dt className="text-xs font-semibold text-ufo-text-muted">길이</dt>
+          <dd className="mt-1 font-bold text-ufo-text">
+            {formatAlternativeNumber(item.length, "m")}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-white/85 px-3 py-3">
+          <dt className="text-xs font-semibold text-ufo-text-muted">구매처</dt>
+          <dd className="mt-1 font-bold text-ufo-text">{item.store}</dd>
+        </div>
+        <div className="rounded-xl bg-white/85 px-3 py-3">
+          <dt className="text-xs font-semibold text-ufo-text-muted">작성자</dt>
+          <dd className="mt-1 font-bold text-ufo-text">{item.username}</dd>
+        </div>
+      </dl>
+    </article>
+  );
+}
+
 export default function PatternDetailScreen({
-  pattern,
-  errorMessage = null,
+  patternId,
 }: PatternDetailScreenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const patternDetailQuery = useQuery(patternDetailQueryOptions(patternId));
+  const pattern = patternDetailQuery.data ?? null;
   const { authStatus, isAuthenticated } = useAuthState();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
   const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
   const [purchaseErrorMessage, setPurchaseErrorMessage] = useState<string | null>(null);
-  const [isScrapped, setIsScrapped] = useState(pattern?.isScrapped ?? false);
-  const [scrapCount, setScrapCount] = useState(pattern?.stats.scraps ?? 0);
   const profileHref = isAuthenticated ? "/my" : "/login";
+  const isScrapped = pattern?.isScrapped ?? false;
+  const scrapCount = pattern?.stats.scraps ?? 0;
   const purchaseStatusQuery = useQuery({
     ...patternPurchaseStatusQueryOptions(pattern?.id ?? 0),
     enabled: authStatus !== "loading" && isAuthenticated && pattern !== null,
   });
   const hasChatPurchase = purchaseStatusQuery.data?.chat === true;
   const hasAlternativePurchase = purchaseStatusQuery.data?.alternative === true;
+  const patternAlternativesQuery = useQuery({
+    ...patternAlternativesQueryOptions(pattern?.id ?? 0),
+    enabled:
+      authStatus !== "loading" &&
+      isAuthenticated &&
+      pattern !== null &&
+      hasAlternativePurchase,
+  });
   const isResolvingChatPurchase =
     pattern === null ||
     authStatus === "loading" ||
@@ -257,6 +303,7 @@ export default function PatternDetailScreen({
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
       : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
+
   const toggleScrapMutation = useMutation<
     Awaited<ReturnType<typeof updatePatternScrap>>,
     Error,
@@ -268,8 +315,20 @@ export default function PatternDetailScreen({
         shouldScrap: nextIsScrapped,
       }),
     onSuccess: (result) => {
-      setIsScrapped(result.scrapped);
-      setScrapCount(result.scrapCount);
+      queryClient.setQueryData<PatternDetailData | undefined>(
+        patternDetailQueryKey(patternId),
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+                isScrapped: result.scrapped,
+                stats: {
+                  ...previous.stats,
+                  scraps: result.scrapCount,
+                },
+              }
+            : previous,
+      );
     },
     onError: (error) => {
       if (error.message === "Unauthorized") {
@@ -290,13 +349,18 @@ export default function PatternDetailScreen({
         patternPurchaseQueryKey(pattern.id),
         (previous) => ({
           userId: data.userId ?? previous?.userId ?? null,
-          chat: data.type === 1 ? true : previous?.chat ?? false,
-          alternative: data.type === 2 ? true : previous?.alternative ?? false,
+          chat: data.type === "chat" ? true : previous?.chat ?? false,
+          alternative: data.type === "yarn" ? true : previous?.alternative ?? false,
         }),
       );
       void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
-      if (data.type === 1) {
+      if (data.type === "chat") {
         void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
+      }
+      if (data.type === "yarn") {
+        void queryClient.invalidateQueries({
+          queryKey: patternAlternativesQueryKey(pattern.id),
+        });
       }
       setPurchaseErrorMessage(null);
       setPurchaseDialogType(null);
@@ -366,7 +430,37 @@ export default function PatternDetailScreen({
     toggleScrapMutation.mutate(!isScrapped);
   };
 
+  if (patternDetailQuery.isPending) {
+    return (
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
+          <TopBar
+            left="back"
+            onLeftClick={() => router.back()}
+            showBottomBorder
+            right={[
+              { type: "chat", href: "/chats", ariaLabel: "채팅" },
+              { type: "profile", href: profileHref, ariaLabel: "프로필" },
+            ]}
+          />
+
+          <section className="px-4 py-16">
+            <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
+              <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오고 있어요.</p>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   if (!pattern) {
+    const errorMessage =
+      patternDetailQuery.error instanceof PatternDetailQueryError &&
+      patternDetailQuery.error.status === 404
+        ? "요청하신 도안을 찾을 수 없어요."
+        : "잠시 후 다시 시도해주세요.";
+
     return (
       <div className="min-h-screen bg-ufo-bg">
         <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
@@ -383,9 +477,7 @@ export default function PatternDetailScreen({
           <section className="px-4 py-16">
             <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
               <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오지 못했어요.</p>
-              <p className="mt-2 text-sm text-ufo-text-secondary">
-                {errorMessage ?? "잠시 후 다시 시도해주세요."}
-              </p>
+              <p className="mt-2 text-sm text-ufo-text-secondary">{errorMessage}</p>
             </div>
           </section>
         </main>
@@ -529,9 +621,25 @@ export default function PatternDetailScreen({
                 구매 정보를 확인하고 있어요.
               </div>
             ) : hasAlternativePurchase ? (
-              <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
-                대체실정보는 추후 API 연동 후 제공될 예정입니다.
-              </div>
+              patternAlternativesQuery.isPending ? (
+                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
+                  대체실 정보를 불러오고 있어요.
+                </div>
+              ) : patternAlternativesQuery.isError ? (
+                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
+                  대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+                </div>
+              ) : patternAlternativesQuery.data.length > 0 ? (
+                <div className="space-y-4">
+                  {patternAlternativesQuery.data.map((item) => (
+                    <AlternativeInfoCard key={item.altId} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
+                  등록된 대체실 정보가 아직 없어요.
+                </div>
+              )
             ) : (
               <AlternativePurchaseGate
                 credits={pattern.credits}
@@ -569,7 +677,7 @@ export default function PatternDetailScreen({
           onYes={() => {
             setPurchaseErrorMessage(null);
             purchaseAccessMutation.mutate({
-              type: purchaseDialogType === "alternative" ? 2 : 1,
+              type: purchaseDialogType === "alternative" ? "yarn" : "chat",
             });
           }}
         />

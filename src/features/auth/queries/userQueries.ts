@@ -1,6 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
+import { getAccessToken } from "@/lib/auth/accessToken";
+import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export type UserProfile = {
@@ -8,6 +10,7 @@ export type UserProfile = {
   email: string;
   nickname: string;
   profileImage: string;
+  joinDate: number | null;
 };
 
 type MeResponse = {
@@ -19,6 +22,7 @@ type MeResponse = {
     nickname?: string;
     profileImage?: string;
     profileImageUrl?: string;
+    joinDate?: number | string;
   };
   error?: unknown;
 };
@@ -36,6 +40,17 @@ export const userQueryKeys = {
 };
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
+  if (!getAccessToken()) {
+    const refreshResponse = await refreshAccessToken({
+      signal,
+      mode: "auto",
+    });
+
+    if (!refreshResponse.ok) {
+      return null;
+    }
+  }
+
   const response = await fetchWithAuthRetry({
     input: buildApiUrl("/v1/users/me"),
     init: {
@@ -43,6 +58,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
       credentials: "include",
       signal,
     },
+    skipRefresh: true,
   });
 
   if (response.status === 401) {
@@ -59,6 +75,13 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     throw new Error("Failed to load user information.");
   }
 
+  const joinDate =
+    typeof payload.data.joinDate === "number"
+      ? payload.data.joinDate
+      : typeof payload.data.joinDate === "string"
+        ? Number(payload.data.joinDate)
+        : null;
+
   return {
     userId:
       typeof payload.data.userId === "number"
@@ -71,6 +94,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     email: payload.data.email ?? "",
     nickname: payload.data.nickname ?? "",
     profileImage: payload.data.profileImage ?? payload.data.profileImageUrl ?? "",
+    joinDate: Number.isFinite(joinDate) ? joinDate : null,
   } satisfies UserProfile;
 }
 

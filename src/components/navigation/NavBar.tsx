@@ -8,7 +8,6 @@ const tabs = [
   { label: "도안", href: "/patterns" },
   { label: "스타일", href: "/styles" },
   { label: "찜", href: "/scraps" },
-  { label: "커뮤니티", href: "/community" },
 ];
 
 export default function NavBar() {

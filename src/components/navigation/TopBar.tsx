@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type TopBarLeftType = "logo" | "back";
 type TopBarRightType = "home" | "chat" | "profile";
@@ -120,10 +121,11 @@ export default function TopBar({
   sticky = true,
   showBottomBorder = false,
 }: TopBarProps) {
+  const router = useRouter();
   const rightActions = right.slice(0, 2);
-
   const leftAriaLabel = left === "logo" ? "홈" : "뒤로가기";
   const leftElement = renderLeftIcon(left);
+  const handleBackClick = onLeftClick ?? (() => router.back());
 
   return (
     <header className={`${sticky ? "sticky top-0" : ""} z-50 w-full`}>
@@ -134,14 +136,14 @@ export default function TopBar({
       >
         <div className="grid h-14 grid-cols-[96px_1fr_96px] items-center px-4">
           <div className="flex items-center">
-            {leftHref ? (
+            {left === "logo" && leftHref ? (
               <Link href={leftHref} className="rounded-full p-1" aria-label={leftAriaLabel}>
                 {leftElement}
               </Link>
             ) : (
               <button
                 type="button"
-                onClick={onLeftClick}
+                onClick={left === "back" ? handleBackClick : onLeftClick}
                 className="rounded-full p-1 text-[ffaba6]"
                 aria-label={leftAriaLabel}
               >

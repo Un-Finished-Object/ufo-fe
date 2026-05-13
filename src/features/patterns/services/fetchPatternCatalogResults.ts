@@ -1,7 +1,7 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchPublic } from "@/lib/fetch/fetchPublic";
 import { buildApiUrl } from "@/lib/api/client";
 
-type PatternSearchApiItem = {
+type PatternCatalogApiItem = {
   id: number;
   title: string;
   thumbnailUrl: string | null;
@@ -11,9 +11,9 @@ type PatternSearchApiItem = {
   };
 };
 
-type PatternSearchResponse = {
+type PatternCatalogResponse = {
   data?: {
-    items?: PatternSearchApiItem[];
+    items?: PatternCatalogApiItem[];
     nextPage?: number;
     totalPages?: number;
     page?: number;
@@ -21,7 +21,7 @@ type PatternSearchResponse = {
   error?: unknown;
 };
 
-export type PatternSearchItem = {
+export type PatternCatalogItem = {
   id: number;
   title: string;
   author: string;
@@ -29,39 +29,39 @@ export type PatternSearchItem = {
   isScrapped: boolean;
 };
 
-export type PatternSearchResult = {
-  items: PatternSearchItem[];
+export type PatternCatalogResult = {
+  items: PatternCatalogItem[];
   page: number;
   nextPage: number;
 };
 
 const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
 
-export async function fetchPatternSearchResults({
-  keyword,
+export async function fetchPatternCatalogResults({
+  category,
+  sort,
   page,
+  subCategory,
   signal,
 }: {
-  keyword: string;
+  category: string;
+  sort: string;
   page: number;
+  subCategory?: string;
   signal?: AbortSignal;
-}): Promise<PatternSearchResult> {
-  const trimmedKeyword = keyword.trim();
-
-  if (!trimmedKeyword) {
-    return {
-      items: [],
-      page: 1,
-      nextPage: 0,
-    };
-  }
-
+}): Promise<PatternCatalogResult> {
   const params = new URLSearchParams({
-    keyword: trimmedKeyword,
+    category,
+    sort,
     page: String(page),
   });
-  const response = await fetchWithAuthRetry({
-    input: buildApiUrl(`/v1/patterns/search?${params.toString()}`),
+
+  if (subCategory) {
+    params.set("subCategory", subCategory);
+  }
+
+  const response = await fetchPublic({
+    input: buildApiUrl(`/v1/patterns?${params.toString()}`),
     init: {
       method: "GET",
       signal,
@@ -69,13 +69,13 @@ export async function fetchPatternSearchResults({
   });
 
   if (!response.ok) {
-    throw new Error("Failed to load search results.");
+    throw new Error("Failed to load pattern catalog.");
   }
 
-  const payload = (await response.json()) as PatternSearchResponse;
+  const payload = (await response.json()) as PatternCatalogResponse;
 
   if (payload.error || !payload.data) {
-    throw new Error("Failed to load search results.");
+    throw new Error("Failed to load pattern catalog.");
   }
 
   const resolvedPage = typeof payload.data.page === "number" ? payload.data.page : page;
@@ -83,7 +83,7 @@ export async function fetchPatternSearchResults({
   return {
     items: (payload.data.items ?? [])
       .filter(
-        (item): item is PatternSearchApiItem =>
+        (item): item is PatternCatalogApiItem =>
           typeof item.id === "number" &&
           typeof item.title === "string" &&
           typeof item.author === "string",
@@ -92,7 +92,7 @@ export async function fetchPatternSearchResults({
         id: item.id,
         title: item.title,
         author: item.author,
-        image: item.thumbnailUrl || PATTERN_FALLBACK_IMAGE,
+        image: item.thumbnailUrl ?? PATTERN_FALLBACK_IMAGE,
         isScrapped: item.my?.scrapped === true,
       })),
     page: resolvedPage,

@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchPublic } from "@/lib/fetch/fetchPublic";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
@@ -94,7 +95,7 @@ export async function fetchHomePatterns(
       page: "1",
     });
 
-    const response = await fetchWithAuthRetry({
+    const response = await fetchPublic({
       input: buildApiUrl(`/v1/patterns?${params.toString()}`),
       init: {
         method: "GET",

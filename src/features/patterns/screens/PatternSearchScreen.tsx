@@ -29,7 +29,7 @@ export default function PatternSearchScreen({
   const searchResultsQuery = useQuery(patternSearchQueryOptions(trimmedKeyword, initialPage));
   const patternItems = searchResultsQuery.data?.items ?? [];
   const currentPage = searchResultsQuery.data?.page ?? initialPage;
-  const totalPages = searchResultsQuery.data?.totalPages ?? 1;
+  const nextPage = searchResultsQuery.data?.nextPage ?? 0;
 
   const handleSearchSubmit = () => {
     const nextKeyword = query.trim();
@@ -103,7 +103,7 @@ export default function PatternSearchScreen({
 
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          nextPage={nextPage}
           onPageChange={handlePageChange}
         />
         <Footer />

@@ -21,6 +21,42 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "k.kakaocdn.net",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.doanity.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.imweb.me",
+      },
+      {
+        protocol: "https",
+        hostname: "d2gfz7wkiigkmv.cloudfront.net",
+      },
+      {
+        protocol: "https",
+        hostname: "knitspourmoi.fr",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn-optimized.imweb.me",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.example.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.petiteknit.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn3-aka.makeshop.co.kr",
+      },
+      {
+        protocol: "https",
+        hostname: "images4-g.ravelrycache.com",
+      },
     ],
   },
   async rewrites() {
@@ -30,16 +66,8 @@ const nextConfig: NextConfig = {
         destination: `${apiProxyTarget}/v1/:path*`,
       },
       {
-        source: "/api/:path*",
-        destination: `${apiProxyTarget}/:path*`,
-      },
-      {
         source: "/oauth2/:path*",
         destination: `${apiProxyTarget}/oauth2/:path*`,
-      },
-      {
-        source: "/login/oauth2/:path*",
-        destination: `${apiProxyTarget}/login/oauth2/:path*`,
       },
     ];
   },

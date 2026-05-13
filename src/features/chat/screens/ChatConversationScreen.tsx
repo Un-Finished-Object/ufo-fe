@@ -1,15 +1,15 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import YesOrNo from "@/components/dialogs/YesOrNo";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
 import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useChatReadReceipt } from "@/features/chat/hooks/useChatReadReceipt";
 import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
-import type { ChatRoom } from "@/features/chat/types";
-import { useChatRoomSubscription } from "@/features/chat/hooks/useChatRoomSubscription";
+import type { ChatMessage, ChatRoom } from "@/features/chat/types";
 import { useChatMessagesQuery } from "@/features/chat/hooks/useChatMessagesQuery";
 import {
   chatStatusQueryKey,
@@ -17,17 +17,24 @@ import {
   type ChatStatus,
   useChatStatusQuery,
 } from "@/features/chat/hooks/useChatStatusQuery";
-import { myChatRoomsQueryKey, useMyChatRoomsQuery } from "@/features/chat/hooks/useMyChatRoomsQuery";
+import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
+import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
 type ChatConversationScreenProps = {
   patternId: string;
 };
 
+type ReplyTarget = {
+  messageId: string;
+  senderName: string;
+  text: string;
+};
+
 export default function ChatConversationScreen({ patternId }: ChatConversationScreenProps) {
   const roomId = patternId;
   const meQuery = useMeQuery();
-  const myChatRoomsQuery = useMyChatRoomsQuery();
+  const myChatRoomsQuery = useQuery(myChatRoomsQueryOptions());
   const chatRoom = myChatRoomsQuery.data?.find((room) => room.patternId === roomId);
   const roomMeta = chatRoom
     ? {
@@ -38,17 +45,27 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const queryClient = useQueryClient();
   const chatStatusQuery = useChatStatusQuery(roomId);
   const [messageText, setMessageText] = useState("");
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [isFoConfirmOpen, setIsFoConfirmOpen] = useState(false);
   const messagesQuery = useChatMessagesQuery(roomId);
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
   const [messageListElement, setMessageListElement] = useState<HTMLElement | null>(null);
   const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
+  const setCurrentRoomId = useChatRealtimeStore((state) => state.setCurrentRoomId);
+  const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
   const sendChatMessage = useSendChatMessage({
     roomId,
     senderId: currentUserId,
     senderName: meQuery.data?.nickname,
   });
 
-  useChatRoomSubscription(roomId);
+  useEffect(() => {
+    setCurrentRoomId(roomId);
+
+    return () => {
+      clearCurrentRoomId(roomId);
+    };
+  }, [clearCurrentRoomId, roomId, setCurrentRoomId]);
 
   useEffect(() => {
     const nextChatStatus = mapChatRoomToStatus(roomId, chatRoom);
@@ -96,8 +113,17 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   };
 
   const handleFoClick = () => {
+    setIsFoConfirmOpen(true);
+  };
+
+  const handleConfirmFoChange = () => {
     const nextHidden = !(chatStatus?.isHidden ?? false);
     updateChatStatusMutation.mutate({ hidden: nextHidden });
+    setIsFoConfirmOpen(false);
+  };
+
+  const handleCloseFoConfirm = () => {
+    setIsFoConfirmOpen(false);
   };
 
   const handleSendMessage = () => {
@@ -107,8 +133,33 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
       return;
     }
 
-    sendChatMessage.sendMessage(nextMessageText);
+    sendChatMessage.sendMessage(
+      nextMessageText,
+      replyTarget
+        ? {
+            replyMessageId: replyTarget.messageId,
+            replySenderName: replyTarget.senderName,
+          }
+        : undefined,
+    );
     setMessageText("");
+    setReplyTarget(null);
+  };
+
+  const handleReplyMessageSelect = (message: ChatMessage) => {
+    if (message.messageId === null) {
+      return;
+    }
+
+    setReplyTarget({
+      messageId: message.messageId,
+      senderName: message.senderName?.trim() || "뜨친",
+      text: message.text,
+    });
+  };
+
+  const handleReplyCancel = () => {
+    setReplyTarget(null);
   };
 
   const errorMessage = messagesQuery.isError ? "메시지를 불러오지 못했습니다." : null;
@@ -126,6 +177,19 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
     targetElement: messageListElement,
     scrollContainer: scrollContainerElement,
   });
+
+  const isFoActive = chatStatus?.isHidden ?? false;
+  const foConfirmMainText = isFoActive
+    ? "이 채팅방의 매듭을 푸시겠습니까?"
+    : "이 채팅방을 매듭짓겠습니까?";
+  const foConfirmSubText = isFoActive ? (
+    <>{"'나의 채팅방'에서 채팅방을 확인할 수 있습니다."}</>
+  ) : (
+    <>
+      <p>{"'나의 채팅방 > FO'에서 채팅방을 확인할 수 있습니다."}</p>
+      <p className="mt-1">{"*FO 버튼을 한 번 더 누르면 다시 불러올 수 있습니다."}</p>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -166,20 +230,34 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
             lastConfirmedMessageId={lastConfirmedMessageId}
             onLastConfirmedMessageRefChange={setMessageListElement}
             onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
+            onReplyMessageSelect={handleReplyMessageSelect}
             onResendFailedMessage={sendChatMessage.resendFailedMessage}
           />
         </section>
 
-        <footer className="sticky bottom-0 border-t border-[#f0b2b2] bg-white p-4">
+        <footer className="sticky bottom-0 border-t border-ufo-border-light bg-white p-4">
           <ChatInput
             value={messageText}
             isSending={false}
             isSubmitDisabled={false}
+            replyPreview={replyTarget ? { senderName: replyTarget.senderName, text: replyTarget.text } : null}
             onChange={setMessageText}
+            onCancelReply={handleReplyCancel}
             onSendMessage={handleSendMessage}
           />
         </footer>
       </main>
+
+      {isFoConfirmOpen ? (
+        <YesOrNo
+          mainText={foConfirmMainText}
+          subText={foConfirmSubText}
+          yesDisabled={updateChatStatusMutation.isPending}
+          noDisabled={updateChatStatusMutation.isPending}
+          onYes={handleConfirmFoChange}
+          onNo={handleCloseFoConfirm}
+        />
+      ) : null}
     </div>
   );
 }
