@@ -1,4 +1,4 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchPublic } from "@/lib/fetch/fetchPublic";
 import { buildApiUrl } from "@/lib/api/client";
 
 type PatternCatalogApiItem = {
@@ -60,7 +60,7 @@ export async function fetchPatternCatalogResults({
     params.set("subCategory", subCategory);
   }
 
-  const response = await fetchWithAuthRetry({
+  const response = await fetchPublic({
     input: buildApiUrl(`/v1/patterns?${params.toString()}`),
     init: {
       method: "GET",
