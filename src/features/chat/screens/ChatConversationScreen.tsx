@@ -18,6 +18,7 @@ import {
   useChatStatusQuery,
 } from "@/features/chat/hooks/useChatStatusQuery";
 import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import { CHAT_MESSAGES_FORBIDDEN_MESSAGE } from "@/features/chat/services/fetchChatMessages";
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
@@ -162,7 +163,12 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
     setReplyTarget(null);
   };
 
-  const errorMessage = messagesQuery.isError ? "메시지를 불러오지 못했습니다." : null;
+  const errorMessage =
+    messagesQuery.isError && messagesQuery.error.message === CHAT_MESSAGES_FORBIDDEN_MESSAGE
+      ? CHAT_MESSAGES_FORBIDDEN_MESSAGE
+      : messagesQuery.isError
+        ? "메시지를 불러오지 못했습니다."
+        : null;
   const lastConfirmedMessageId = useMemo(() => {
     const confirmedMessages = (messagesQuery.data ?? []).filter(
       (message) => message.status === "confirmed" && message.messageId !== null,

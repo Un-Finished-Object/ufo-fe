@@ -2,6 +2,8 @@ import type { ChatMessage } from "@/features/chat/types";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
 
+export const CHAT_MESSAGES_FORBIDDEN_MESSAGE = "구매하지 않은 채팅방입니다.";
+
 type ChatMessageItem = {
   messageId?: number;
   clientMessageId?: string;
@@ -61,6 +63,10 @@ export async function fetchChatMessages(
 
   if (response.status === 401) {
     return [] satisfies ChatMessage[];
+  }
+
+  if (response.status === 403) {
+    throw new Error(CHAT_MESSAGES_FORBIDDEN_MESSAGE);
   }
 
   if (!response.ok) {
