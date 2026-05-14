@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
@@ -49,9 +49,22 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [isFoConfirmOpen, setIsFoConfirmOpen] = useState(false);
   const messagesQuery = useChatMessagesQuery(roomId);
+  const messages = messagesQuery.data;
+  const {
+    error: messagesError,
+    fetchNextPage,
+    hasNextPage,
+    isError: isMessagesError,
+    isFetchingNextPage,
+    isPending: isMessagesPending,
+  } = messagesQuery;
   const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
+  const [topSentinelElement, setTopSentinelElement] = useState<HTMLDivElement | null>(null);
   const [messageListElement, setMessageListElement] = useState<HTMLElement | null>(null);
   const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
+  const scrollContainerElementRef = useRef<HTMLElement | null>(null);
+  const didScrollToInitialBottomRef = useRef(false);
+  const previousScrollHeightRef = useRef<number | null>(null);
   const setCurrentRoomId = useChatRealtimeStore((state) => state.setCurrentRoomId);
   const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
   const sendChatMessage = useSendChatMessage({
@@ -163,19 +176,112 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
     setReplyTarget(null);
   };
 
+  const handleScrollContainerRefChange = useCallback((element: HTMLElement | null) => {
+    scrollContainerElementRef.current = element;
+    setScrollContainerElement(element);
+  }, []);
+
+  const loadOlderMessages = useCallback(() => {
+    const scrollContainer = scrollContainerElementRef.current;
+
+    if (!scrollContainer || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    previousScrollHeightRef.current = scrollContainer.scrollHeight;
+    void fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerElementRef.current;
+
+    if (
+      !scrollContainer ||
+      didScrollToInitialBottomRef.current ||
+      isMessagesPending ||
+      messages.length === 0
+    ) {
+      return;
+    }
+
+    let secondAnimationFrameId = 0;
+    const firstAnimationFrameId = window.requestAnimationFrame(() => {
+      secondAnimationFrameId = window.requestAnimationFrame(() => {
+        const currentScrollContainer = scrollContainerElementRef.current;
+
+        if (!currentScrollContainer) {
+          return;
+        }
+
+        currentScrollContainer.scrollTop = currentScrollContainer.scrollHeight;
+        didScrollToInitialBottomRef.current = true;
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstAnimationFrameId);
+
+      if (secondAnimationFrameId !== 0) {
+        window.cancelAnimationFrame(secondAnimationFrameId);
+      }
+    };
+  }, [isMessagesPending, messages.length, scrollContainerElement]);
+
+  useEffect(() => {
+    if (!topSentinelElement || !scrollContainerElement || !hasNextPage) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting || !didScrollToInitialBottomRef.current) {
+          return;
+        }
+
+        loadOlderMessages();
+      },
+      {
+        root: scrollContainerElement,
+        threshold: 1,
+      },
+    );
+
+    observer.observe(topSentinelElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasNextPage, loadOlderMessages, scrollContainerElement, topSentinelElement]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerElementRef.current;
+
+    if (
+      !scrollContainer ||
+      isFetchingNextPage ||
+      previousScrollHeightRef.current === null
+    ) {
+      return;
+    }
+
+    const previousScrollHeight = previousScrollHeightRef.current;
+    previousScrollHeightRef.current = null;
+    scrollContainer.scrollTop += scrollContainer.scrollHeight - previousScrollHeight;
+  }, [isFetchingNextPage, messages.length, scrollContainerElement]);
+
   const errorMessage =
-    messagesQuery.isError && messagesQuery.error.message === CHAT_MESSAGES_FORBIDDEN_MESSAGE
+    isMessagesError && messagesError.message === CHAT_MESSAGES_FORBIDDEN_MESSAGE
       ? CHAT_MESSAGES_FORBIDDEN_MESSAGE
-      : messagesQuery.isError
+      : isMessagesError
         ? "메시지를 불러오지 못했습니다."
         : null;
   const lastConfirmedMessageId = useMemo(() => {
-    const confirmedMessages = (messagesQuery.data ?? []).filter(
+    const confirmedMessages = messages.filter(
       (message) => message.status === "confirmed" && message.messageId !== null,
     );
 
     return confirmedMessages.at(-1)?.messageId ?? null;
-  }, [messagesQuery.data]);
+  }, [messages]);
 
   useChatReadReceipt({
     roomId,
@@ -224,21 +330,24 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
         />
 
         <section
-          ref={setScrollContainerElement}
-          className="flex-1 space-y-5 overflow-y-auto px-4 py-6"
+          ref={handleScrollContainerRefChange}
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-6"
           aria-label="채팅 메시지 목록"
         >
-          <ChatMessageList
-            messages={messagesQuery.data ?? []}
-            currentUserId={currentUserId}
-            isLoading={messagesQuery.isPending}
-            errorMessage={errorMessage}
-            lastConfirmedMessageId={lastConfirmedMessageId}
-            onLastConfirmedMessageRefChange={setMessageListElement}
-            onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
-            onReplyMessageSelect={handleReplyMessageSelect}
-            onResendFailedMessage={sendChatMessage.resendFailedMessage}
-          />
+          <div ref={setTopSentinelElement} aria-hidden="true" className="h-px" />
+          <div className="space-y-5">
+            <ChatMessageList
+              messages={messages}
+              currentUserId={currentUserId}
+              isLoading={isMessagesPending}
+              errorMessage={errorMessage}
+              lastConfirmedMessageId={lastConfirmedMessageId}
+              onLastConfirmedMessageRefChange={setMessageListElement}
+              onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
+              onReplyMessageSelect={handleReplyMessageSelect}
+              onResendFailedMessage={sendChatMessage.resendFailedMessage}
+            />
+          </div>
         </section>
 
         <footer className="sticky bottom-0 border-t border-ufo-border-light bg-white p-4">

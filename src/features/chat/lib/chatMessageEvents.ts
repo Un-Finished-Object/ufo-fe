@@ -1,6 +1,10 @@
 import type { IMessage } from "@stomp/stompjs";
 import type { QueryClient } from "@tanstack/react-query";
-import { chatMessagesQueryKey } from "@/features/chat/hooks/useChatMessagesQuery";
+import {
+  chatMessagesQueryKey,
+  type ChatMessagesInfiniteData,
+  upsertIncomingChatMessageInData,
+} from "@/features/chat/hooks/useChatMessagesQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
 import type { ChatMessage, ChatRoom } from "@/features/chat/types";
 
@@ -79,41 +83,9 @@ export function applyIncomingChatMessage(
   roomId: string,
   nextMessage: ChatMessage,
 ) {
-  queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) => {
-    const matchedPendingMessage = previousMessages.find(
-      (messageItem) =>
-        messageItem.clientMessageId &&
-        messageItem.clientMessageId === nextMessage.clientMessageId,
-    );
-
-    if (matchedPendingMessage) {
-      return previousMessages.map((messageItem) =>
-        messageItem.clientMessageId === nextMessage.clientMessageId
-          ? {
-              ...messageItem,
-              messageId: nextMessage.messageId,
-              senderId: nextMessage.senderId,
-              senderName: nextMessage.senderName,
-              replySenderName: nextMessage.replySenderName ?? null,
-              replyMessageId: nextMessage.replyMessageId ?? null,
-              text: nextMessage.text,
-              createdAt: nextMessage.createdAt,
-              status: "confirmed",
-            }
-          : messageItem,
-      );
-    }
-
-    const alreadyExists = previousMessages.some(
-      (messageItem) => messageItem.messageId && messageItem.messageId === nextMessage.messageId,
-    );
-
-    if (alreadyExists) {
-      return previousMessages;
-    }
-
-    return [...previousMessages, nextMessage];
-  });
+  queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
+    upsertIncomingChatMessageInData(previousData, nextMessage),
+  );
 }
 
 export function incrementUnreadCount(queryClient: QueryClient, roomId: string) {
