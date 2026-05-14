@@ -74,6 +74,11 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   });
 
   useEffect(() => {
+    didScrollToInitialBottomRef.current = false;
+    previousScrollHeightRef.current = null;
+  }, [roomId]);
+
+  useEffect(() => {
     setCurrentRoomId(roomId);
 
     return () => {
@@ -305,7 +310,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
 
   return (
     <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-ufo-surface text-ufo-text">
+      <main className="mx-auto flex h-screen min-h-screen w-full max-w-[430px] flex-col bg-ufo-surface text-ufo-text">
         <ChatRoomTopBar
           leftHref="/chats"
           title={roomMeta?.title ?? "채팅방"}
