@@ -2,7 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { chatMessagesQueryKey } from "@/features/chat/hooks/useChatMessagesQuery";
+import {
+  appendChatMessageToData,
+  chatMessagesQueryKey,
+  markChatMessageFailedInData,
+  removeChatMessageFromData,
+  type ChatMessagesInfiniteData,
+} from "@/features/chat/hooks/useChatMessagesQuery";
 import { sendChatMessage } from "@/features/chat/services/sendChatMessage";
 import type { ChatMessage } from "@/features/chat/types";
 
@@ -82,8 +88,8 @@ export function useSendChatMessage({
   const queryClient = useQueryClient();
 
   const removeMessageByClientMessageId = useCallback((clientMessageId: string) => {
-    queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) =>
-      previousMessages.filter((message) => message.clientMessageId !== clientMessageId),
+    queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
+      removeChatMessageFromData(previousData, clientMessageId),
     );
   }, [queryClient, roomId]);
 
@@ -99,17 +105,19 @@ export function useSendChatMessage({
       );
     },
     onMutate: async ({ text, clientMessageId, replyMessageId, replySenderName }) => {
-      queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) => [
-        ...previousMessages,
-        buildPendingMessage({
-          clientMessageId,
-          senderId,
-          senderName,
-          replyMessageId,
-          replySenderName,
-          text,
-        }),
-      ]);
+      queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
+        appendChatMessageToData(
+          previousData,
+          buildPendingMessage({
+            clientMessageId,
+            senderId,
+            senderName,
+            replyMessageId,
+            replySenderName,
+            text,
+          }),
+        ),
+      );
 
       return { clientMessageId };
     },
@@ -118,15 +126,8 @@ export function useSendChatMessage({
         return;
       }
 
-      queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(roomId), (previousMessages = []) =>
-        previousMessages.map((message) =>
-          message.clientMessageId === context.clientMessageId
-            ? {
-                ...message,
-                status: "failed",
-              }
-            : message,
-        ),
+      queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
+        markChatMessageFailedInData(previousData, context.clientMessageId),
       );
     },
   });

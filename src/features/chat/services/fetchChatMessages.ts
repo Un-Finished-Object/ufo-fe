@@ -2,6 +2,9 @@ import type { ChatMessage } from "@/features/chat/types";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { buildApiUrl } from "@/lib/api/client";
 
+export const CHAT_MESSAGES_FORBIDDEN_MESSAGE = "구매하지 않은 채팅방입니다.";
+const CHAT_MESSAGES_CURSOR_PARAM = "messageId";
+
 type ChatMessageItem = {
   messageId?: number;
   clientMessageId?: string;
@@ -28,6 +31,12 @@ type ChatMessagesResponse = {
   error?: unknown;
 };
 
+export type ChatMessagesPage = {
+  messages: ChatMessage[];
+  hasNext: boolean;
+  nextCursor: string | null;
+};
+
 function getSenderName(message: ChatMessageItem) {
   return (
     message.senderName ??
@@ -48,10 +57,23 @@ function getReplyMessageId(message: ChatMessageItem) {
 
 export async function fetchChatMessages(
   roomId: string,
-  { signal }: { signal?: AbortSignal } = {},
+  {
+    cursorMessageId = null,
+    signal,
+  }: {
+    cursorMessageId?: string | null;
+    signal?: AbortSignal;
+  } = {},
 ) {
+  const searchParams = new URLSearchParams();
+
+  if (cursorMessageId) {
+    searchParams.set(CHAT_MESSAGES_CURSOR_PARAM, cursorMessageId);
+  }
+
+  const queryString = searchParams.toString();
   const response = await fetchWithAuthRetry({
-    input: buildApiUrl(`/v1/chat/${roomId}/messages`),
+    input: buildApiUrl(`/v1/chat/${roomId}/messages${queryString ? `?${queryString}` : ""}`),
     init: {
       method: "GET",
       credentials: "include",
@@ -60,7 +82,15 @@ export async function fetchChatMessages(
   });
 
   if (response.status === 401) {
-    return [] satisfies ChatMessage[];
+    return {
+      messages: [],
+      hasNext: false,
+      nextCursor: null,
+    } satisfies ChatMessagesPage;
+  }
+
+  if (response.status === 403) {
+    throw new Error(CHAT_MESSAGES_FORBIDDEN_MESSAGE);
   }
 
   if (!response.ok) {
@@ -73,7 +103,7 @@ export async function fetchChatMessages(
     throw new Error("Failed to load chat messages.");
   }
 
-  return payload.data.messages
+  const messages = payload.data.messages
     .filter(
       (message): message is ChatMessageItem & { messageId: number; text: string } =>
         typeof message.messageId === "number" &&
@@ -107,4 +137,14 @@ export async function fetchChatMessages(
       } satisfies ChatMessage;
     })
     .sort((left, right) => Number(left.messageId) - Number(right.messageId));
+
+  const oldestMessageId = messages[0]?.messageId ?? null;
+  const fallbackNextCursor =
+    typeof payload.data.nextMessageId === "number" ? String(payload.data.nextMessageId) : null;
+
+  return {
+    messages,
+    hasNext: payload.data.hasNext === true,
+    nextCursor: oldestMessageId ?? fallbackNextCursor,
+  } satisfies ChatMessagesPage;
 }
