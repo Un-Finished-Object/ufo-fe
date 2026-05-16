@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import EditIcon from "@/components/icons/EditIcon";
 import TopBar from "@/components/navigation/TopBar";
@@ -13,6 +14,7 @@ import { clearAccessToken } from "@/lib/auth/accessToken";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type MenuItem = {
   label: string;
@@ -79,14 +81,15 @@ export default function MyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const isLoggingOutRef = useRef(false);
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
   const walletQuery = useWalletQuery({ enabled: Boolean(meQuery.data) });
 
   useEffect(() => {
     if (!isLoggingOutRef.current && !meQuery.isPending && !meQuery.isError && !meQuery.data) {
-      router.replace("/login?error=unauthorized");
+      showAuthRequiredToast();
     }
-  }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   const nickname = meQuery.data?.nickname || "회원";
   const email = meQuery.data?.email || "";
@@ -148,58 +151,68 @@ export default function MyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
-          <TopBar
-            left="back"
-            leftHref="/"
-            title="마이페이지"
-            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
-            showBottomBorder
-          />
-          <LoadingState />
-        </main>
-      </div>
+      <>
+        <div className="min-h-screen bg-ufo-bg">
+          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+            <TopBar
+              left="back"
+              leftHref="/"
+              title="마이페이지"
+              right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+              showBottomBorder
+            />
+            <LoadingState />
+          </main>
+        </div>
+        <ToastMessage message={toastMessage} />
+      </>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
-          <TopBar
-            left="back"
-            leftHref="/"
-            title="마이페이지"
-            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
-            showBottomBorder
-          />
-          <ErrorState onRetry={handleRetry} />
-        </main>
-      </div>
+      <>
+        <div className="min-h-screen bg-ufo-bg">
+          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+            <TopBar
+              left="back"
+              leftHref="/"
+              title="마이페이지"
+              right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+              showBottomBorder
+            />
+            <ErrorState onRetry={handleRetry} />
+          </main>
+        </div>
+        <ToastMessage message={toastMessage} />
+      </>
     );
   }
 
   if (!meQuery.data) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
-          <TopBar
-            left="back"
-            leftHref="/"
-            title="마이페이지"
-            right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
-            showBottomBorder
-          />
-          <LoadingState />
-        </main>
-      </div>
+      <>
+        <div className="min-h-screen bg-ufo-bg">
+          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+            <TopBar
+              left="back"
+              leftHref="/"
+              title="마이페이지"
+              right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
+              showBottomBorder
+            />
+            <LoadingState />
+          </main>
+        </div>
+        <ToastMessage message={toastMessage} />
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+    <>
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
         <TopBar
           left="back"
           leftHref="/"
@@ -265,7 +278,9 @@ export default function MyPage() {
         </section>
 
         <MenuSection title="도움말" items={helpMenuItems} />
-      </main>
-    </div>
+        </main>
+      </div>
+      <ToastMessage message={toastMessage} />
+    </>
   );
 }

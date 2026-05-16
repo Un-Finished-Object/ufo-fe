@@ -1,13 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
 import { chatRoomFilters } from "@/features/chat/constants";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 function LoadingState() {
   return <p className="px-4 py-8 text-sm text-ufo-text-dim">채팅방 목록을 불러오는 중입니다.</p>;
@@ -33,8 +35,17 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 export default function ChatRoomDirectoryScreen() {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
-  const myChatRoomsQuery = useQuery(myChatRoomsQueryOptions());
+  const myChatRoomsQuery = useQuery(
+    myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
+  );
+
+  useEffect(() => {
+    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+      showAuthRequiredToast();
+    }
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   const filteredMyRooms = useMemo(
     () =>
@@ -53,6 +64,8 @@ export default function ChatRoomDirectoryScreen() {
   );
 
   const nickname = meQuery.data?.nickname ?? "회원";
+  const isChatRoomsLoading = Boolean(meQuery.data) && myChatRoomsQuery.isPending;
+  const isChatRoomsError = Boolean(meQuery.data) && myChatRoomsQuery.isError;
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -74,10 +87,10 @@ export default function ChatRoomDirectoryScreen() {
           </h2>
         </section>
 
-        {myChatRoomsQuery.isPending ? <LoadingState /> : null}
-        {myChatRoomsQuery.isError ? <ErrorState onRetry={() => void myChatRoomsQuery.refetch()} /> : null}
+        {isChatRoomsLoading ? <LoadingState /> : null}
+        {isChatRoomsError ? <ErrorState onRetry={() => void myChatRoomsQuery.refetch()} /> : null}
 
-        {!myChatRoomsQuery.isPending && !myChatRoomsQuery.isError ? (
+        {!isChatRoomsLoading && !isChatRoomsError ? (
           <>
             <ChatRoomList
               title="나의 채팅방"
@@ -97,6 +110,7 @@ export default function ChatRoomDirectoryScreen() {
           </>
         ) : null}
       </main>
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }

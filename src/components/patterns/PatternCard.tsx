@@ -3,11 +3,12 @@
 import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import HeartIcon, { type HeartIconVariant } from "@/components/icons/HeartIcon";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 export type PatternCardImageRatio = "1:1" | "4:5" | "5:4";
 
@@ -46,8 +47,8 @@ export default function PatternCard({
   authorClassName = "text-[10px] text-ufo-text-neutral",
   onScrapChange,
 }: PatternCardProps) {
-  const router = useRouter();
   const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const [localIsScrapped, setLocalIsScrapped] = useState(
     isScrapped || heartVariant === "filled",
   );
@@ -74,7 +75,7 @@ export default function PatternCard({
     },
     onError: (error) => {
       if (error.message === "Unauthorized") {
-        router.push("/login?toast=auth_required");
+        showAuthRequiredToast();
       }
     },
   });
@@ -91,7 +92,7 @@ export default function PatternCard({
     }
 
     if (!isAuthenticated) {
-      router.push("/login?toast=auth_required");
+      showAuthRequiredToast();
       return;
     }
 
@@ -105,10 +106,11 @@ export default function PatternCard({
   );
 
   return (
-    <div>
-      <div
-        className={`relative mb-2 w-full overflow-hidden rounded-2xl ${imageRatioClassMap[imageRatio]}`}
-      >
+    <>
+      <div>
+        <div
+          className={`relative mb-2 w-full overflow-hidden rounded-2xl ${imageRatioClassMap[imageRatio]}`}
+        >
         {patternHref ? (
           <Link href={patternHref} className="block h-full w-full">
             <Image src={imageSrc} alt={alt ?? `${title} image`} fill className="object-cover" />
@@ -140,14 +142,16 @@ export default function PatternCard({
             )}
           </div>
         ) : null}
+        </div>
+        {patternHref ? (
+          <Link href={patternHref} className="block">
+            {textContent}
+          </Link>
+        ) : (
+          textContent
+        )}
       </div>
-      {patternHref ? (
-        <Link href={patternHref} className="block">
-          {textContent}
-        </Link>
-      ) : (
-        textContent
-      )}
-    </div>
+      <ToastMessage message={toastMessage} />
+    </>
   );
 }

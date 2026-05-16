@@ -3,12 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQueries";
 import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 function LoadingState() {
   return (
@@ -44,34 +45,13 @@ export default function ProfileEditScreen() {
   const queryClient = useQueryClient();
   const meQuery = useMeQuery();
   const [draftNickname, setDraftNickname] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
 
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
-      router.replace("/login?error=unauthorized");
+      showAuthRequiredToast();
     }
-  }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
-
-  const showToast = useCallback((message: string) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-
-    setToastMessage(message);
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2000);
-  }, []);
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   const saveProfileMutation = useMutation({
     mutationFn: (nextNickname: string) => updateMyProfile({ nickname: nextNickname }),
@@ -91,7 +71,7 @@ export default function ProfileEditScreen() {
     },
     onError: (error) => {
       if (error instanceof Error && error.message === "Unauthorized") {
-        router.replace("/login?error=unauthorized");
+        showAuthRequiredToast();
         return;
       }
 
@@ -160,7 +140,7 @@ export default function ProfileEditScreen() {
   }
 
   if (!meQuery.data) {
-    return null;
+    return <ToastMessage message={toastMessage} />;
   }
 
   return (

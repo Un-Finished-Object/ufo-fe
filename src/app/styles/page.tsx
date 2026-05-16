@@ -1,8 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import ToastMessage from "@/components/common/ToastMessage";
 import NavBar from "@/components/navigation/NavBar";
 import TopBar from "@/components/navigation/TopBar";
+import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 export default function StylesPage() {
+  const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
+  const profileHref = isAuthenticated ? "/my" : "/login";
+
   return (
     <div className="min-h-screen bg-ufo-bg">
       <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col overflow-hidden bg-ufo-surface text-ufo-text">
@@ -11,7 +20,7 @@ export default function StylesPage() {
           leftHref="/"
           right={[
             { type: "chat", href: "/chats", ariaLabel: "채팅" },
-            { type: "profile", href: "/my", ariaLabel: "프로필" },
+            { type: "profile", href: profileHref, ariaLabel: "프로필" },
           ]}
         />
         <NavBar />
@@ -30,6 +39,14 @@ export default function StylesPage() {
               </Link>
               <Link
                 href="/scraps"
+                onClick={(event) => {
+                  if (authStatus === "loading" || isAuthenticated) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  showAuthRequiredToast();
+                }}
                 className="inline-flex flex-1 items-center justify-center rounded-full border border-ufo-border bg-white px-4 py-3 text-sm font-semibold text-ufo-brand transition-colors hover:bg-ufo-brand hover:text-white"
               >
                 찜 페이지로 이동
@@ -38,6 +55,7 @@ export default function StylesPage() {
           </div>
         </section>
       </main>
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }
