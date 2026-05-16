@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import CreditBadge from "@/components/credits/CreditBadge";
 import EditIcon from "@/components/icons/EditIcon";
 import TopBar from "@/components/navigation/TopBar";
@@ -78,11 +78,12 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 export default function MyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isLoggingOutRef = useRef(false);
   const meQuery = useMeQuery();
   const walletQuery = useWalletQuery({ enabled: Boolean(meQuery.data) });
 
   useEffect(() => {
-    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+    if (!isLoggingOutRef.current && !meQuery.isPending && !meQuery.isError && !meQuery.data) {
       router.replace("/login?error=unauthorized");
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
@@ -94,6 +95,8 @@ export default function MyPage() {
   const sinceText = `우리 뜨친된지 ${joinDateText}일 ♡`;
 
   const handleLogout = useCallback(async () => {
+    isLoggingOutRef.current = true;
+
     try {
       await fetchWithAuthRetry({
         input: buildApiUrl("/v1/auth/logout"),
@@ -105,7 +108,7 @@ export default function MyPage() {
       clearAccessToken();
       queryClient.setQueryData(userQueryKeys.me, null);
       queryClient.setQueryData(userQueryKeys.wallet, null);
-      router.replace("/login");
+      router.replace("/");
     }
   }, [queryClient, router]);
 
