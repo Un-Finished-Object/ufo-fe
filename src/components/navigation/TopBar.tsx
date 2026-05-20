@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 type TopBarLeftType = "logo" | "back";
@@ -103,9 +104,14 @@ function renderRightIcon(type: TopBarRightType) {
 function renderLeftIcon(type: TopBarLeftType) {
   if (type === "logo") {
     return (
-      <span className="text-3xl font-black lowercase tracking-tight text-ufo-brand">
-        ufo
-      </span>
+      <Image
+        src="/ufo_pk.svg"
+        alt=""
+        width={69}
+        height={24}
+        priority
+        className="h-6 w-auto"
+      />
     );
   }
 
