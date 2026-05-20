@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ToastMessage from "@/components/common/ToastMessage";
+import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 const tabs = [
   { label: "홈", href: "/" },
@@ -12,6 +15,8 @@ const tabs = [
 
 export default function NavBar() {
   const pathname = usePathname();
+  const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -30,6 +35,14 @@ export default function NavBar() {
                 <Link
                   key={tab.href}
                   href={tab.href}
+                  onClick={(event) => {
+                    if (tab.href !== "/scraps" || authStatus === "loading" || isAuthenticated) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    showAuthRequiredToast();
+                  }}
                   className={`relative flex-1 pb-3 text-center ${isActive(tab.href) ? "font-semibold text-ufo-brand-soft" : ""}`}
                 >
                   {tab.label}
@@ -42,6 +55,7 @@ export default function NavBar() {
           </div>
         </section>
       </div>
+      <ToastMessage message={toastMessage} />
     </header>
   );
 }

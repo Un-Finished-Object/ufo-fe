@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Footer from "@/components/common/Footer";
+import ToastMessage from "@/components/common/ToastMessage";
 import TopBar from "@/components/navigation/TopBar";
 import SearchBar from "@/components/common/SearchBar";
 import NavBar from "@/components/navigation/NavBar";
@@ -14,6 +15,7 @@ import {
   type PatternScrapItem,
 } from "@/features/scraps/services/fetchPatternScraps";
 import { fetchStyleScraps, type StyleScrapItem } from "@/features/scraps/services/fetchStyleScraps";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type ScrapTab = "pattern" | "style";
 
@@ -28,9 +30,16 @@ export default function ScrapCollectionScreen() {
   const [patternScraps, setPatternScraps] = useState<PatternScrapItem[]>([]);
   const [styleScraps, setStyleScraps] = useState<StyleScrapItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated } = useAuthState();
+  const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const profileHref = isAuthenticated ? "/my" : "/login";
   const normalizedQuery = query.trim().toLowerCase();
+
+  useEffect(() => {
+    if (authStatus !== "loading" && !isAuthenticated) {
+      showAuthRequiredToast();
+    }
+  }, [authStatus, isAuthenticated, showAuthRequiredToast]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,6 +183,7 @@ export default function ScrapCollectionScreen() {
         </section>
         <Footer />
       </main>
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }

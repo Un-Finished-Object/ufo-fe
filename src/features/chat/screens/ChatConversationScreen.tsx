@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
@@ -21,6 +22,7 @@ import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/qu
 import { CHAT_MESSAGES_FORBIDDEN_MESSAGE } from "@/features/chat/services/fetchChatMessages";
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type ChatConversationScreenProps = {
   patternId: string;
@@ -34,8 +36,11 @@ type ReplyTarget = {
 
 export default function ChatConversationScreen({ patternId }: ChatConversationScreenProps) {
   const roomId = patternId;
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
-  const myChatRoomsQuery = useQuery(myChatRoomsQueryOptions());
+  const myChatRoomsQuery = useQuery(
+    myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
+  );
   const chatRoom = myChatRoomsQuery.data?.find((room) => room.patternId === roomId);
   const roomMeta = chatRoom
     ? {
@@ -72,6 +77,12 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
     senderId: currentUserId,
     senderName: meQuery.data?.nickname,
   });
+
+  useEffect(() => {
+    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+      showAuthRequiredToast();
+    }
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   useEffect(() => {
     didScrollToInitialBottomRef.current = false;
@@ -124,18 +135,39 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
         ),
       );
     },
+    onError: (error) => {
+      if (error instanceof Error && error.message === "Unauthorized") {
+        showAuthRequiredToast();
+      }
+    },
   });
 
   const handleFavoriteClick = () => {
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      return;
+    }
+
     const nextFavorite = !(chatStatus?.favorite ?? false);
     updateChatStatusMutation.mutate({ favorite: nextFavorite });
   };
 
   const handleFoClick = () => {
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      return;
+    }
+
     setIsFoConfirmOpen(true);
   };
 
   const handleConfirmFoChange = () => {
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      setIsFoConfirmOpen(false);
+      return;
+    }
+
     const nextHidden = !(chatStatus?.isHidden ?? false);
     updateChatStatusMutation.mutate({ hidden: nextHidden });
     setIsFoConfirmOpen(false);
@@ -146,6 +178,11 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   };
 
   const handleSendMessage = () => {
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      return;
+    }
+
     const nextMessageText = messageText.trim();
 
     if (!nextMessageText) {
@@ -378,6 +415,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
           onNo={handleCloseFoConfirm}
         />
       ) : null}
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }

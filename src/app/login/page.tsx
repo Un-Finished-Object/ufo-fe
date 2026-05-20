@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -9,12 +8,7 @@ import Footer from "@/components/common/Footer";
 import TopBar from "@/components/navigation/TopBar";
 import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
-import {
-  meQueryOptions,
-  walletQueryOptions,
-} from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -52,7 +46,6 @@ const socialButtons: Array<{
 
 function LoginPageContent() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const meQuery = useMeQuery();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
@@ -76,78 +69,14 @@ function LoginPageContent() {
     }
   }, [meQuery.data, router]);
 
-  useEffect(() => {
-    const handleOAuthMessage = (event: MessageEvent<unknown>) => {
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      const data = event.data;
-      if (!data || typeof data !== "object" || !("type" in data)) {
-        return;
-      }
-
-      const messageType = (data as { type?: string }).type;
-      if (messageType === "oauth-success") {
-        void (async () => {
-          try {
-            const refreshResponse = await refreshAccessToken({ mode: "required" });
-            if (!refreshResponse.ok) {
-              router.replace("/login?error=oauth_failed");
-              return;
-            }
-
-            const me = await queryClient.fetchQuery({
-              ...meQueryOptions(),
-              staleTime: 0,
-            });
-            if (!me) {
-              router.replace("/login?error=oauth_failed");
-              return;
-            }
-
-            void queryClient.prefetchQuery({
-              ...walletQueryOptions(),
-              staleTime: 0,
-            });
-            router.replace("/");
-          } catch {
-            router.replace("/login?error=oauth_failed");
-          }
-        })();
-        return;
-      }
-
-      if (messageType === "oauth-failed") {
-        router.replace("/login?error=oauth_failed");
-      }
-    };
-
-    window.addEventListener("message", handleOAuthMessage);
-
-    return () => {
-      window.removeEventListener("message", handleOAuthMessage);
-    };
-  }, [queryClient, router]);
-
   const handleSocialLogin = (provider: Provider) => {
-    const redirectUri = `${window.location.origin}/auth/popup-complete`;
+    const redirectUri = `${window.location.origin}/auth/complete`;
     const oauthStartUrl = buildApiUrl(
       `/v1/auth/login/${provider}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,
     );
-    const popup = window.open(
-      oauthStartUrl,
-      "ufo-social-login",
-      "popup=yes,width=500,height=740,left=120,top=80",
-    );
 
-    if (!popup) {
-      // eslint-disable-next-line react-hooks/immutability
-      window.location.href = oauthStartUrl;
-      return;
-    }
-
-    popup.focus();
+    // eslint-disable-next-line react-hooks/immutability
+    window.location.href = oauthStartUrl;
   };
 
   if (meQuery.data) {

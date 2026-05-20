@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import Pagination from "@/components/common/Pagination";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
@@ -11,6 +12,7 @@ import {
   myPurchasedProjectsQueryOptions,
   type PurchasedProjectItem,
 } from "@/features/my/queries/myActivityQueries";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type MyActivityScreenProps = {
   initialPage: number;
@@ -181,6 +183,7 @@ function PurchasedProjectCard({ item }: { item: PurchasedProjectItem }) {
 
 export default function MyActivityScreen({ initialPage }: MyActivityScreenProps) {
   const router = useRouter();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
   const purchasedProjectsQuery = useQuery(
     myPurchasedProjectsQueryOptions(initialPage, { enabled: Boolean(meQuery.data) }),
@@ -188,15 +191,15 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
 
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
-      router.replace("/login?error=unauthorized");
+      showAuthRequiredToast();
     }
-  }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   useEffect(() => {
     if (purchasedProjectsQuery.error instanceof Error && purchasedProjectsQuery.error.message === "Unauthorized") {
-      router.replace("/login?error=unauthorized");
+      showAuthRequiredToast();
     }
-  }, [purchasedProjectsQuery.error, router]);
+  }, [purchasedProjectsQuery.error, showAuthRequiredToast]);
 
   const handleRetry = useCallback(() => {
     void meQuery.refetch();
@@ -221,8 +224,9 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
   const nextPage = purchasedProjectsQuery.data?.nextPage ?? 0;
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
+    <>
+      <div className="min-h-screen bg-ufo-bg">
+        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
         <TopBar
           left="back"
           leftHref="/my"
@@ -258,7 +262,9 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
             />
           </>
         ) : null}
-      </main>
-    </div>
+        </main>
+      </div>
+      <ToastMessage message={toastMessage} />
+    </>
   );
 }
