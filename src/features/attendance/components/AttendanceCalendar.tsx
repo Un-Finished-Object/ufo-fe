@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/common/ToastMessage";
 import { buildApiUrl } from "@/lib/api/client";
+import { AUTH_REQUIRED_MESSAGE } from "@/hooks/useAuthRequiredToast";
 
 type StatusResponse = {
   data?: { rewarded?: Record<string, boolean> };
@@ -56,6 +57,12 @@ export default function AttendanceCalendar() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 2500);
+  }, []);
+
   const attendedSet = new Set(monthDates);
   const isViewingCurrentMonth = viewYear === currentYear && viewMonth === currentMonth;
   const checkedInToday = todayChecked === true;
@@ -86,6 +93,12 @@ export default function AttendanceCalendar() {
             cache: "no-store",
           },
         });
+
+        if (response.status === 401) {
+          showToast(AUTH_REQUIRED_MESSAGE);
+          if (isCurrentMonthRequest) setTodayChecked(false);
+          return;
+        }
 
         if (!response.ok || !isMounted) {
           if (isCurrentMonthRequest) setTodayChecked(false);
@@ -119,13 +132,7 @@ export default function AttendanceCalendar() {
       isMounted = false;
       controller.abort();
     };
-  }, [currentMonth, currentYear, todayStr, viewMonth, viewYear]);
-
-  const showToast = (msg: string) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(msg);
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 2500);
-  };
+  }, [currentMonth, currentYear, showToast, todayStr, viewMonth, viewYear]);
 
   const handleCheckIn = async () => {
     if (checkedInToday || isCheckingIn) return;
@@ -138,6 +145,11 @@ export default function AttendanceCalendar() {
           method: "POST",
         },
       });
+
+      if (response.status === 401) {
+        showToast(AUTH_REQUIRED_MESSAGE);
+        return;
+      }
 
       const payload = (await response.json()) as {
         data?: { date?: string; rewarded?: boolean; rewardAmount?: number; balance?: number };

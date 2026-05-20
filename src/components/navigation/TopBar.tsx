@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
+import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type TopBarLeftType = "logo" | "back";
 type TopBarRightType = "home" | "chat" | "profile";
@@ -22,6 +26,14 @@ type TopBarProps = {
   sticky?: boolean;
   showBottomBorder?: boolean;
 };
+
+const protectedRoutePrefixes = ["/my", "/scraps", "/chats", "/events"];
+
+function isProtectedHref(href: string) {
+  return protectedRoutePrefixes.some(
+    (route) => href === route || href.startsWith(`${route}/`),
+  );
+}
 
 function BackIcon() {
   return (
@@ -122,18 +134,29 @@ export default function TopBar({
   showBottomBorder = false,
 }: TopBarProps) {
   const router = useRouter();
+  const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const rightActions = right.slice(0, 2);
   const leftAriaLabel = left === "logo" ? "홈" : "뒤로가기";
   const leftElement = renderLeftIcon(left);
   const handleBackClick = onLeftClick ?? (() => router.back());
+  const handleProtectedLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!isProtectedHref(href) || authStatus === "loading" || isAuthenticated) {
+      return;
+    }
+
+    event.preventDefault();
+    showAuthRequiredToast();
+  };
 
   return (
-    <header className={`${sticky ? "sticky top-0" : ""} z-50 w-full`}>
-      <div
-        className={`mx-auto w-full max-w-[430px] bg-ufo-surface ${
-          showBottomBorder ? "border-b border-ufo-border-light" : ""
-        }`}
-      >
+    <>
+      <header className={`${sticky ? "sticky top-0" : ""} z-50 w-full`}>
+        <div
+          className={`mx-auto w-full max-w-[430px] bg-ufo-surface ${
+            showBottomBorder ? "border-b border-ufo-border-light" : ""
+          }`}
+        >
         <div className="grid h-14 grid-cols-[96px_1fr_96px] items-center px-4">
           <div className="flex items-center">
             {left === "logo" && leftHref ? (
@@ -166,6 +189,7 @@ export default function TopBar({
                   <Link
                     key={`${action.type}-${action.href}`}
                     href={action.href}
+                    onClick={(event) => handleProtectedLinkClick(event, action.href ?? "")}
                     className="rounded-full p-1"
                     aria-label={ariaLabel}
                   >
@@ -188,7 +212,9 @@ export default function TopBar({
             })}
           </div>
         </div>
-      </div>
-    </header>
+        </div>
+      </header>
+      <ToastMessage message={toastMessage} />
+    </>
   );
 }

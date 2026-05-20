@@ -3,6 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
+import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type BannerItem = {
   id: number;
@@ -16,11 +19,17 @@ type MainTopSliderProps = {
   posts: BannerItem[];
 };
 
+function isProtectedHref(href: string) {
+  return href === "/events" || href.startsWith("/events/");
+}
+
 export default function MainTopSlider({ posts }: MainTopSliderProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const interactedAtRef = useRef<number>(0);
   const snapTimeoutRef = useRef<number | null>(null);
+  const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
 
   useEffect(() => {
     if (posts.length <= 1) {
@@ -166,13 +175,26 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
             );
 
             return post.href ? (
-              <Link key={post.id} href={post.href} className="w-full shrink-0">
+              <Link
+                key={post.id}
+                href={post.href}
+                onClick={(event) => {
+                  if (!post.href || !isProtectedHref(post.href) || authStatus === "loading" || isAuthenticated) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  showAuthRequiredToast();
+                }}
+                className="w-full shrink-0"
+              >
                 {inner}
               </Link>
             ) : inner;
           })}
         </div>
       </div>
+      <ToastMessage message={toastMessage} />
     </section>
   );
 }

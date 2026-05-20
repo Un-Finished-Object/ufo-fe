@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import HeartIcon from "@/components/icons/HeartIcon";
@@ -31,6 +32,7 @@ import {
   type PatternDetailData,
 } from "@/features/patterns/queries/patternDetailQueries";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type PatternDetailScreenProps = {
   patternId: number;
@@ -260,6 +262,7 @@ export default function PatternDetailScreen({
   const patternDetailQuery = useQuery(patternDetailQueryOptions(patternId));
   const pattern = patternDetailQuery.data ?? null;
   const { authStatus, isAuthenticated } = useAuthState();
+  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
   const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
@@ -332,7 +335,7 @@ export default function PatternDetailScreen({
     },
     onError: (error) => {
       if (error.message === "Unauthorized") {
-        router.push("/login?toast=auth_required");
+        showAuthRequiredToast();
       }
     },
   });
@@ -368,7 +371,7 @@ export default function PatternDetailScreen({
     onError: (error) => {
       if (error instanceof Error && error.message === "Unauthorized") {
         setPurchaseDialogType(null);
-        router.replace("/login?error=unauthorized");
+        showAuthRequiredToast();
         return;
       }
 
@@ -382,7 +385,7 @@ export default function PatternDetailScreen({
     }
 
     if (!isAuthenticated) {
-      router.push("/login?toast=auth_required");
+      showAuthRequiredToast();
       return;
     }
 
@@ -401,7 +404,7 @@ export default function PatternDetailScreen({
     }
 
     if (!isAuthenticated) {
-      router.push("/login?toast=auth_required");
+      showAuthRequiredToast();
       return;
     }
 
@@ -423,7 +426,7 @@ export default function PatternDetailScreen({
     }
 
     if (!isAuthenticated) {
-      router.push("/login?toast=auth_required");
+      showAuthRequiredToast();
       return;
     }
 
@@ -682,6 +685,7 @@ export default function PatternDetailScreen({
           }}
         />
       ) : null}
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }
