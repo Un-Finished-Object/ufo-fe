@@ -540,7 +540,7 @@ export default function PatternDetailScreen({
         </section>
 
         <section className="mt-5 px-4">
-          <article className="flex h-[184px] flex-col rounded-2xl border border-ufo-brand bg-white p-4">
+          <article className="flex min-h-48 flex-col rounded-2xl border border-ufo-brand bg-white p-4 pb-3">
             <div className="flex items-center gap-2 border-b border-ufo-border-light pb-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -556,7 +556,7 @@ export default function PatternDetailScreen({
               <h2 className="truncate text-sm text-ufo-text-neutral">{pattern.title} 실시간 채팅방</h2>
             </div>
 
-            <div className="mt-3">
+            <div className="mt-4">
               <div
                 className="max-h-[72px] space-y-3 overflow-y-auto"
                 aria-label="실시간 채팅 미리보기"
