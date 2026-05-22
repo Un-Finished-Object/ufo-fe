@@ -8,6 +8,7 @@ export type PatternPurchaseType = "chat" | "yarn";
 export type PatternPurchaseStatus = {
   userId: number | null;
   chat: boolean;
+  chatroomId: number | null;
   alternative: boolean;
 };
 
@@ -15,6 +16,7 @@ type PatternPurchaseStatusResponse = {
   data?: {
     userId?: number;
     chat?: boolean;
+    chatRoomId?: number;
     alternative?: boolean;
   };
   error?: unknown;
@@ -23,6 +25,7 @@ type PatternPurchaseStatusResponse = {
 type PurchasePatternAccessResponse = {
   data?: {
     userId?: number;
+    chatRoomId?: number;
     type?: unknown;
   };
   error?: unknown;
@@ -30,6 +33,10 @@ type PurchasePatternAccessResponse = {
 
 export function patternPurchaseQueryKey(patternId: number) {
   return ["patternPurchase", patternId] as const;
+}
+
+function getChatRoomId(data: { chatRoomId?: number }) {
+  return typeof data.chatRoomId === "number" ? data.chatRoomId : null;
 }
 
 export async function fetchPatternPurchaseStatus(
@@ -62,6 +69,7 @@ export async function fetchPatternPurchaseStatus(
   return {
     userId: typeof payload.data.userId === "number" ? payload.data.userId : null,
     chat: payload.data.chat === true,
+    chatroomId: getChatRoomId(payload.data),
     alternative: payload.data.alternative === true,
   } satisfies PatternPurchaseStatus;
 }
@@ -101,6 +109,7 @@ export async function purchasePatternAccess({
 
   return {
     userId: typeof payload.data.userId === "number" ? payload.data.userId : null,
+    chatroomId: getChatRoomId(payload.data),
     type,
   } as const;
 }
