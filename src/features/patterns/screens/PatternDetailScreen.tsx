@@ -209,7 +209,7 @@ function AlternativePurchaseGate({
 
 function formatAlternativeNumber(value: number | null, unit: string) {
   if (value === null) {
-    return "-";
+    return "";
   }
 
   return `${currencyFormatter.format(value)}${unit}`;
@@ -275,6 +275,7 @@ export default function PatternDetailScreen({
     enabled: authStatus !== "loading" && isAuthenticated && pattern !== null,
   });
   const hasChatPurchase = purchaseStatusQuery.data?.chat === true;
+  const purchasedChatroomId = purchaseStatusQuery.data?.chatroomId ?? null;
   const hasAlternativePurchase = purchaseStatusQuery.data?.alternative === true;
   const patternAlternativesQuery = useQuery({
     ...patternAlternativesQueryOptions(pattern?.id ?? 0),
@@ -287,7 +288,10 @@ export default function PatternDetailScreen({
   const isResolvingChatPurchase =
     pattern === null ||
     authStatus === "loading" ||
-    (isAuthenticated && purchaseStatusQuery.isPending);
+    (isAuthenticated &&
+      (purchaseStatusQuery.isPending ||
+        purchaseStatusQuery.isFetching ||
+        (hasChatPurchase && purchasedChatroomId === null)));
   const isResolvingAlternativePurchase =
     pattern === null ||
     authStatus === "loading" ||
@@ -353,10 +357,17 @@ export default function PatternDetailScreen({
         (previous) => ({
           userId: data.userId ?? previous?.userId ?? null,
           chat: data.type === "chat" ? true : previous?.chat ?? false,
+          chatroomId:
+            data.type === "chat"
+              ? data.chatroomId ?? previous?.chatroomId ?? null
+              : previous?.chatroomId ?? null,
           alternative: data.type === "yarn" ? true : previous?.alternative ?? false,
         }),
       );
       void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
+      void queryClient.invalidateQueries({
+        queryKey: patternPurchaseQueryKey(pattern.id),
+      });
       if (data.type === "chat") {
         void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
       }
@@ -389,8 +400,8 @@ export default function PatternDetailScreen({
       return;
     }
 
-    if (hasChatPurchase) {
-      router.push(`/chats/${pattern.id}`);
+    if (hasChatPurchase && purchasedChatroomId !== null) {
+      router.push(`/chats/${purchasedChatroomId}`);
       return;
     }
 
@@ -634,8 +645,11 @@ export default function PatternDetailScreen({
                 </div>
               ) : patternAlternativesQuery.data.length > 0 ? (
                 <div className="space-y-4">
-                  {patternAlternativesQuery.data.map((item) => (
-                    <AlternativeInfoCard key={item.altId} item={item} />
+                  {patternAlternativesQuery.data.map((item, itemIndex) => (
+                    <AlternativeInfoCard
+                      key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
+                      item={item}
+                    />
                   ))}
                 </div>
               ) : (

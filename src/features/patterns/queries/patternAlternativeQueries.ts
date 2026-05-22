@@ -4,15 +4,15 @@ import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 type PatternAlternativeItemResponse = {
-  altId?: number;
-  yarnId?: number;
-  yarnName?: string;
-  weight?: number;
-  cost?: number;
-  subComponent?: string;
-  store?: string;
-  length?: number;
-  username?: string;
+  altId?: number | null;
+  yarnId?: number | null;
+  yarnName?: string | null;
+  weight?: number | null;
+  cost?: number | null;
+  subComponent?: string | null;
+  store?: string | null;
+  length?: number | null;
+  username?: string | null;
 };
 
 type PatternAlternativesResponse = {
@@ -23,7 +23,7 @@ type PatternAlternativesResponse = {
 };
 
 export type PatternAlternativeItem = {
-  altId: number;
+  altId: number | null;
   yarnId: number | null;
   yarnName: string;
   weight: number | null;
@@ -36,18 +36,14 @@ export type PatternAlternativeItem = {
 
 function getSafeText(value?: string | null) {
   const trimmedValue = value?.trim();
-  return trimmedValue ? trimmedValue : "-";
+  return trimmedValue ? trimmedValue : "";
 }
 
 function mapPatternAlternativeItem(
   item: PatternAlternativeItemResponse,
-): PatternAlternativeItem | null {
-  if (typeof item.altId !== "number" || typeof item.yarnName !== "string") {
-    return null;
-  }
-
+): PatternAlternativeItem {
   return {
-    altId: item.altId,
+    altId: typeof item.altId === "number" ? item.altId : null,
     yarnId: typeof item.yarnId === "number" ? item.yarnId : null,
     yarnName: getSafeText(item.yarnName),
     weight: typeof item.weight === "number" ? item.weight : null,
@@ -88,7 +84,6 @@ export async function fetchPatternAlternatives(
 
   return payload.data.items
     .map(mapPatternAlternativeItem)
-    .filter((item): item is PatternAlternativeItem => item !== null);
 }
 
 export function patternAlternativesQueryOptions(patternId: number) {
