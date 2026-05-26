@@ -268,7 +268,7 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
   const hasHeaderContent = yarnName !== null || subComponent !== null || cost !== null;
 
   return (
-    <article className="rounded-xl border border-ufo-border-light bg-white px-3 py-2.5">
+    <article className="rounded-xl border border-ufo-border bg-white px-3 py-2.5">
       {hasHeaderContent ? (
         <div className="flex items-start justify-between gap-2.5">
           {yarnName || subComponent ? (
@@ -311,14 +311,19 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
 
 function AlternativeYarnSection({
   title,
+  action,
   children,
 }: {
   title: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="border-t border-ufo-border-light pt-4 first:border-t-0 first:pt-0">
-      <h3 className="mb-2 px-1 text-sm font-bold text-ufo-text">{title}</h3>
+      <div className="mb-2 flex items-center justify-between gap-3 px-1">
+        <h3 className="text-sm font-bold text-ufo-text">{title}</h3>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -727,7 +732,23 @@ export default function PatternDetailScreen({
                   )}
                 </AlternativeYarnSection>
 
-                <AlternativeYarnSection title="UFO 등록 대체실">
+                <AlternativeYarnSection
+                  title="UFO 등록 대체실"
+                  action={
+                    hasAlternativePurchase ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void patternAlternativesQuery.refetch();
+                        }}
+                        disabled={patternAlternativesQuery.isFetching}
+                        className="shrink-0 rounded-full border border-ufo-border-light bg-white px-2.5 py-1 text-xs font-semibold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        새로고침
+                      </button>
+                    ) : null
+                  }
+                >
                   {isResolvingAlternativePurchase ? (
                     <AlternativeSectionMessage>
                       구매 정보를 확인하고 있어요.
