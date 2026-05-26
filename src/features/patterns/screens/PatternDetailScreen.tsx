@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
@@ -221,7 +221,19 @@ function getAlternativeText(value: string) {
   return trimmedValue ? trimmedValue : null;
 }
 
-function getAlternativeDetailItems(item: PatternAlternativeItem) {
+type YarnInfoDetailItem = {
+  label: string;
+  value: string;
+};
+
+type YarnInfoCardData = {
+  yarnName: string;
+  subComponent?: string;
+  cost?: number | null;
+  detailItems?: YarnInfoDetailItem[];
+};
+
+function getAlternativeDetailItems(item: PatternAlternativeItem): YarnInfoDetailItem[] {
   return [
     { label: "무게", value: formatAlternativeNumber(item.weight, "g") },
     { label: "길이", value: formatAlternativeNumber(item.length, "m") },
@@ -239,11 +251,20 @@ function hasVisibleAlternativeInfo(item: PatternAlternativeItem) {
   );
 }
 
-function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
-  const yarnName = getAlternativeText(item.yarnName);
-  const subComponent = getAlternativeText(item.subComponent);
-  const cost = formatAlternativeNumber(item.cost, "원");
-  const detailItems = getAlternativeDetailItems(item);
+function getAlternativeCardData(item: PatternAlternativeItem): YarnInfoCardData {
+  return {
+    yarnName: item.yarnName,
+    subComponent: item.subComponent,
+    cost: item.cost,
+    detailItems: getAlternativeDetailItems(item),
+  };
+}
+
+function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
+  const yarnName = getAlternativeText(card.yarnName);
+  const subComponent = card.subComponent ? getAlternativeText(card.subComponent) : null;
+  const cost = formatAlternativeNumber(card.cost ?? null, "원");
+  const detailItems = card.detailItems ?? [];
   const hasHeaderContent = yarnName !== null || subComponent !== null || cost !== null;
 
   return (
@@ -285,6 +306,29 @@ function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
         </dl>
       ) : null}
     </article>
+  );
+}
+
+function AlternativeYarnSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-t border-ufo-border-light pt-4 first:border-t-0 first:pt-0">
+      <h3 className="mb-2 px-1 text-sm font-bold text-ufo-text">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function AlternativeSectionMessage({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
+      {children}
+    </div>
   );
 }
 
@@ -535,6 +579,11 @@ export default function PatternDetailScreen({
     );
   }
 
+  const originalYarnCard: YarnInfoCardData = {
+    yarnName: pattern.details.yarn,
+  };
+  const hasOriginalYarn = getAlternativeText(originalYarnCard.yarnName) !== null;
+
   return (
     <div className="min-h-screen bg-ufo-bg">
       <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-28 text-ufo-text">
@@ -666,39 +715,61 @@ export default function PatternDetailScreen({
                   </div>
                 ))}
               </div>
-            ) : isResolvingAlternativePurchase ? (
-              <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
-                구매 정보를 확인하고 있어요.
-              </div>
-            ) : hasAlternativePurchase ? (
-              patternAlternativesQuery.isPending ? (
-                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
-                  대체실 정보를 불러오고 있어요.
-                </div>
-              ) : patternAlternativesQuery.isError ? (
-                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
-                  대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
-                </div>
-              ) : visibleAlternativeItems.length > 0 ? (
-                <div className="space-y-2">
-                  {visibleAlternativeItems.map((item, itemIndex) => (
-                    <AlternativeInfoCard
-                      key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
-                      item={item}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
-                  등록된 대체실 정보가 아직 없어요.
-                </div>
-              )
             ) : (
-              <AlternativePurchaseGate
-                credits={pattern.credits}
-                disabled={purchaseAccessMutation.isPending}
-                onPurchaseClick={handleAlternativePurchaseClick}
-              />
+              <div className="space-y-4">
+                <AlternativeYarnSection title="원작실">
+                  {hasOriginalYarn ? (
+                    <YarnInfoCard card={originalYarnCard} />
+                  ) : (
+                    <AlternativeSectionMessage>
+                      등록된 원작실 정보가 없어요.
+                    </AlternativeSectionMessage>
+                  )}
+                </AlternativeYarnSection>
+
+                <AlternativeYarnSection title="UFO 등록 대체실">
+                  {isResolvingAlternativePurchase ? (
+                    <AlternativeSectionMessage>
+                      구매 정보를 확인하고 있어요.
+                    </AlternativeSectionMessage>
+                  ) : hasAlternativePurchase ? (
+                    patternAlternativesQuery.isPending ? (
+                      <AlternativeSectionMessage>
+                        대체실 정보를 불러오고 있어요.
+                      </AlternativeSectionMessage>
+                    ) : patternAlternativesQuery.isError ? (
+                      <AlternativeSectionMessage>
+                        대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+                      </AlternativeSectionMessage>
+                    ) : visibleAlternativeItems.length > 0 ? (
+                      <div className="space-y-2">
+                        {visibleAlternativeItems.map((item, itemIndex) => (
+                          <YarnInfoCard
+                            key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
+                            card={getAlternativeCardData(item)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <AlternativeSectionMessage>
+                        등록된 대체실 정보가 아직 없어요.
+                      </AlternativeSectionMessage>
+                    )
+                  ) : (
+                    <AlternativePurchaseGate
+                      credits={pattern.credits}
+                      disabled={purchaseAccessMutation.isPending}
+                      onPurchaseClick={handleAlternativePurchaseClick}
+                    />
+                  )}
+                </AlternativeYarnSection>
+
+                <AlternativeYarnSection title="사용자 등록 대체실">
+                  <AlternativeSectionMessage>
+                    등록된 사용자 대체실 정보가 아직 없어요.
+                  </AlternativeSectionMessage>
+                </AlternativeYarnSection>
+              </div>
             )}
           </div>
         </section>
