@@ -208,48 +208,79 @@ function AlternativePurchaseGate({
 }
 
 function formatAlternativeNumber(value: number | null, unit: string) {
-  if (value === null) {
-    return "";
+  if (value === null || value <= 0) {
+    return null;
   }
 
   return `${currencyFormatter.format(value)}${unit}`;
 }
 
-function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
+function getAlternativeText(value: string) {
+  const trimmedValue = value.trim();
+
+  return trimmedValue ? trimmedValue : null;
+}
+
+function getAlternativeDetailItems(item: PatternAlternativeItem) {
+  return [
+    { label: "무게", value: formatAlternativeNumber(item.weight, "g") },
+    { label: "길이", value: formatAlternativeNumber(item.length, "m") },
+    { label: "구매처", value: getAlternativeText(item.store) },
+    { label: "작성자", value: getAlternativeText(item.username) },
+  ].filter((detail): detail is { label: string; value: string } => detail.value !== null);
+}
+
+function hasVisibleAlternativeInfo(item: PatternAlternativeItem) {
   return (
-    <article className="rounded-[18px] border border-ufo-text-muted/35 bg-ufo-brand-pale px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-lg font-black tracking-tight text-ufo-text">{item.yarnName}</p>
-          <p className="mt-2 text-sm font-medium text-ufo-text-secondary">{item.subComponent}</p>
-        </div>
-        <div className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-ufo-text-secondary">
-          {formatAlternativeNumber(item.cost, "원")}
-        </div>
+    getAlternativeText(item.yarnName) !== null ||
+    getAlternativeText(item.subComponent) !== null ||
+    formatAlternativeNumber(item.cost, "원") !== null ||
+    getAlternativeDetailItems(item).length > 0
+  );
+}
+
+function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
+  const yarnName = getAlternativeText(item.yarnName);
+  const subComponent = getAlternativeText(item.subComponent);
+  const cost = formatAlternativeNumber(item.cost, "원");
+  const detailItems = getAlternativeDetailItems(item);
+
+  return (
+    <article className="rounded-2xl border border-ufo-text-muted/35 bg-ufo-brand-pale px-3.5 py-3">
+      <div className="flex items-start justify-between gap-2.5">
+        {yarnName || subComponent ? (
+          <div className="min-w-0 flex-1">
+            {yarnName ? (
+              <p className="break-words text-base font-bold tracking-tight text-ufo-text">
+                {yarnName}
+              </p>
+            ) : null}
+            {subComponent ? (
+              <p className="mt-1 break-words text-xs font-medium leading-5 text-ufo-text-secondary">
+                {subComponent}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {cost ? (
+          <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-ufo-text-secondary">
+            {cost}
+          </div>
+        ) : null}
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
-        <div className="rounded-xl bg-white/85 px-3 py-3">
-          <dt className="text-xs font-semibold text-ufo-text-muted">무게</dt>
-          <dd className="mt-1 font-bold text-ufo-text">
-            {formatAlternativeNumber(item.weight, "g")}
-          </dd>
-        </div>
-        <div className="rounded-xl bg-white/85 px-3 py-3">
-          <dt className="text-xs font-semibold text-ufo-text-muted">길이</dt>
-          <dd className="mt-1 font-bold text-ufo-text">
-            {formatAlternativeNumber(item.length, "m")}
-          </dd>
-        </div>
-        <div className="rounded-xl bg-white/85 px-3 py-3">
-          <dt className="text-xs font-semibold text-ufo-text-muted">구매처</dt>
-          <dd className="mt-1 font-bold text-ufo-text">{item.store}</dd>
-        </div>
-        <div className="rounded-xl bg-white/85 px-3 py-3">
-          <dt className="text-xs font-semibold text-ufo-text-muted">작성자</dt>
-          <dd className="mt-1 font-bold text-ufo-text">{item.username}</dd>
-        </div>
-      </dl>
+      {detailItems.length > 0 ? (
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          {detailItems.map((detail) => (
+            <div key={detail.label} className="rounded-xl bg-white/85 px-2.5 py-2">
+              <dt className="font-semibold text-ufo-text-muted">{detail.label}</dt>
+              <dd className="mt-0.5 break-words font-bold leading-5 text-ufo-text">
+                {detail.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </article>
   );
 }
@@ -310,6 +341,8 @@ export default function PatternDetailScreen({
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
       : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
+  const visibleAlternativeItems =
+    patternAlternativesQuery.data?.filter(hasVisibleAlternativeInfo) ?? [];
 
   const toggleScrapMutation = useMutation<
     Awaited<ReturnType<typeof updatePatternScrap>>,
@@ -643,9 +676,9 @@ export default function PatternDetailScreen({
                 <div className="rounded-xl bg-ufo-brand-pale p-4 text-sm text-ufo-text-secondary">
                   대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
                 </div>
-              ) : patternAlternativesQuery.data.length > 0 ? (
-                <div className="space-y-4">
-                  {patternAlternativesQuery.data.map((item, itemIndex) => (
+              ) : visibleAlternativeItems.length > 0 ? (
+                <div className="space-y-3">
+                  {visibleAlternativeItems.map((item, itemIndex) => (
                     <AlternativeInfoCard
                       key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
                       item={item}
