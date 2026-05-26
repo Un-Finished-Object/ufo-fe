@@ -244,39 +244,42 @@ function AlternativeInfoCard({ item }: { item: PatternAlternativeItem }) {
   const subComponent = getAlternativeText(item.subComponent);
   const cost = formatAlternativeNumber(item.cost, "원");
   const detailItems = getAlternativeDetailItems(item);
+  const hasHeaderContent = yarnName !== null || subComponent !== null || cost !== null;
 
   return (
-    <article className="rounded-2xl border border-ufo-text-muted/35 bg-ufo-brand-pale px-3.5 py-3">
-      <div className="flex items-start justify-between gap-2.5">
-        {yarnName || subComponent ? (
-          <div className="min-w-0 flex-1">
-            {yarnName ? (
-              <p className="break-words text-base font-bold tracking-tight text-ufo-text">
-                {yarnName}
-              </p>
-            ) : null}
-            {subComponent ? (
-              <p className="mt-1 break-words text-xs font-medium leading-5 text-ufo-text-secondary">
-                {subComponent}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-        {cost ? (
-          <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-ufo-text-secondary">
-            {cost}
-          </div>
-        ) : null}
-      </div>
+    <article className="rounded-xl border border-ufo-border-light bg-white px-3 py-2.5">
+      {hasHeaderContent ? (
+        <div className="flex items-start justify-between gap-2.5">
+          {yarnName || subComponent ? (
+            <div className="min-w-0 flex-1">
+              {yarnName ? (
+                <p className="break-words text-sm font-bold leading-5 text-ufo-text">{yarnName}</p>
+              ) : null}
+              {subComponent ? (
+                <p className="mt-0.5 break-words text-[11px] font-medium leading-4 text-ufo-text-secondary">
+                  {subComponent}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {cost ? (
+            <div className="shrink-0 rounded-full bg-ufo-brand-pale px-2 py-0.5 text-[10px] font-bold leading-4 text-ufo-text-secondary">
+              {cost}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {detailItems.length > 0 ? (
-        <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <dl
+          className={`flex flex-wrap gap-x-2 gap-y-1 text-[11px] leading-4 ${
+            hasHeaderContent ? "mt-1.5" : ""
+          }`}
+        >
           {detailItems.map((detail) => (
-            <div key={detail.label} className="rounded-xl bg-white/85 px-2.5 py-2">
-              <dt className="font-semibold text-ufo-text-muted">{detail.label}</dt>
-              <dd className="mt-0.5 break-words font-bold leading-5 text-ufo-text">
-                {detail.value}
-              </dd>
+            <div key={detail.label} className="flex min-w-0 items-center gap-1">
+              <dt className="shrink-0 font-semibold text-ufo-text-muted">{detail.label}</dt>
+              <dd className="break-words font-bold text-ufo-text-secondary">{detail.value}</dd>
             </div>
           ))}
         </dl>
@@ -677,7 +680,7 @@ export default function PatternDetailScreen({
                   대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
                 </div>
               ) : visibleAlternativeItems.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {visibleAlternativeItems.map((item, itemIndex) => (
                     <AlternativeInfoCard
                       key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
