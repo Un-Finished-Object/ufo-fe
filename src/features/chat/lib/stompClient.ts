@@ -96,7 +96,7 @@ function buildDebugLogger(debug?: StompConfig["debug"]) {
   }
 
   if (process.env.NODE_ENV !== "development") {
-    return undefined;
+    return () => {};
   }
 
   return (message: string) => {
