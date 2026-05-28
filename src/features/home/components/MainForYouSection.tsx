@@ -192,7 +192,7 @@ export default function MainForYouSection({
         </div>
 
         <div className="bg-ufo-text px-4 py-5">
-          <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-color:var(--color-ufo-brand-soft)_var(--color-ufo-text)] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ufo-brand-soft [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/20">
             {items.length > 0 ? (
               <div className="flex w-max gap-4">
                 {items.map((item) => (
