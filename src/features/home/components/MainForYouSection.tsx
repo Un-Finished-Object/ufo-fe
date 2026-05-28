@@ -75,6 +75,9 @@ export default function MainForYouSection({
     enabled: authStatus === "authenticated",
   });
   const selectedInterests = authStatus === "authenticated" ? interestsQuery.data ?? [] : [];
+  const isLoadingInterests = authStatus === "authenticated" && interestsQuery.isPending;
+  const shouldShowInterestPrompt =
+    authStatus !== "loading" && !isLoadingInterests && selectedInterests.length === 0;
 
   useEffect(() => {
     if (isModalOpen && firstInterestButtonRef.current) {
@@ -193,7 +196,14 @@ export default function MainForYouSection({
 
         <div className="bg-ufo-text px-4 py-5">
           <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-color:var(--color-ufo-brand-soft)_var(--color-ufo-text)] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ufo-brand-soft [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/20">
-            {items.length > 0 ? (
+            {shouldShowInterestPrompt ? (
+              <div className="px-4 py-10 text-center text-sm font-semibold text-white">
+                <p>관심사를 알려주세요!</p>
+                <p className="mt-1 font-medium text-ufo-brand-soft">
+                  선택한 관심사를 바탕으로 도안을 추천해 드려요.
+                </p>
+              </div>
+            ) : items.length > 0 ? (
               <div className="flex w-max gap-4">
                 {items.map((item) => (
                   <article key={item.id} className="w-[156px] shrink-0">
