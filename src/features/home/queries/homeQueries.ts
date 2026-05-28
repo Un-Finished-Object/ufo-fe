@@ -203,7 +203,7 @@ export async function saveUserInterests(keywords: string[]) {
 export function bestPatternsQueryOptions() {
   return queryOptions({
     queryKey: homeQueryKeys.bestPatterns,
-    queryFn: ({ signal }) => fetchHomePatterns("views", 5, { signal }),
+    queryFn: ({ signal }) => fetchHomePatterns("views", 10, { signal }),
     staleTime: QUERY_STALE_TIME_MS,
   });
 }
