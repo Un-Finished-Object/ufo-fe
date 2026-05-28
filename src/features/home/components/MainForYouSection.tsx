@@ -10,6 +10,7 @@ import {
   saveUserInterests,
   userInterestsQueryOptions,
 } from "@/features/home/queries/homeQueries";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type CuratedItem = {
   id: number;
@@ -65,30 +66,24 @@ export default function MainForYouSection({
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftInterests, setDraftInterests] = useState<string[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
   const firstInterestButtonRef = useRef<HTMLButtonElement | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSettingDisabled = !isAuthenticated || authStatus === "loading";
+  const isSettingDisabled = authStatus === "loading";
   const previousAuthCacheKeyRef = useRef(authCacheKey);
   const interestsQuery = useQuery({
     ...userInterestsQueryOptions(authCacheKey),
     enabled: authStatus === "authenticated",
   });
   const selectedInterests = authStatus === "authenticated" ? interestsQuery.data ?? [] : [];
+  const isLoadingInterests = authStatus === "authenticated" && interestsQuery.isPending;
+  const shouldShowInterestPrompt =
+    authStatus !== "loading" && !isLoadingInterests && selectedInterests.length === 0;
 
   useEffect(() => {
     if (isModalOpen && firstInterestButtonRef.current) {
       firstInterestButtonRef.current.focus();
     }
   }, [isModalOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const previousAuthCacheKey = previousAuthCacheKeyRef.current;
@@ -114,20 +109,13 @@ export default function MainForYouSection({
     },
   });
 
-  const showToast = (message: string) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-
-    setToastMessage(message);
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2000);
-  };
-
   const openModal = () => {
     if (isSettingDisabled) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      showAuthRequiredToast();
       return;
     }
 
@@ -153,7 +141,7 @@ export default function MainForYouSection({
 
   const saveInterests = async () => {
     if (authStatus !== "authenticated") {
-      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      showAuthRequiredToast();
       return;
     }
 
@@ -192,8 +180,15 @@ export default function MainForYouSection({
         </div>
 
         <div className="bg-ufo-text px-4 py-5">
-          <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {items.length > 0 ? (
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-color:var(--color-ufo-brand-soft)_var(--color-ufo-text)] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ufo-brand-soft [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/20">
+            {shouldShowInterestPrompt ? (
+              <div className="px-4 py-10 text-center text-sm font-semibold text-white">
+                <p>관심사를 알려주세요!</p>
+                <p className="mt-1 font-medium text-ufo-brand-soft">
+                  선택한 관심사를 바탕으로 도안을 추천해 드려요.
+                </p>
+              </div>
+            ) : items.length > 0 ? (
               <div className="flex w-max gap-4">
                 {items.map((item) => (
                   <article key={item.id} className="w-[156px] shrink-0">

@@ -92,9 +92,9 @@ export default function HomeLandingScreen() {
         <MainTopSlider posts={bannerPosts} />
 
         <section className="mb-6 px-4">
-          <h2 className="mb-3 text-xl font-bold tracking-tight">BEST &gt;</h2>
+          <h2 className="mb-3 text-xl font-bold tracking-tight">BEST</h2>
           {bestItems.length > 0 ? (
-            <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-color:var(--color-ufo-text-muted)_var(--color-ufo-surface)] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ufo-text-muted [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-ufo-surface">
               <div className="flex w-max gap-4 pb-1">
                 {bestItems.map((item) => (
                   <article key={item.id} className="w-[140px]">
