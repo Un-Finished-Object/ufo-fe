@@ -10,6 +10,7 @@ import {
   saveUserInterests,
   userInterestsQueryOptions,
 } from "@/features/home/queries/homeQueries";
+import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 type CuratedItem = {
   id: number;
@@ -65,10 +66,9 @@ export default function MainForYouSection({
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftInterests, setDraftInterests] = useState<string[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
   const firstInterestButtonRef = useRef<HTMLButtonElement | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSettingDisabled = !isAuthenticated || authStatus === "loading";
+  const isSettingDisabled = authStatus === "loading";
   const previousAuthCacheKeyRef = useRef(authCacheKey);
   const interestsQuery = useQuery({
     ...userInterestsQueryOptions(authCacheKey),
@@ -84,14 +84,6 @@ export default function MainForYouSection({
       firstInterestButtonRef.current.focus();
     }
   }, [isModalOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const previousAuthCacheKey = previousAuthCacheKeyRef.current;
@@ -117,20 +109,13 @@ export default function MainForYouSection({
     },
   });
 
-  const showToast = (message: string) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-
-    setToastMessage(message);
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2000);
-  };
-
   const openModal = () => {
     if (isSettingDisabled) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      showAuthRequiredToast();
       return;
     }
 
@@ -156,7 +141,7 @@ export default function MainForYouSection({
 
   const saveInterests = async () => {
     if (authStatus !== "authenticated") {
-      showToast("관심사 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      showAuthRequiredToast();
       return;
     }
 
