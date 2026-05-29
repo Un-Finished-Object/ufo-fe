@@ -100,8 +100,11 @@ export default function MainForYouSection({
 
   const saveInterestsMutation = useMutation({
     mutationFn: () => saveUserInterests(draftInterests),
-    onSuccess: (keywords) => {
+    onSuccess: async (keywords) => {
       queryClient.setQueryData(homeQueryKeys.interests(authCacheKey), keywords);
+      await queryClient.invalidateQueries({
+        queryKey: homeQueryKeys.recommendPatterns(authCacheKey),
+      });
       closeModal();
     },
     onError: () => {
