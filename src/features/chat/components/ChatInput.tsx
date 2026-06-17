@@ -10,6 +10,7 @@ type ChatInputReplyPreview = {
 type ChatInputProps = {
   value: string;
   isSending: boolean;
+  placeholder?: string;
   isSubmitDisabled?: boolean;
   replyPreview?: ChatInputReplyPreview | null;
   onChange: (value: string) => void;
@@ -20,6 +21,7 @@ type ChatInputProps = {
 export default function ChatInput({
   value,
   isSending,
+  placeholder = "뜨개감지(으)로 대화해보세요.",
   isSubmitDisabled = false,
   replyPreview = null,
   onChange,
@@ -88,7 +90,7 @@ export default function ChatInput({
             event.preventDefault();
             handleSend();
           }}
-          placeholder="뜨개감지(으)로 대화해보세요."
+          placeholder={placeholder}
           enterKeyHint="send"
           className="w-full bg-transparent text-sm font-semibold text-ufo-text-secondary placeholder:text-ufo-text-muted focus:outline-none"
         />

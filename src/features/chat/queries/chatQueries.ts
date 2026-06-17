@@ -4,11 +4,14 @@ import { buildApiUrl } from "@/lib/api/client";
 import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 
 type MyChatItem = {
+  patternId?: number;
   chatId?: number;
   chatName?: string;
+  chatImageUrl?: string | null;
   favorite?: boolean;
   isHidden?: boolean;
   unRead?: number;
+  createdAt?: string;
 };
 
 type MyChatsResponse = {
@@ -18,11 +21,37 @@ type MyChatsResponse = {
   error?: unknown;
 };
 
+type ValidMyChatItem = MyChatItem & {
+  patternId: number;
+  chatId: number;
+  chatName: string;
+  favorite: boolean;
+  isHidden: boolean;
+  unRead: number;
+  createdAt: string;
+};
+
 export const myChatRoomsQueryKey = ["myChatRooms"] as const;
 
 type MyChatRoomsQueryOptionsParams = {
   enabled?: boolean;
 };
+
+function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
+  if (!chatImageUrl) {
+    return null;
+  }
+
+  if (
+    chatImageUrl.startsWith("http://") ||
+    chatImageUrl.startsWith("https://") ||
+    chatImageUrl.startsWith("/")
+  ) {
+    return chatImageUrl;
+  }
+
+  return `/${chatImageUrl}`;
+}
 
 export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
   const response = await fetchWithAuthRetry({
@@ -50,19 +79,24 @@ export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}
 
   return payload.data.chats
     .filter(
-      (chat): chat is Required<MyChatItem> =>
+      (chat): chat is ValidMyChatItem =>
+        typeof chat.patternId === "number" &&
         typeof chat.chatId === "number" &&
         typeof chat.chatName === "string" &&
         typeof chat.favorite === "boolean" &&
         typeof chat.isHidden === "boolean" &&
-        typeof chat.unRead === "number",
+        typeof chat.unRead === "number" &&
+        typeof chat.createdAt === "string",
     )
     .map((chat) => ({
-      patternId: String(chat.chatId),
+      chatId: String(chat.chatId),
+      patternId: String(chat.patternId),
       name: chat.chatName,
+      imageUrl: normalizeChatImageUrl(chat.chatImageUrl),
       favorite: chat.favorite,
       isHidden: chat.isHidden,
       unreadCount: chat.unRead,
+      createdAt: chat.createdAt,
     } satisfies ChatRoom));
 }
 

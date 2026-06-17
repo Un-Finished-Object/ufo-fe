@@ -70,6 +70,10 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const scrollContainerElementRef = useRef<HTMLElement | null>(null);
   const didScrollToInitialBottomRef = useRef(false);
   const previousScrollHeightRef = useRef<number | null>(null);
+  const previousAutoScrollStateRef = useRef<{ messageCount: number; messageKey: string | null }>({
+    messageCount: 0,
+    messageKey: null,
+  });
   const setCurrentRoomId = useChatRealtimeStore((state) => state.setCurrentRoomId);
   const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
   const sendChatMessage = useSendChatMessage({
@@ -87,6 +91,10 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   useEffect(() => {
     didScrollToInitialBottomRef.current = false;
     previousScrollHeightRef.current = null;
+    previousAutoScrollStateRef.current = {
+      messageCount: 0,
+      messageKey: null,
+    };
   }, [roomId]);
 
   useEffect(() => {
@@ -324,6 +332,45 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
 
     return confirmedMessages.at(-1)?.messageId ?? null;
   }, [messages]);
+  const lastMessageKey = useMemo(() => {
+    const lastMessage = messages.at(-1);
+
+    return lastMessage?.clientMessageId ?? lastMessage?.messageId ?? lastMessage?.createdAt ?? null;
+  }, [messages]);
+
+  useEffect(() => {
+    const previousAutoScrollState = previousAutoScrollStateRef.current;
+
+    if (!lastMessageKey || isMessagesPending || isFetchingNextPage) {
+      return;
+    }
+
+    previousAutoScrollStateRef.current = {
+      messageCount: messages.length,
+      messageKey: lastMessageKey,
+    };
+
+    if (
+      previousAutoScrollState.messageKey === lastMessageKey ||
+      previousAutoScrollState.messageCount >= messages.length
+    ) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const currentScrollContainer = scrollContainerElementRef.current;
+
+      if (!currentScrollContainer) {
+        return;
+      }
+
+      currentScrollContainer.scrollTop = currentScrollContainer.scrollHeight;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [isFetchingNextPage, isMessagesPending, lastMessageKey, messages.length]);
 
   useChatReadReceipt({
     roomId,
@@ -333,6 +380,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   });
 
   const isFoActive = chatStatus?.isHidden ?? false;
+  const chatInputPlaceholderName = meQuery.data?.nickname.trim() || "회원";
   const foConfirmMainText = isFoActive
     ? "이 채팅방의 매듭을 푸시겠습니까?"
     : "이 채팅방을 매듭짓겠습니까?";
@@ -396,6 +444,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
           <ChatInput
             value={messageText}
             isSending={false}
+            placeholder={`${chatInputPlaceholderName}(으)로 대화해보세요.`}
             isSubmitDisabled={false}
             replyPreview={replyTarget ? { senderName: replyTarget.senderName, text: replyTarget.text } : null}
             onChange={setMessageText}
