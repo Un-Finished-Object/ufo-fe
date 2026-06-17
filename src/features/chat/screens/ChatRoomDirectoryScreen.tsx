@@ -1,14 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
-import { chatRoomFilters } from "@/features/chat/constants";
+import { chatRoomFilters, type ChatRoomFilter } from "@/features/chat/constants";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
-import { myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import { chatStatusQueryKey, type ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
+import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
+import type { ChatRoom } from "@/features/chat/types";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
 function LoadingState() {
@@ -34,12 +37,53 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 export default function ChatRoomDirectoryScreen() {
   const [query, setQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ChatRoomFilter>("전체");
+  const [isSettingsMode, setIsSettingsMode] = useState(false);
   const normalizedQuery = query.trim().toLowerCase();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
+  const queryClient = useQueryClient();
   const myChatRoomsQuery = useQuery(
     myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
   );
+  const updateChatStatusMutation = useMutation({
+    mutationFn: ({
+      favorite,
+      hidden,
+      room,
+    }: {
+      favorite?: boolean;
+      hidden?: boolean;
+      room: ChatRoom;
+    }) =>
+      patchChatStatus({
+        patternId: room.patternId,
+        favorite,
+        hidden,
+      }),
+    onSuccess: (nextChatStatus, { room }) => {
+      queryClient.setQueryData<ChatStatus | null>(
+        chatStatusQueryKey(room.patternId),
+        nextChatStatus,
+      );
+      queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
+        previousRooms?.map((previousRoom) =>
+          previousRoom.patternId === room.patternId
+            ? {
+                ...previousRoom,
+                favorite: nextChatStatus.favorite,
+                isHidden: nextChatStatus.isHidden,
+              }
+            : previousRoom,
+        ),
+      );
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message === "Unauthorized") {
+        showAuthRequiredToast();
+      }
+    },
+  });
 
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
@@ -47,25 +91,68 @@ export default function ChatRoomDirectoryScreen() {
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
-  const filteredMyRooms = useMemo(
-    () =>
-      (myChatRoomsQuery.data ?? []).filter(
-        (room) => !room.isHidden && room.name.toLowerCase().includes(normalizedQuery),
-      ),
-    [myChatRoomsQuery.data, normalizedQuery],
-  );
+  const filteredMyRooms = useMemo(() => {
+    const searchedRooms = (myChatRoomsQuery.data ?? []).filter((room) =>
+      room.name.toLowerCase().includes(normalizedQuery),
+    );
 
-  const filteredFoRooms = useMemo(
-    () =>
-      (myChatRoomsQuery.data ?? []).filter(
-        (room) => room.isHidden && room.name.toLowerCase().includes(normalizedQuery),
-      ),
-    [myChatRoomsQuery.data, normalizedQuery],
-  );
+    if (activeFilter === "즐겨찾기") {
+      return searchedRooms.filter((room) => room.favorite);
+    }
+
+    if (activeFilter === "안읽음") {
+      return searchedRooms.filter((room) => room.unreadCount > 0);
+    }
+
+    if (activeFilter === "FO") {
+      return searchedRooms.filter((room) => room.isHidden);
+    }
+
+    return searchedRooms.filter((room) => !room.isHidden);
+  }, [activeFilter, myChatRoomsQuery.data, normalizedQuery]);
 
   const nickname = meQuery.data?.nickname ?? "회원";
   const isChatRoomsLoading = Boolean(meQuery.data) && myChatRoomsQuery.isPending;
   const isChatRoomsError = Boolean(meQuery.data) && myChatRoomsQuery.isError;
+  const updatingRoomId = updateChatStatusMutation.isPending
+    ? updateChatStatusMutation.variables.room.patternId
+    : null;
+
+  const handleSettingsClick = () => {
+    setIsSettingsMode((currentIsSettingsMode) => !currentIsSettingsMode);
+  };
+
+  const handleFavoriteChange = (room: ChatRoom) => {
+    if (updateChatStatusMutation.isPending) {
+      return;
+    }
+
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      return;
+    }
+
+    updateChatStatusMutation.mutate({
+      room,
+      favorite: !room.favorite,
+    });
+  };
+
+  const handleHiddenChange = (room: ChatRoom) => {
+    if (updateChatStatusMutation.isPending) {
+      return;
+    }
+
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      return;
+    }
+
+    updateChatStatusMutation.mutate({
+      room,
+      hidden: !room.isHidden,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -95,18 +182,17 @@ export default function ChatRoomDirectoryScreen() {
             <ChatRoomList
               title="나의 채팅방"
               rooms={filteredMyRooms}
-              filters={[...chatRoomFilters]}
+              filters={chatRoomFilters}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
               showSettingsButton
+              isSettingsMode={isSettingsMode}
+              updatingRoomId={updatingRoomId}
+              onSettingsClick={handleSettingsClick}
+              onFavoriteChange={handleFavoriteChange}
+              onHiddenChange={handleHiddenChange}
               emptyText="검색 결과가 없습니다."
             />
-
-            <div className="px-4 pt-3">
-              <ChatRoomList
-                title="FO"
-                rooms={filteredFoRooms}
-                emptyText="FO 채팅방이 없습니다."
-              />
-            </div>
           </>
         ) : null}
       </main>
