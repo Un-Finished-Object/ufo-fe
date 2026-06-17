@@ -14,7 +14,7 @@ export function chatStatusQueryKey(patternId: string) {
 }
 
 export function mapChatRoomToStatus(patternId: string, chatRoom?: ChatRoom) {
-  const chatId = Number(patternId);
+  const chatId = Number(chatRoom?.chatId ?? patternId);
 
   if (!chatRoom || Number.isNaN(chatId)) {
     return null;
