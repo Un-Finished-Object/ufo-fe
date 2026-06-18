@@ -1,4 +1,5 @@
 import { buildApiUrl } from "@/lib/api/client";
+import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
 
 type PatternScrapItem = {
   id: number;
@@ -8,62 +9,96 @@ type PatternScrapItem = {
   isScrapped: boolean;
 };
 
+type PatternScrapResult = {
+  items: PatternScrapItem[];
+  page: number;
+  nextPage: number;
+};
+
+type PatternScrapApiItem = {
+  id?: number;
+  title?: string;
+  thumbnailUrl?: string | null;
+  category?: string;
+  subCategory?: string;
+  author?: string;
+  stats?: {
+    views?: number;
+    scraps?: number;
+  };
+  my?: {
+    scrapped?: boolean;
+  };
+  createdAt?: string;
+};
+
 type PatternScrapResponse = {
   data?: {
-    items?: Array<{
-      id?: number;
-      title?: string;
-      author?: string;
-      image?: string | null;
-      thumbnailUrl?: string | null;
-    }>;
+    items?: PatternScrapApiItem[];
+    page?: number;
+    nextPage?: number;
   };
   error?: unknown;
 };
 
-// Assumption: this placeholder endpoint will be replaced once the pattern scrap API contract is finalized.
-const PATTERN_SCRAPS_ENDPOINT = "/v1/users/me/scraps/patterns";
+const PATTERN_SCRAPS_ENDPOINT = "/v1/users/me/scraps";
+const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
 
-export async function fetchPatternScraps({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetch(buildApiUrl(PATTERN_SCRAPS_ENDPOINT), {
-    method: "GET",
-    signal,
-    credentials: "include",
+export async function fetchPatternScraps({
+  page,
+  signal,
+}: {
+  page: number;
+  signal?: AbortSignal;
+}): Promise<PatternScrapResult> {
+  const params = new URLSearchParams({
+    page: String(page),
+  });
+  const response = await fetchWithAuthRetry({
+    input: buildApiUrl(`${PATTERN_SCRAPS_ENDPOINT}?${params.toString()}`),
+    init: {
+      method: "GET",
+      signal,
+      credentials: "include",
+    },
   });
 
+  if (response.status === 401) {
+    return {
+      items: [],
+      page,
+      nextPage: 0,
+    };
+  }
+
   if (!response.ok) {
-    return [] satisfies PatternScrapItem[];
+    throw new Error("Failed to load pattern scraps.");
   }
 
   const payload = (await response.json()) as PatternScrapResponse;
 
   if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-    return [] satisfies PatternScrapItem[];
+    throw new Error("Failed to load pattern scraps.");
   }
 
-  return payload.data.items
-    .filter(
-      (
-        item,
-      ): item is {
-        id: number;
-        title: string;
-        author: string;
-        image?: string | null;
-        thumbnailUrl?: string | null;
-      } =>
-        typeof item.id === "number" &&
-        typeof item.title === "string" &&
-        typeof item.author === "string" &&
-        typeof (item.image ?? item.thumbnailUrl) === "string",
-    )
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      author: item.author,
-      image: item.image ?? item.thumbnailUrl ?? "",
-      isScrapped: true,
-    }));
+  return {
+    items: payload.data.items
+      .filter(
+        (item): item is PatternScrapApiItem & { id: number; title: string; author: string } =>
+          typeof item.id === "number" &&
+          typeof item.title === "string" &&
+          typeof item.author === "string",
+      )
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        image: item.thumbnailUrl ?? PATTERN_FALLBACK_IMAGE,
+        isScrapped: item.my?.scrapped === true,
+      })),
+    page: typeof payload.data.page === "number" ? payload.data.page : page,
+    nextPage: typeof payload.data.nextPage === "number" ? payload.data.nextPage : 0,
+  };
 }
 
-export type { PatternScrapItem };
+export type { PatternScrapItem, PatternScrapResult };
