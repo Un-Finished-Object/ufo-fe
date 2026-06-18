@@ -59,6 +59,7 @@ const detailTabOptions = [
 const alternativePreviewCards = [0, 1, 2] as const;
 
 const currencyFormatter = new Intl.NumberFormat("ko-KR");
+const patternAccessCredits = 10;
 
 type DetailTabSwitchProps = {
   value: DetailTabValue;
@@ -651,7 +652,7 @@ export default function PatternDetailScreen({
               <span>채팅방 입장하기</span>
               {shouldShowChatCreditBadge ? (
                 <CreditBadge
-                  credits={pattern.credits}
+                  credits={patternAccessCredits}
                   className="bg-transparent text-ufo-credit"
                   circleClassName="text-ufo-credit"
                   starClassName="text-ufo-surface"
@@ -739,7 +740,7 @@ export default function PatternDetailScreen({
                     )
                   ) : (
                     <AlternativePurchaseGate
-                      credits={pattern.credits}
+                      credits={patternAccessCredits}
                       disabled={purchaseAccessMutation.isPending}
                       onPurchaseClick={handleAlternativePurchaseClick}
                     />
@@ -763,7 +764,7 @@ export default function PatternDetailScreen({
           subText={
             <>
               <span className="block">현재 크레딧 {currentCreditText}</span>
-              <span className="block">필요 크레딧 {pattern.credits} 크레딧</span>
+              <span className="block">필요 크레딧 {patternAccessCredits} 크레딧</span>
               {purchaseErrorMessage ? (
                 <span className="mt-2 block text-ufo-error">{purchaseErrorMessage}</span>
               ) : null}
