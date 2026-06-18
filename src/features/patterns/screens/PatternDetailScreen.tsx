@@ -641,63 +641,24 @@ export default function PatternDetailScreen({
         </section>
 
         <section className="mt-5 px-4">
-          <article className="flex min-h-48 flex-col rounded-2xl border border-ufo-brand bg-white p-4 pb-3">
-            <div className="flex items-center gap-2 border-b border-ufo-border-light pb-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                className="bi bi-chat-right-text text-ufo-text-neutral"
-                viewBox="0 0 16 16"
-              >
-                <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
-                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5" />
-              </svg>
-              <h2 className="truncate text-sm text-ufo-text-neutral">{pattern.title} 실시간 채팅방</h2>
-            </div>
-
-            <div className="mt-4">
-              <div
-                className="max-h-[72px] space-y-3 overflow-y-auto"
-                aria-label="실시간 채팅 미리보기"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-9 w-9 rounded-full bg-ufo-brand-pale" aria-hidden="true" />
-                  <span className="h-7 w-[132px] rounded-xl bg-ufo-border" aria-hidden="true" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-9 w-9 rounded-full bg-ufo-brand" aria-hidden="true" />
-                  <span className="h-7 w-[132px] rounded-xl bg-ufo-border" aria-hidden="true" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-9 w-9 rounded-full bg-ufo-brand-pale" aria-hidden="true" />
-                  <span className="h-7 w-[120px] rounded-xl bg-ufo-border" aria-hidden="true" />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={handleChatRoomClick}
-                disabled={isResolvingChatPurchase || purchaseAccessMutation.isPending}
-                className="flex h-10 w-full items-center justify-center rounded-xl border border-ufo-brand bg-ufo-brand-pale px-3 text-sm font-bold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span className="flex items-center gap-2 pb-0.5">
-                  <span>채팅방 입장하기</span>
-                  {shouldShowChatCreditBadge ? (
-                    <CreditBadge
-                      credits={pattern.credits}
-                      className="bg-transparent text-ufo-credit"
-                      circleClassName="text-ufo-credit"
-                      starClassName="text-ufo-surface"
-                    />
-                  ) : null}
-                </span>
-              </button>
-            </div>
-          </article>
+          <button
+            type="button"
+            onClick={handleChatRoomClick}
+            disabled={isResolvingChatPurchase || purchaseAccessMutation.isPending}
+            className="flex h-10 w-full items-center justify-center rounded-xl border border-ufo-brand bg-ufo-brand-pale px-3 text-sm font-bold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="flex items-center gap-2 pb-0.5">
+              <span>채팅방 입장하기</span>
+              {shouldShowChatCreditBadge ? (
+                <CreditBadge
+                  credits={pattern.credits}
+                  className="bg-transparent text-ufo-credit"
+                  circleClassName="text-ufo-credit"
+                  starClassName="text-ufo-surface"
+                />
+              ) : null}
+            </span>
+          </button>
         </section>
 
         <section className="mt-6 px-4">
