@@ -11,9 +11,12 @@ export type ChatMessage = {
 };
 
 export type ChatRoom = {
+  chatId: string;
   patternId: string;
   name: string;
+  imageUrl: string | null;
   favorite: boolean;
   isHidden: boolean;
   unreadCount: number;
+  createdAt: string;
 };
