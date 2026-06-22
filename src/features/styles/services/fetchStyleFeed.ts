@@ -1,4 +1,5 @@
 import { buildApiUrl } from "@/lib/api/client";
+import { fetchPublic } from "@/lib/fetch/fetchPublic";
 
 type StyleFeedItem = {
   id: number;
@@ -24,10 +25,12 @@ type StyleFeedResponse = {
 const STYLE_FEED_ENDPOINT = "/v1/styles";
 
 export async function fetchStyleFeed({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetch(buildApiUrl(STYLE_FEED_ENDPOINT), {
-    method: "GET",
-    signal,
-    credentials: "include",
+  const response = await fetchPublic({
+    input: buildApiUrl(STYLE_FEED_ENDPOINT),
+    init: {
+      method: "GET",
+      signal,
+    },
   });
 
   if (!response.ok) {

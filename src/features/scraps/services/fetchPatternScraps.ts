@@ -1,5 +1,5 @@
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 
 type PatternScrapItem = {
   id: number;
@@ -54,7 +54,7 @@ export async function fetchPatternScraps({
   const params = new URLSearchParams({
     page: String(page),
   });
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`${PATTERN_SCRAPS_ENDPOINT}?${params.toString()}`),
     init: {
       method: "GET",

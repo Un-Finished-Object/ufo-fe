@@ -1,5 +1,5 @@
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 
 type UpdateMyProfileResponse = {
   data?: {
@@ -10,7 +10,7 @@ type UpdateMyProfileResponse = {
 
 export async function updateMyProfile({ nickname }: { nickname: string }) {
   // Assumption: profile updates are handled by PATCH /v1/users/me.
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
     init: {
       method: "PATCH",

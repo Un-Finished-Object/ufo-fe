@@ -22,11 +22,17 @@ export default function PatternSearchScreen({
   initialPage,
 }: PatternSearchScreenProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuthState();
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const [query, setQuery] = useState(initialKeyword);
   const trimmedKeyword = initialKeyword.trim();
   const profileHref = isAuthenticated ? "/my" : "/login";
-  const searchResultsQuery = useQuery(patternSearchQueryOptions(trimmedKeyword, initialPage));
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
+  const searchResultsQuery = useQuery({
+    ...patternSearchQueryOptions(trimmedKeyword, initialPage, authCacheKey),
+    enabled: authStatus !== "loading" && trimmedKeyword.length > 0,
+  });
   const patternItems = searchResultsQuery.data?.items ?? [];
   const currentPage = searchResultsQuery.data?.page ?? initialPage;
   const nextPage = searchResultsQuery.data?.nextPage ?? 0;

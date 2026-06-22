@@ -1,4 +1,5 @@
 import { buildApiUrl } from "@/lib/api/client";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 
 type StyleScrapItem = {
   id: number;
@@ -24,10 +25,12 @@ type StyleScrapResponse = {
 const STYLE_SCRAPS_ENDPOINT = "/v1/users/me/scraps/styles";
 
 export async function fetchStyleScraps({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetch(buildApiUrl(STYLE_SCRAPS_ENDPOINT), {
-    method: "GET",
-    signal,
-    credentials: "include",
+  const response = await fetchAuthenticated({
+    input: buildApiUrl(STYLE_SCRAPS_ENDPOINT),
+    init: {
+      method: "GET",
+      signal,
+    },
   });
 
   if (!response.ok) {

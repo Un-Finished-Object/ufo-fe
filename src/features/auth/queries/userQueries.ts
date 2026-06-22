@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 import { getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
@@ -41,24 +41,20 @@ export const userQueryKeys = {
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
   if (!getAccessToken()) {
-    const refreshResponse = await refreshAccessToken({
-      signal,
-      mode: "auto",
-    });
+    const refreshResponse = await refreshAccessToken({ mode: "auto" });
 
     if (!refreshResponse.ok) {
       return null;
     }
   }
 
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
     init: {
       method: "GET",
       credentials: "include",
       signal,
     },
-    skipRefresh: true,
   });
 
   if (response.status === 401) {
@@ -99,7 +95,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
 }
 
 export async function fetchWallet({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/credits/wallet"),
     init: {
       method: "GET",

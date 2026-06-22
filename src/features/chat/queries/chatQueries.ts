@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 
 type MyChatItem = {
   patternId?: number;
@@ -54,7 +54,7 @@ function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
 }
 
 export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me/chats"),
     init: {
       method: "GET",

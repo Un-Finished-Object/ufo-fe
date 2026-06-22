@@ -1,4 +1,4 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import type { ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
 import { buildApiUrl } from "@/lib/api/client";
 
@@ -22,7 +22,7 @@ export async function patchChatStatus({
   favorite,
   hidden,
 }: PatchChatStatusParams) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/chat/${patternId}/status`),
     init: {
       method: "PATCH",

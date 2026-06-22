@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/common/ToastMessage";
 import { buildApiUrl } from "@/lib/api/client";
@@ -86,7 +86,7 @@ export default function AttendanceCalendar() {
           month: String(requestedMonth).padStart(2, "0"),
         });
 
-        const response = await fetchWithAuthRetry({
+        const response = await fetchAuthenticated({
           input: buildApiUrl(`/v1/attendance/status?${params.toString()}`),
           init: {
             signal: controller.signal,
@@ -139,7 +139,7 @@ export default function AttendanceCalendar() {
 
     setIsCheckingIn(true);
     try {
-      const response = await fetchWithAuthRetry({
+      const response = await fetchAuthenticated({
         input: buildApiUrl("/v1/attendance/check"),
         init: {
           method: "POST",

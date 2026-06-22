@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
@@ -43,7 +43,7 @@ export async function fetchPatternPurchaseStatus(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "GET",
@@ -81,7 +81,7 @@ export async function purchasePatternAccess({
   patternId: number;
   type: PatternPurchaseType;
 }) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "POST",

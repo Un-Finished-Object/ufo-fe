@@ -1,17 +1,5 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { request, type ApiFetchParams } from "@/lib/fetch/request";
 
-type FetchPublicParams = {
-  input: RequestInfo | URL;
-  init?: RequestInit;
-};
-
-export function fetchPublic({ input, init }: FetchPublicParams) {
-  return fetchWithAuthRetry({
-    input,
-    init: {
-      ...init,
-      credentials: init?.credentials ?? "omit",
-    },
-    skipRefresh: true,
-  });
+export function fetchPublic(params: ApiFetchParams) {
+  return request({ ...params, authMode: "public" });
 }

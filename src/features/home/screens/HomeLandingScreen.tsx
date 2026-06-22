@@ -51,8 +51,14 @@ export default function HomeLandingScreen() {
   const authCacheKey = isAuthenticated
     ? currentUser?.userId ?? currentUser?.email ?? "member"
     : "guest";
-  const bestPatternsQuery = useQuery(bestPatternsQueryOptions());
-  const newPatternsQuery = useQuery(newPatternsQueryOptions());
+  const bestPatternsQuery = useQuery({
+    ...bestPatternsQueryOptions(authCacheKey),
+    enabled: authStatus !== "loading",
+  });
+  const newPatternsQuery = useQuery({
+    ...newPatternsQueryOptions(authCacheKey),
+    enabled: authStatus !== "loading",
+  });
   const recommendPatternsQuery = useQuery({
     ...recommendPatternsQueryOptions(authCacheKey),
     enabled: authStatus !== "loading",

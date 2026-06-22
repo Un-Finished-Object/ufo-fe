@@ -1,4 +1,4 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
 
 type PatternSearchApiItem = {
@@ -60,7 +60,7 @@ export async function fetchPatternSearchResults({
     keyword: trimmedKeyword,
     page: String(page),
   });
-  const response = await fetchWithAuthRetry({
+  const response = await fetchOptionalAuth({
     input: buildApiUrl(`/v1/patterns/search?${params.toString()}`),
     init: {
       method: "GET",

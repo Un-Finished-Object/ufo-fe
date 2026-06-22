@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@/features/chat/types";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 
 export const CHAT_MESSAGES_FORBIDDEN_MESSAGE = "구매하지 않은 채팅방입니다.";
@@ -72,7 +72,7 @@ export async function fetchChatMessages(
   }
 
   const queryString = searchParams.toString();
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/chat/${roomId}/messages${queryString ? `?${queryString}` : ""}`),
     init: {
       method: "GET",

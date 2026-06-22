@@ -6,14 +6,15 @@ import {
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 export const patternSearchQueryKeys = {
-  results: (keyword: string, page: number) => ["patterns", "search", keyword, page] as const,
+  results: (keyword: string, page: number, viewerKey: string) =>
+    ["patterns", "search", keyword, page, viewerKey] as const,
 };
 
-export function patternSearchQueryOptions(keyword: string, page: number) {
+export function patternSearchQueryOptions(keyword: string, page: number, viewerKey: string) {
   const trimmedKeyword = keyword.trim();
 
   return queryOptions<PatternSearchResult>({
-    queryKey: patternSearchQueryKeys.results(trimmedKeyword, page),
+    queryKey: patternSearchQueryKeys.results(trimmedKeyword, page, viewerKey),
     queryFn: ({ signal }) =>
       fetchPatternSearchResults({
         keyword: trimmedKeyword,

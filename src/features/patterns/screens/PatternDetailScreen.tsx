@@ -343,9 +343,15 @@ export default function PatternDetailScreen({
 }: PatternDetailScreenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const patternDetailQuery = useQuery(patternDetailQueryOptions(patternId));
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
+  const patternDetailQuery = useQuery({
+    ...patternDetailQueryOptions(patternId, authCacheKey),
+    enabled: authStatus !== "loading",
+  });
   const pattern = patternDetailQuery.data ?? null;
-  const { authStatus, isAuthenticated } = useAuthState();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
@@ -409,7 +415,7 @@ export default function PatternDetailScreen({
       }),
     onSuccess: (result) => {
       queryClient.setQueryData<PatternDetailData | undefined>(
-        patternDetailQueryKey(patternId),
+        patternDetailQueryKey(patternId, authCacheKey),
         (previous) =>
           previous
             ? {

@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 import { formatPatternCategory } from "@/features/patterns/lib/patternCategories";
@@ -68,15 +68,15 @@ function getSafeText(value?: string | null) {
   return trimmedValue ? trimmedValue : "-";
 }
 
-export function patternDetailQueryKey(patternId: number) {
-  return ["patternDetail", patternId] as const;
+export function patternDetailQueryKey(patternId: number, viewerKey: string) {
+  return ["patternDetail", patternId, viewerKey] as const;
 }
 
 export async function fetchPatternDetail(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchOptionalAuth({
     input: buildApiUrl(`/v1/patterns/${patternId}`),
     init: {
       method: "GET",
@@ -129,9 +129,9 @@ export async function fetchPatternDetail(
   } satisfies PatternDetailData;
 }
 
-export function patternDetailQueryOptions(patternId: number) {
+export function patternDetailQueryOptions(patternId: number, viewerKey: string) {
   return queryOptions({
-    queryKey: patternDetailQueryKey(patternId),
+    queryKey: patternDetailQueryKey(patternId, viewerKey),
     queryFn: ({ signal }) => fetchPatternDetail(patternId, { signal }),
     staleTime: QUERY_STALE_TIME_MS,
   });

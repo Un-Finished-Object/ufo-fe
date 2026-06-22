@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
-import { fetchPublic } from "@/lib/fetch/fetchPublic";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
@@ -77,8 +77,8 @@ function mapPatternItems(items: PatternApiItem[] | RecommendApiItem[], limit?: n
 }
 
 export const homeQueryKeys = {
-  bestPatterns: ["home", "bestPatterns"] as const,
-  newPatterns: ["home", "newPatterns"] as const,
+  bestPatterns: (viewerKey: string) => ["home", "bestPatterns", viewerKey] as const,
+  newPatterns: (viewerKey: string) => ["home", "newPatterns", viewerKey] as const,
   recommendPatterns: (viewerKey: string) => ["home", "recommendPatterns", viewerKey] as const,
   interests: (viewerKey: string) => ["home", "interests", viewerKey] as const,
 };
@@ -95,7 +95,7 @@ export async function fetchHomePatterns(
       page: "1",
     });
 
-    const response = await fetchPublic({
+    const response = await fetchOptionalAuth({
       input: buildApiUrl(`/v1/patterns?${params.toString()}`),
       init: {
         method: "GET",
@@ -123,7 +123,7 @@ export async function fetchRecommendedPatterns(
   { signal }: { signal?: AbortSignal } = {},
 ) {
   try {
-    const response = await fetchWithAuthRetry({
+    const response = await fetchOptionalAuth({
       input: buildApiUrl("/v1/patterns/recommend"),
       init: {
         method: "GET",
@@ -151,7 +151,7 @@ export async function fetchUserInterests(
   { signal }: { signal?: AbortSignal } = {},
 ) {
   try {
-    const response = await fetchWithAuthRetry({
+    const response = await fetchAuthenticated({
       input: buildApiUrl("/v1/users/me/interests"),
       init: {
         method: "GET",
@@ -176,7 +176,7 @@ export async function fetchUserInterests(
 }
 
 export async function saveUserInterests(keywords: string[]) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me/interests"),
     init: {
       method: "PATCH",
@@ -200,17 +200,17 @@ export async function saveUserInterests(keywords: string[]) {
   return Array.isArray(payload.data.keywords) ? payload.data.keywords : [];
 }
 
-export function bestPatternsQueryOptions() {
+export function bestPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
-    queryKey: homeQueryKeys.bestPatterns,
+    queryKey: homeQueryKeys.bestPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("views", 10, { signal }),
     staleTime: QUERY_STALE_TIME_MS,
   });
 }
 
-export function newPatternsQueryOptions() {
+export function newPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
-    queryKey: homeQueryKeys.newPatterns,
+    queryKey: homeQueryKeys.newPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("news", 10, { signal }),
     staleTime: QUERY_STALE_TIME_MS,
   });

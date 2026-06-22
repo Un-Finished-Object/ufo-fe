@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
 
 type PatternAlternativeItemResponse = {
@@ -63,7 +63,7 @@ export async function fetchPatternAlternatives(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/alternatives`),
     init: {
       method: "GET",

@@ -9,12 +9,13 @@ export type PatternCatalogQueryParams = {
   category: string;
   sort: string;
   page: number;
+  viewerKey: string;
   subCategory?: string;
 };
 
 export const patternCatalogQueryKeys = {
-  list: ({ category, sort, page, subCategory }: PatternCatalogQueryParams) =>
-    ["patterns", "catalog", category, sort, page, subCategory ?? null] as const,
+  list: ({ category, sort, page, viewerKey, subCategory }: PatternCatalogQueryParams) =>
+    ["patterns", "catalog", category, sort, page, subCategory ?? null, viewerKey] as const,
 };
 
 export function patternCatalogQueryOptions(params: PatternCatalogQueryParams) {
@@ -22,7 +23,10 @@ export function patternCatalogQueryOptions(params: PatternCatalogQueryParams) {
     queryKey: patternCatalogQueryKeys.list(params),
     queryFn: ({ signal }) =>
       fetchPatternCatalogResults({
-        ...params,
+        category: params.category,
+        sort: params.sort,
+        page: params.page,
+        subCategory: params.subCategory,
         signal,
       }),
     placeholderData: keepPreviousData,

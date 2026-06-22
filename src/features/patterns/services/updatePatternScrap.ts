@@ -1,4 +1,4 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 
 type UpdatePatternScrapResponse = {
@@ -21,7 +21,7 @@ export async function updatePatternScrap({
   patternId: number;
   shouldScrap: boolean;
 }) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/scrap`),
     init: {
       method: shouldScrap ? "POST" : "DELETE",

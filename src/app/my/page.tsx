@@ -11,7 +11,7 @@ import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { clearAccessToken } from "@/lib/auth/accessToken";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
@@ -101,7 +101,7 @@ export default function MyPage() {
     isLoggingOutRef.current = true;
 
     try {
-      await fetchWithAuthRetry({
+      await fetchAuthenticated({
         input: buildApiUrl("/v1/auth/logout"),
         init: {
           method: "POST",
