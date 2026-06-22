@@ -13,6 +13,7 @@ import {
   type PurchasedProjectItem,
 } from "@/features/my/queries/myActivityQueries";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 type MyActivityScreenProps = {
   initialPage: number;
@@ -196,7 +197,7 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
   }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   useEffect(() => {
-    if (purchasedProjectsQuery.error instanceof Error && purchasedProjectsQuery.error.message === "Unauthorized") {
+    if (isApiError(purchasedProjectsQuery.error, 401)) {
       showAuthRequiredToast();
     }
   }, [purchasedProjectsQuery.error, showAuthRequiredToast]);
@@ -216,9 +217,7 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
   const isLoading = meQuery.isPending || (Boolean(meQuery.data) && purchasedProjectsQuery.isPending);
   const isError =
     meQuery.isError ||
-    (purchasedProjectsQuery.isError &&
-      (!(purchasedProjectsQuery.error instanceof Error) ||
-        purchasedProjectsQuery.error.message !== "Unauthorized"));
+    (purchasedProjectsQuery.isError && !isApiError(purchasedProjectsQuery.error, 401));
   const purchasedProjects = purchasedProjectsQuery.data?.items ?? [];
   const currentPage = purchasedProjectsQuery.data?.page ?? initialPage;
   const nextPage = purchasedProjectsQuery.data?.nextPage ?? 0;

@@ -2,6 +2,11 @@ import { queryOptions } from "@tanstack/react-query";
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternAlternativeItemResponse = {
   altId?: number | null;
@@ -75,13 +80,17 @@ export async function fetchPatternAlternatives(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to load pattern alternatives.");
+    await throwApiError(response, "Failed to load pattern alternatives.");
   }
 
   const payload = (await response.json()) as PatternAlternativesResponse;
 
-  if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-    throw new Error("Failed to load pattern alternatives.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load pattern alternatives.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.items)) {
+    throw createInvalidApiResponseError("Failed to load pattern alternatives.");
   }
 
   return payload.data.items

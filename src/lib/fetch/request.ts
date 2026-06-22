@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/auth/accessToken";
+import { clearAccessToken, getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 
 export type ApiFetchParams = {
@@ -90,5 +90,14 @@ export async function request({
     return firstResponse;
   }
 
-  return fetch(input, buildRequestInit(init, accessToken, "include"));
+  const retryResponse = await fetch(
+    input,
+    buildRequestInit(init, accessToken, "include"),
+  );
+
+  if (retryResponse.status === 401) {
+    clearAccessToken();
+  }
+
+  return retryResponse;
 }

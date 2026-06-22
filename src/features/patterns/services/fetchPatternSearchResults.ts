@@ -1,5 +1,10 @@
 import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternSearchApiItem = {
   id: number;
@@ -69,13 +74,17 @@ export async function fetchPatternSearchResults({
   });
 
   if (!response.ok) {
-    throw new Error("Failed to load search results.");
+    await throwApiError(response, "Failed to load search results.");
   }
 
   const payload = (await response.json()) as PatternSearchResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to load search results.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load search results.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load search results.");
   }
 
   const resolvedPage = typeof payload.data.page === "number" ? payload.data.page : page;

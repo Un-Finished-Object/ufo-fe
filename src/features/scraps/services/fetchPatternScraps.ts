@@ -1,5 +1,10 @@
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternScrapItem = {
   id: number;
@@ -63,22 +68,18 @@ export async function fetchPatternScraps({
     },
   });
 
-  if (response.status === 401) {
-    return {
-      items: [],
-      page,
-      nextPage: 0,
-    };
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load pattern scraps.");
+    await throwApiError(response, "Failed to load pattern scraps.");
   }
 
   const payload = (await response.json()) as PatternScrapResponse;
 
-  if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-    throw new Error("Failed to load pattern scraps.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load pattern scraps.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.items)) {
+    throw createInvalidApiResponseError("Failed to load pattern scraps.");
   }
 
   return {

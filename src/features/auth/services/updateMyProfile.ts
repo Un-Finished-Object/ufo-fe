@@ -1,5 +1,6 @@
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { throwApiError, throwApiPayloadError } from "@/lib/api/ApiError";
 
 type UpdateMyProfileResponse = {
   data?: {
@@ -21,12 +22,8 @@ export async function updateMyProfile({ nickname }: { nickname: string }) {
     },
   });
 
-  if (response.status === 401) {
-    throw new Error("Unauthorized");
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to update profile.");
+    await throwApiError(response, "Failed to update profile.");
   }
 
   if (response.status === 204) {
@@ -42,7 +39,7 @@ export async function updateMyProfile({ nickname }: { nickname: string }) {
   const payload = JSON.parse(responseText) as UpdateMyProfileResponse;
 
   if (payload.error) {
-    throw new Error("Failed to update profile.");
+    throwApiPayloadError(payload.error, "Failed to update profile.");
   }
 
   return {

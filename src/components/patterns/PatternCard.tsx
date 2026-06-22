@@ -10,6 +10,7 @@ import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 export type PatternCardImageRatio = "1:1" | "4:5" | "5:4";
 
@@ -85,7 +86,7 @@ export default function PatternCard({
       onScrapChange?.(result.scrapped);
     },
     onError: (error) => {
-      if (error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
       }
     },

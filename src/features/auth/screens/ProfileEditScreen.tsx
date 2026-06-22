@@ -10,6 +10,7 @@ import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQueries";
 import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 function LoadingState() {
   return (
@@ -70,7 +71,7 @@ export default function ProfileEditScreen() {
       router.replace("/my");
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
         return;
       }

@@ -26,13 +26,11 @@ import {
   type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
-import {
-  PatternDetailQueryError,
-  patternDetailQueryOptions,
-} from "@/features/patterns/queries/patternDetailQueries";
+import { patternDetailQueryOptions } from "@/features/patterns/queries/patternDetailQueries";
 import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 type PatternDetailScreenProps = {
   patternId: number;
@@ -422,7 +420,7 @@ export default function PatternDetailScreen({
       });
     },
     onError: (error) => {
-      if (error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
       }
     },
@@ -476,7 +474,7 @@ export default function PatternDetailScreen({
       setPurchaseDialogType(null);
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         setPurchaseDialogType(null);
         showAuthRequiredToast();
         return;
@@ -566,8 +564,7 @@ export default function PatternDetailScreen({
 
   if (!pattern) {
     const errorMessage =
-      patternDetailQuery.error instanceof PatternDetailQueryError &&
-      patternDetailQuery.error.status === 404
+      isApiError(patternDetailQuery.error, 404)
         ? "요청하신 도안을 찾을 수 없어요."
         : "잠시 후 다시 시도해주세요.";
 

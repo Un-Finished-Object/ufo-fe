@@ -1,5 +1,10 @@
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type StyleScrapItem = {
   id: number;
@@ -34,13 +39,17 @@ export async function fetchStyleScraps({ signal }: { signal?: AbortSignal } = {}
   });
 
   if (!response.ok) {
-    return [] satisfies StyleScrapItem[];
+    await throwApiError(response, "Failed to load style scraps.");
   }
 
   const payload = (await response.json()) as StyleScrapResponse;
 
-  if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-    return [] satisfies StyleScrapItem[];
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load style scraps.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.items)) {
+    throw createInvalidApiResponseError("Failed to load style scraps.");
   }
 
   return payload.data.items
