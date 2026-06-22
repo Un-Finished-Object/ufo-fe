@@ -3,7 +3,7 @@ import {
   fetchPatternCatalogResults,
   type PatternCatalogResult,
 } from "@/features/patterns/services/fetchPatternCatalogResults";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type PatternCatalogQueryParams = {
   category: string;
@@ -14,6 +14,7 @@ export type PatternCatalogQueryParams = {
 };
 
 export const patternCatalogQueryKeys = {
+  all: ["patterns", "catalog"] as const,
   list: ({ category, sort, page, viewerKey, subCategory }: PatternCatalogQueryParams) =>
     ["patterns", "catalog", category, sort, page, subCategory ?? null, viewerKey] as const,
 };
@@ -30,6 +31,6 @@ export function patternCatalogQueryOptions(params: PatternCatalogQueryParams) {
         signal,
       }),
     placeholderData: keepPreviousData,
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }

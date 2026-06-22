@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type MyChatItem = {
   patternId?: number;
@@ -105,5 +106,6 @@ export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = 
     queryKey: myChatRoomsQueryKey,
     enabled: params.enabled ?? true,
     queryFn: ({ signal }) => fetchMyChatRooms({ signal }),
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

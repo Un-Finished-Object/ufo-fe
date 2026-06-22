@@ -13,6 +13,7 @@ import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
+import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import {
   patternAlternativesQueryKey,
   patternAlternativesQueryOptions,
@@ -27,10 +28,9 @@ import {
 } from "@/features/patterns/queries/patternPurchaseQueries";
 import {
   PatternDetailQueryError,
-  patternDetailQueryKey,
   patternDetailQueryOptions,
-  type PatternDetailData,
 } from "@/features/patterns/queries/patternDetailQueries";
+import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
@@ -414,20 +414,12 @@ export default function PatternDetailScreen({
         shouldScrap: nextIsScrapped,
       }),
     onSuccess: (result) => {
-      queryClient.setQueryData<PatternDetailData | undefined>(
-        patternDetailQueryKey(patternId, authCacheKey),
-        (previous) =>
-          previous
-            ? {
-                ...previous,
-                isScrapped: result.scrapped,
-                stats: {
-                  ...previous.stats,
-                  scraps: result.scrapCount,
-                },
-              }
-            : previous,
-      );
+      syncPatternScrapCaches(queryClient, {
+        patternId,
+        scrapped: result.scrapped,
+        scrapCount: result.scrapCount,
+        viewerKey: authCacheKey,
+      });
     },
     onError: (error) => {
       if (error.message === "Unauthorized") {
@@ -439,7 +431,7 @@ export default function PatternDetailScreen({
   const purchaseAccessMutation = useMutation({
     mutationFn: ({ type }: { type: PatternPurchaseType }) =>
       purchasePatternAccess({ patternId: pattern?.id ?? 0, type }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (!pattern) {
         return;
       }
@@ -456,18 +448,30 @@ export default function PatternDetailScreen({
           alternative: data.type === "yarn" ? true : previous?.alternative ?? false,
         }),
       );
-      void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
-      void queryClient.invalidateQueries({
-        queryKey: patternPurchaseQueryKey(pattern.id),
-      });
+      const invalidations = [
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet }),
+        queryClient.invalidateQueries({
+          queryKey: patternPurchaseQueryKey(pattern.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: myActivityQueryKeys.purchasedProjects,
+        }),
+      ];
+
       if (data.type === "chat") {
-        void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey }),
+        );
       }
       if (data.type === "yarn") {
-        void queryClient.invalidateQueries({
-          queryKey: patternAlternativesQueryKey(pattern.id),
-        });
+        invalidations.push(
+          queryClient.invalidateQueries({
+            queryKey: patternAlternativesQueryKey(pattern.id),
+          }),
+        );
       }
+
+      await Promise.all(invalidations);
       setPurchaseErrorMessage(null);
       setPurchaseDialogType(null);
     },

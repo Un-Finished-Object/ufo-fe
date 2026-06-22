@@ -3,7 +3,7 @@ import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 import { getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type UserProfile = {
   userId: string | null;
@@ -125,7 +125,7 @@ export function meQueryOptions() {
   return queryOptions({
     queryKey: userQueryKeys.me,
     queryFn: ({ signal }) => fetchMe({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.userState,
   });
 }
 
@@ -133,6 +133,6 @@ export function walletQueryOptions() {
   return queryOptions({
     queryKey: userQueryKeys.wallet,
     queryFn: ({ signal }) => fetchWallet({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

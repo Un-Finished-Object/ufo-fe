@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { buildApiUrl } from "@/lib/api/client";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type PurchasedProjectApiItem = {
   patternId?: number;
@@ -68,9 +68,12 @@ function mapPurchasedProjectItem(item: PurchasedProjectApiItem) {
   } satisfies PurchasedProjectItem;
 }
 
-export function myPurchasedProjectsQueryKey(page: number) {
-  return ["myActivity", "purchasedProjects", page] as const;
-}
+export const myActivityQueryKeys = {
+  all: ["myActivity"] as const,
+  purchasedProjects: ["myActivity", "purchasedProjects"] as const,
+  purchasedProjectsPage: (page: number) =>
+    ["myActivity", "purchasedProjects", page] as const,
+};
 
 export async function fetchMyPurchasedProjects(
   page: number,
@@ -120,9 +123,9 @@ export function myPurchasedProjectsQueryOptions(
   { enabled = true }: { enabled?: boolean } = {},
 ) {
   return queryOptions({
-    queryKey: myPurchasedProjectsQueryKey(page),
+    queryKey: myActivityQueryKeys.purchasedProjectsPage(page),
     enabled,
     queryFn: ({ signal }) => fetchMyPurchasedProjects(page, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.userState,
   });
 }

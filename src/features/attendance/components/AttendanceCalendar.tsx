@@ -1,9 +1,11 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/common/ToastMessage";
+import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 import { AUTH_REQUIRED_MESSAGE } from "@/hooks/useAuthRequiredToast";
 
@@ -41,6 +43,7 @@ function ChevronRight() {
 }
 
 export default function AttendanceCalendar() {
+  const queryClient = useQueryClient();
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
@@ -164,6 +167,12 @@ export default function AttendanceCalendar() {
       if (payload.data?.rewarded !== true) {
         showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
         return;
+      }
+
+      if (typeof payload.data.balance === "number") {
+        queryClient.setQueryData(userQueryKeys.wallet, payload.data.balance);
+      } else {
+        void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
       }
 
       setTodayChecked(true);

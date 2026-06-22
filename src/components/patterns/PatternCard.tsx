@@ -1,12 +1,13 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import HeartIcon, { type HeartIconVariant } from "@/components/icons/HeartIcon";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
@@ -47,12 +48,16 @@ export default function PatternCard({
   authorClassName = "text-[10px] text-ufo-text-neutral",
   onScrapChange,
 }: PatternCardProps) {
-  const { authStatus, isAuthenticated } = useAuthState();
+  const queryClient = useQueryClient();
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const [localIsScrapped, setLocalIsScrapped] = useState(
     isScrapped || heartVariant === "filled",
   );
   const showHeart = heartVariant !== undefined;
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
   const patternHref = patternId !== undefined ? `/patterns/${patternId}` : null;
   const displayHeartVariant = localIsScrapped ? "filled" : "outline";
   const resolvedHeartClassName =
@@ -71,6 +76,12 @@ export default function PatternCard({
       }),
     onSuccess: (result) => {
       setLocalIsScrapped(result.scrapped);
+      syncPatternScrapCaches(queryClient, {
+        patternId: patternId ?? 0,
+        scrapped: result.scrapped,
+        scrapCount: result.scrapCount,
+        viewerKey: authCacheKey,
+      });
       onScrapChange?.(result.scrapped);
     },
     onError: (error) => {
@@ -79,6 +90,10 @@ export default function PatternCard({
       }
     },
   });
+
+  useEffect(() => {
+    setLocalIsScrapped(isScrapped);
+  }, [isScrapped]);
   const handleHeartClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();

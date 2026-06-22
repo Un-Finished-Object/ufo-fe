@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type PatternSort = "views" | "news";
 
@@ -77,9 +77,14 @@ function mapPatternItems(items: PatternApiItem[] | RecommendApiItem[], limit?: n
 }
 
 export const homeQueryKeys = {
+  all: ["home"] as const,
+  bestPatternsRoot: ["home", "bestPatterns"] as const,
   bestPatterns: (viewerKey: string) => ["home", "bestPatterns", viewerKey] as const,
+  newPatternsRoot: ["home", "newPatterns"] as const,
   newPatterns: (viewerKey: string) => ["home", "newPatterns", viewerKey] as const,
+  recommendPatternsRoot: ["home", "recommendPatterns"] as const,
   recommendPatterns: (viewerKey: string) => ["home", "recommendPatterns", viewerKey] as const,
+  interestsRoot: ["home", "interests"] as const,
   interests: (viewerKey: string) => ["home", "interests", viewerKey] as const,
 };
 
@@ -204,7 +209,7 @@ export function bestPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.bestPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("views", 10, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.dynamicList,
   });
 }
 
@@ -212,7 +217,7 @@ export function newPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.newPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("news", 10, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.dynamicList,
   });
 }
 
@@ -220,7 +225,7 @@ export function recommendPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.recommendPatterns(viewerKey),
     queryFn: ({ signal }) => fetchRecommendedPatterns({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }
 
@@ -228,6 +233,6 @@ export function userInterestsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.interests(viewerKey),
     queryFn: ({ signal }) => fetchUserInterests({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }

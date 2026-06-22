@@ -10,9 +10,9 @@ import EditIcon from "@/components/icons/EditIcon";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
+import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import { clearAccessToken } from "@/lib/auth/accessToken";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
-import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
@@ -109,8 +109,7 @@ export default function MyPage() {
       });
     } finally {
       clearAccessToken();
-      queryClient.setQueryData(userQueryKeys.me, null);
-      queryClient.setQueryData(userQueryKeys.wallet, null);
+      clearAuthenticatedQueryCache(queryClient);
       router.replace("/");
     }
   }, [queryClient, router]);

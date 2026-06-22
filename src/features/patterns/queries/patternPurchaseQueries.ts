@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type PatternPurchaseType = "chat" | "yarn";
 
@@ -34,6 +34,8 @@ type PurchasePatternAccessResponse = {
 export function patternPurchaseQueryKey(patternId: number) {
   return ["patternPurchase", patternId] as const;
 }
+
+export const patternPurchaseQueryRoot = ["patternPurchase"] as const;
 
 function getChatRoomId(data: { chatRoomId?: number }) {
   return typeof data.chatRoomId === "number" ? data.chatRoomId : null;
@@ -118,6 +120,6 @@ export function patternPurchaseStatusQueryOptions(patternId: number) {
   return queryOptions({
     queryKey: patternPurchaseQueryKey(patternId),
     queryFn: ({ signal }) => fetchPatternPurchaseStatus(patternId, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

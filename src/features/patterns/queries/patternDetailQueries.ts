@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 import { formatPatternCategory } from "@/features/patterns/lib/patternCategories";
 
 type PatternDetailResponse = {
@@ -72,6 +72,8 @@ export function patternDetailQueryKey(patternId: number, viewerKey: string) {
   return ["patternDetail", patternId, viewerKey] as const;
 }
 
+export const patternDetailQueryRoot = ["patternDetail"] as const;
+
 export async function fetchPatternDetail(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
@@ -133,6 +135,6 @@ export function patternDetailQueryOptions(patternId: number, viewerKey: string) 
   return queryOptions({
     queryKey: patternDetailQueryKey(patternId, viewerKey),
     queryFn: ({ signal }) => fetchPatternDetail(patternId, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.reference,
   });
 }
