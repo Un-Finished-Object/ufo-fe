@@ -10,10 +10,12 @@ import SearchBar from "@/components/common/SearchBar";
 import NavBar from "@/components/navigation/NavBar";
 import PatternCard from "@/components/patterns/PatternCard";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
-import { fetchPatternScraps } from "@/features/scraps/services/fetchPatternScraps";
+import {
+  patternScrapQueryKeys,
+  patternScrapsQueryOptions,
+} from "@/features/scraps/queries/patternScrapQueries";
+import type { PatternScrapResult } from "@/features/scraps/services/fetchPatternScraps";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
-
-const patternScrapsQueryKey = (page: number) => ["patternScraps", page] as const;
 
 export default function ScrapCollectionScreen() {
   const [query, setQuery] = useState("");
@@ -23,11 +25,9 @@ export default function ScrapCollectionScreen() {
   const queryClient = useQueryClient();
   const profileHref = isAuthenticated ? "/my" : "/login";
   const normalizedQuery = query.trim().toLowerCase();
-  const patternScrapsQuery = useQuery({
-    queryKey: patternScrapsQueryKey(currentPage),
-    enabled: isAuthenticated,
-    queryFn: ({ signal }) => fetchPatternScraps({ page: currentPage, signal }),
-  });
+  const patternScrapsQuery = useQuery(
+    patternScrapsQueryOptions(currentPage, { enabled: isAuthenticated }),
+  );
   const patternScrapItems = patternScrapsQuery.data?.items;
   const nextPage = patternScrapsQuery.data?.nextPage ?? 0;
 
@@ -95,8 +95,8 @@ export default function ScrapCollectionScreen() {
                       onScrapChange={(nextIsScrapped) => {
                         if (!nextIsScrapped) {
                           queryClient.setQueryData(
-                            patternScrapsQueryKey(currentPage),
-                            (previous: Awaited<ReturnType<typeof fetchPatternScraps>> | undefined) =>
+                            patternScrapQueryKeys.page(currentPage),
+                            (previous: PatternScrapResult | undefined) =>
                               previous
                                 ? {
                                     ...previous,

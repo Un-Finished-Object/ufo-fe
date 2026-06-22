@@ -34,7 +34,7 @@ const sortApiMap: Record<string, string> = {
 
 export default function PatternCatalogScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthState();
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const [query, setQuery] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] =
     useState<(typeof mainCategories)[number]>("ALL");
@@ -50,20 +50,25 @@ export default function PatternCatalogScreen() {
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
   const selectedCategory = patternCategoryApiMap[selectedMainCategory] ?? "all";
   const selectedSortValue = sortApiMap[selectedSort] ?? "views";
   const selectedSubCategory =
     selectedMainCategory === "의류" && selectedClothingSubCategory
       ? patternSubCategoryApiMap[selectedClothingSubCategory] ?? "others"
       : undefined;
-  const patternCatalogQuery = useQuery(
-    patternCatalogQueryOptions({
+  const patternCatalogQuery = useQuery({
+    ...patternCatalogQueryOptions({
       category: selectedCategory,
       sort: selectedSortValue,
       page: currentPage,
+      viewerKey: authCacheKey,
       subCategory: selectedSubCategory,
     }),
-  );
+    enabled: authStatus !== "loading",
+  });
   const patternItems = patternCatalogQuery.data?.items ?? [];
   const nextPage = patternCatalogQuery.data?.nextPage ?? 0;
 

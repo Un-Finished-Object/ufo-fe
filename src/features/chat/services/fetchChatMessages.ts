@@ -1,6 +1,11 @@
 import type { ChatMessage } from "@/features/chat/types";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 export const CHAT_MESSAGES_FORBIDDEN_MESSAGE = "구매하지 않은 채팅방입니다.";
 const CHAT_MESSAGES_CURSOR_PARAM = "messageId";
@@ -72,7 +77,7 @@ export async function fetchChatMessages(
   }
 
   const queryString = searchParams.toString();
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/chat/${roomId}/messages${queryString ? `?${queryString}` : ""}`),
     init: {
       method: "GET",
@@ -81,26 +86,23 @@ export async function fetchChatMessages(
     },
   });
 
-  if (response.status === 401) {
-    return {
-      messages: [],
-      hasNext: false,
-      nextCursor: null,
-    } satisfies ChatMessagesPage;
-  }
-
-  if (response.status === 403) {
-    throw new Error(CHAT_MESSAGES_FORBIDDEN_MESSAGE);
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load chat messages.");
+    await throwApiError(
+      response,
+      response.status === 403
+        ? CHAT_MESSAGES_FORBIDDEN_MESSAGE
+        : "Failed to load chat messages.",
+    );
   }
 
   const payload = (await response.json()) as ChatMessagesResponse;
 
-  if (payload.error || !payload.data || !Array.isArray(payload.data.messages)) {
-    throw new Error("Failed to load chat messages.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load chat messages.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.messages)) {
+    throw createInvalidApiResponseError("Failed to load chat messages.");
   }
 
   const messages = payload.data.messages

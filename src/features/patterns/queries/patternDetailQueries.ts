@@ -1,8 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 import { formatPatternCategory } from "@/features/patterns/lib/patternCategories";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternDetailResponse = {
   data?: {
@@ -53,30 +58,22 @@ export type PatternDetailData = {
   };
 };
 
-export class PatternDetailQueryError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-  ) {
-    super(message);
-    this.name = "PatternDetailQueryError";
-  }
-}
-
 function getSafeText(value?: string | null) {
   const trimmedValue = value?.trim();
   return trimmedValue ? trimmedValue : "-";
 }
 
-export function patternDetailQueryKey(patternId: number) {
-  return ["patternDetail", patternId] as const;
+export function patternDetailQueryKey(patternId: number, viewerKey: string) {
+  return ["patternDetail", patternId, viewerKey] as const;
 }
+
+export const patternDetailQueryRoot = ["patternDetail"] as const;
 
 export async function fetchPatternDetail(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchOptionalAuth({
     input: buildApiUrl(`/v1/patterns/${patternId}`),
     init: {
       method: "GET",
@@ -84,23 +81,22 @@ export async function fetchPatternDetail(
     },
   });
 
-  if (response.status === 404) {
-    throw new PatternDetailQueryError("Pattern not found.", 404);
-  }
-
   if (!response.ok) {
-    throw new PatternDetailQueryError("Failed to load pattern detail.", response.status);
+    await throwApiError(response, "Failed to load pattern detail.");
   }
 
   const payload = (await response.json()) as PatternDetailResponse;
 
   if (
-    payload.error ||
     !payload.data ||
     typeof payload.data.id !== "number" ||
     typeof payload.data.title !== "string"
   ) {
-    throw new PatternDetailQueryError("Invalid pattern detail response.");
+    if (payload.error) {
+      throwApiPayloadError(payload.error, "Failed to load pattern detail.");
+    }
+
+    throw createInvalidApiResponseError("Invalid pattern detail response.");
   }
 
   return {
@@ -129,10 +125,10 @@ export async function fetchPatternDetail(
   } satisfies PatternDetailData;
 }
 
-export function patternDetailQueryOptions(patternId: number) {
+export function patternDetailQueryOptions(patternId: number, viewerKey: string) {
   return queryOptions({
-    queryKey: patternDetailQueryKey(patternId),
+    queryKey: patternDetailQueryKey(patternId, viewerKey),
     queryFn: ({ signal }) => fetchPatternDetail(patternId, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.reference,
   });
 }

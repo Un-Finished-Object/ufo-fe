@@ -3,17 +3,19 @@ import {
   fetchPatternSearchResults,
   type PatternSearchResult,
 } from "@/features/patterns/services/fetchPatternSearchResults";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export const patternSearchQueryKeys = {
-  results: (keyword: string, page: number) => ["patterns", "search", keyword, page] as const,
+  all: ["patterns", "search"] as const,
+  results: (keyword: string, page: number, viewerKey: string) =>
+    ["patterns", "search", keyword, page, viewerKey] as const,
 };
 
-export function patternSearchQueryOptions(keyword: string, page: number) {
+export function patternSearchQueryOptions(keyword: string, page: number, viewerKey: string) {
   const trimmedKeyword = keyword.trim();
 
   return queryOptions<PatternSearchResult>({
-    queryKey: patternSearchQueryKeys.results(trimmedKeyword, page),
+    queryKey: patternSearchQueryKeys.results(trimmedKeyword, page, viewerKey),
     queryFn: ({ signal }) =>
       fetchPatternSearchResults({
         keyword: trimmedKeyword,
@@ -22,6 +24,6 @@ export function patternSearchQueryOptions(keyword: string, page: number) {
       }),
     enabled: trimmedKeyword.length > 0,
     placeholderData: keepPreviousData,
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }

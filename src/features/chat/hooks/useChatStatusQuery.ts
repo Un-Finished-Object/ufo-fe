@@ -13,6 +13,8 @@ export function chatStatusQueryKey(patternId: string) {
   return ["chatStatus", patternId] as const;
 }
 
+export const chatStatusQueryRoot = ["chatStatus"] as const;
+
 export function mapChatRoomToStatus(patternId: string, chatRoom?: ChatRoom) {
   const chatId = Number(chatRoom?.chatId ?? patternId);
 

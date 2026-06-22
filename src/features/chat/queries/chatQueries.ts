@@ -1,7 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type MyChatItem = {
   patternId?: number;
@@ -54,7 +60,7 @@ function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
 }
 
 export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me/chats"),
     init: {
       method: "GET",
@@ -63,18 +69,18 @@ export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}
     },
   });
 
-  if (response.status === 401) {
-    return [] satisfies ChatRoom[];
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load chat rooms.");
+    await throwApiError(response, "Failed to load chat rooms.");
   }
 
   const payload = (await response.json()) as MyChatsResponse;
 
-  if (payload.error || !payload.data || !Array.isArray(payload.data.chats)) {
-    throw new Error("Failed to load chat rooms.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load chat rooms.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.chats)) {
+    throw createInvalidApiResponseError("Failed to load chat rooms.");
   }
 
   return payload.data.chats
@@ -105,5 +111,6 @@ export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = 
     queryKey: myChatRoomsQueryKey,
     enabled: params.enabled ?? true,
     queryFn: ({ signal }) => fetchMyChatRooms({ signal }),
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

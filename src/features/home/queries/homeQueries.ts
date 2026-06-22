@@ -1,8 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
-import { fetchPublic } from "@/lib/fetch/fetchPublic";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternSort = "views" | "news";
 
@@ -77,9 +82,14 @@ function mapPatternItems(items: PatternApiItem[] | RecommendApiItem[], limit?: n
 }
 
 export const homeQueryKeys = {
-  bestPatterns: ["home", "bestPatterns"] as const,
-  newPatterns: ["home", "newPatterns"] as const,
+  all: ["home"] as const,
+  bestPatternsRoot: ["home", "bestPatterns"] as const,
+  bestPatterns: (viewerKey: string) => ["home", "bestPatterns", viewerKey] as const,
+  newPatternsRoot: ["home", "newPatterns"] as const,
+  newPatterns: (viewerKey: string) => ["home", "newPatterns", viewerKey] as const,
+  recommendPatternsRoot: ["home", "recommendPatterns"] as const,
   recommendPatterns: (viewerKey: string) => ["home", "recommendPatterns", viewerKey] as const,
+  interestsRoot: ["home", "interests"] as const,
   interests: (viewerKey: string) => ["home", "interests", viewerKey] as const,
 };
 
@@ -88,95 +98,95 @@ export async function fetchHomePatterns(
   limit: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  try {
-    const params = new URLSearchParams({
-      category: "all",
-      sort,
-      page: "1",
-    });
+  const params = new URLSearchParams({
+    category: "all",
+    sort,
+    page: "1",
+  });
 
-    const response = await fetchPublic({
-      input: buildApiUrl(`/v1/patterns?${params.toString()}`),
-      init: {
-        method: "GET",
-        signal,
-      },
-    });
+  const response = await fetchOptionalAuth({
+    input: buildApiUrl(`/v1/patterns?${params.toString()}`),
+    init: {
+      method: "GET",
+      signal,
+    },
+  });
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = (await response.json()) as PatternListResponse;
-
-    if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-      return [];
-    }
-
-    return mapPatternItems(payload.data.items, limit);
-  } catch {
-    return [];
+  if (!response.ok) {
+    await throwApiError(response, "Failed to load home patterns.");
   }
+
+  const payload = (await response.json()) as PatternListResponse;
+
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load home patterns.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.items)) {
+    throw createInvalidApiResponseError("Failed to load home patterns.");
+  }
+
+  return mapPatternItems(payload.data.items, limit);
 }
 
 export async function fetchRecommendedPatterns(
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  try {
-    const response = await fetchWithAuthRetry({
-      input: buildApiUrl("/v1/patterns/recommend"),
-      init: {
-        method: "GET",
-        signal,
-      },
-    });
+  const response = await fetchOptionalAuth({
+    input: buildApiUrl("/v1/patterns/recommend"),
+    init: {
+      method: "GET",
+      signal,
+    },
+  });
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = (await response.json()) as RecommendResponse;
-
-    if (payload.error || !payload.data || !Array.isArray(payload.data.items)) {
-      return [];
-    }
-
-    return mapPatternItems(payload.data.items);
-  } catch {
-    return [];
+  if (!response.ok) {
+    await throwApiError(response, "Failed to load recommended patterns.");
   }
+
+  const payload = (await response.json()) as RecommendResponse;
+
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load recommended patterns.");
+  }
+
+  if (!payload.data || !Array.isArray(payload.data.items)) {
+    throw createInvalidApiResponseError("Failed to load recommended patterns.");
+  }
+
+  return mapPatternItems(payload.data.items);
 }
 
 export async function fetchUserInterests(
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  try {
-    const response = await fetchWithAuthRetry({
-      input: buildApiUrl("/v1/users/me/interests"),
-      init: {
-        method: "GET",
-        signal,
-      },
-    });
+  const response = await fetchAuthenticated({
+    input: buildApiUrl("/v1/users/me/interests"),
+    init: {
+      method: "GET",
+      signal,
+    },
+  });
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = (await response.json()) as InterestsResponse;
-
-    if (payload.error || !payload.data) {
-      return [];
-    }
-
-    return Array.isArray(payload.data.keywords) ? payload.data.keywords : [];
-  } catch {
-    return [];
+  if (!response.ok) {
+    await throwApiError(response, "Failed to load user interests.");
   }
+
+  const payload = (await response.json()) as InterestsResponse;
+
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load user interests.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load user interests.");
+  }
+
+  return Array.isArray(payload.data.keywords) ? payload.data.keywords : [];
 }
 
 export async function saveUserInterests(keywords: string[]) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me/interests"),
     init: {
       method: "PATCH",
@@ -188,31 +198,35 @@ export async function saveUserInterests(keywords: string[]) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to save user interests.");
+    await throwApiError(response, "Failed to save user interests.");
   }
 
   const payload = (await response.json()) as InterestsResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to save user interests.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to save user interests.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to save user interests.");
   }
 
   return Array.isArray(payload.data.keywords) ? payload.data.keywords : [];
 }
 
-export function bestPatternsQueryOptions() {
+export function bestPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
-    queryKey: homeQueryKeys.bestPatterns,
+    queryKey: homeQueryKeys.bestPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("views", 10, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.dynamicList,
   });
 }
 
-export function newPatternsQueryOptions() {
+export function newPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
-    queryKey: homeQueryKeys.newPatterns,
+    queryKey: homeQueryKeys.newPatterns(viewerKey),
     queryFn: ({ signal }) => fetchHomePatterns("news", 10, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.dynamicList,
   });
 }
 
@@ -220,7 +234,7 @@ export function recommendPatternsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.recommendPatterns(viewerKey),
     queryFn: ({ signal }) => fetchRecommendedPatterns({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }
 
@@ -228,6 +242,6 @@ export function userInterestsQueryOptions(viewerKey: string) {
   return queryOptions({
     queryKey: homeQueryKeys.interests(viewerKey),
     queryFn: ({ signal }) => fetchUserInterests({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.personalized,
   });
 }

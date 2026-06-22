@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import {
   meQueryOptions,
   walletQueryOptions,
@@ -29,6 +30,7 @@ export default function AuthCompletePage() {
           return;
         }
 
+        clearAuthenticatedQueryCache(queryClient);
         const me = await queryClient.fetchQuery({
           ...meQueryOptions(),
           staleTime: 0,

@@ -1,5 +1,10 @@
-import { fetchPublic } from "@/lib/fetch/fetchPublic";
+import { fetchOptionalAuth } from "@/lib/fetch/fetchOptionalAuth";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatternCatalogApiItem = {
   id: number;
@@ -60,7 +65,7 @@ export async function fetchPatternCatalogResults({
     params.set("subCategory", subCategory);
   }
 
-  const response = await fetchPublic({
+  const response = await fetchOptionalAuth({
     input: buildApiUrl(`/v1/patterns?${params.toString()}`),
     init: {
       method: "GET",
@@ -69,13 +74,17 @@ export async function fetchPatternCatalogResults({
   });
 
   if (!response.ok) {
-    throw new Error("Failed to load pattern catalog.");
+    await throwApiError(response, "Failed to load pattern catalog.");
   }
 
   const payload = (await response.json()) as PatternCatalogResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to load pattern catalog.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load pattern catalog.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load pattern catalog.");
   }
 
   const resolvedPage = typeof payload.data.page === "number" ? payload.data.page : page;
