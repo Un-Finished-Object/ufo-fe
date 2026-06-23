@@ -30,29 +30,26 @@ const MAX_INTEREST_COUNT = 4;
 
 const interestRows = [
   {
-    rowClassName: "pl-6 pr-6 justify-between",
     items: [
-      { label: "빈티지", className: "" },
-      { label: "클래식", className: "mt-3 -ml-4" },
-      { label: "로맨틱", className: "-mt-0.5 -ml-1.5" },
-      { label: "캐주얼", className: "mt-1.5" },
+      { label: "빈티지", className: "col-span-3 justify-self-center" },
+      { label: "클래식", className: "col-span-3 translate-y-3 justify-self-center" },
+      { label: "로맨틱", className: "col-span-3 -translate-y-0.5 justify-self-center" },
+      { label: "캐주얼", className: "col-span-3 translate-y-1.5 justify-self-center" },
     ],
   },
   {
-    rowClassName: "pl-2 justify-start gap-x-4",
     items: [
-      { label: "오버사이즈", className: "mt-2 ml-0.5" },
-      { label: "슬림핏", className: "mt-4 ml-8" },
-      { label: "크롭", className: "ml-3" },
-      { label: "레귤러핏", className: "mt-4 ml-4" },
+      { label: "오버사이즈", className: "col-span-4 translate-y-2 justify-self-start" },
+      { label: "슬림핏", className: "col-span-3 translate-y-4 justify-self-center" },
+      { label: "크롭", className: "col-span-2 justify-self-center" },
+      { label: "레귤러핏", className: "col-span-3 translate-y-4 justify-self-end" },
     ],
   },
   {
-    rowClassName: "pl-15 pr-8 justify-start gap-x-6",
     items: [
-      { label: "아란무늬", className: "mt-2" },
-      { label: "배색", className: "mt-3.5 ml-10" },
-      { label: "메리야스", className: "mt-2 ml-5" },
+      { label: "아란무늬", className: "col-span-3 col-start-2 translate-y-2 justify-self-start" },
+      { label: "배색", className: "col-span-2 col-start-6 translate-y-3.5 justify-self-center" },
+      { label: "메리야스", className: "col-span-3 col-start-9 translate-y-2 justify-self-end" },
     ],
   },
 ] as const;
@@ -242,11 +239,11 @@ export default function MainForYouSection({
               *관심사는 최대 {MAX_INTEREST_COUNT}개까지 설정할 수 있습니다.
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-5">
               {interestRows.map((row, rowIndex) => (
                 <div
                   key={`interest-row-${rowIndex}`}
-                  className={`flex flex-wrap items-start gap-y-2 ${row.rowClassName}`}
+                  className="grid grid-cols-12 items-start"
                 >
                   {row.items.map((interest, index) => {
                     const selected = draftInterests.includes(interest.label);
@@ -260,7 +257,7 @@ export default function MainForYouSection({
                         type="button"
                         onClick={() => toggleInterest(interest.label)}
                         disabled={disabled}
-                        className={`${interest.className} rounded-md px-3 py-1.5 text-sm font-semibold transition-opacity ${
+                        className={`${interest.className} whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-opacity max-[321px]:text-xs ${
                           selected ? "bg-ufo-brand-soft text-ufo-text" : "bg-ufo-border text-ufo-text-secondary"
                         } ${disabled ? "opacity-45" : ""}`}
                         aria-pressed={selected}
