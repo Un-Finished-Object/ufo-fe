@@ -5,6 +5,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { clearAccessToken } from "@/lib/auth/accessToken";
 import { ACCESS_TOKEN_REFRESH_INTERVAL_MS, refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
+import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 
 export function useAccessTokenRefresh() {
   const queryClient = useQueryClient();
@@ -29,8 +30,7 @@ export function useAccessTokenRefresh() {
 
         if (response.status === 401 || response.status === 403) {
           clearAccessToken();
-          queryClient.setQueryData(userQueryKeys.me, null);
-          queryClient.setQueryData(userQueryKeys.wallet, null);
+          clearAuthenticatedQueryCache(queryClient);
         }
       } catch {
         // Ignore transient network failures and keep the existing session state.

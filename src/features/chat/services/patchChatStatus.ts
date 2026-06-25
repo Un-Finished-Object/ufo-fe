@@ -1,6 +1,11 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import type { ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type PatchChatStatusParams = {
   patternId: string;
@@ -22,7 +27,7 @@ export async function patchChatStatus({
   favorite,
   hidden,
 }: PatchChatStatusParams) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/chat/${patternId}/status`),
     init: {
       method: "PATCH",
@@ -37,24 +42,23 @@ export async function patchChatStatus({
     },
   });
 
-  if (response.status === 401) {
-    throw new Error("Unauthorized");
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to update chat status.");
+    await throwApiError(response, "Failed to update chat status.");
   }
 
   const payload = (await response.json()) as PatchChatStatusResponse;
 
   if (
-    payload.error ||
     !payload.data ||
     typeof payload.data.chatId !== "number" ||
     typeof payload.data.favorite !== "boolean" ||
     typeof payload.data.isHidden !== "boolean"
   ) {
-    throw new Error("Failed to update chat status.");
+    if (payload.error) {
+      throwApiPayloadError(payload.error, "Failed to update chat status.");
+    }
+
+    throw createInvalidApiResponseError("Failed to update chat status.");
   }
 
   return {

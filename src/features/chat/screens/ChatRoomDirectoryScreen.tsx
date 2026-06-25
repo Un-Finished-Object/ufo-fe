@@ -13,6 +13,7 @@ import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/qu
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import type { ChatRoom } from "@/features/chat/types";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 function LoadingState() {
   return <p className="px-4 py-8 text-sm text-ufo-text-dim">채팅방 목록을 불러오는 중입니다.</p>;
@@ -79,7 +80,7 @@ export default function ChatRoomDirectoryScreen() {
       );
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
       }
     },

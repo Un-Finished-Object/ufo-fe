@@ -13,6 +13,7 @@ import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
+import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import {
   patternAlternativesQueryKey,
   patternAlternativesQueryOptions,
@@ -25,14 +26,11 @@ import {
   type PatternPurchaseType,
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
-import {
-  PatternDetailQueryError,
-  patternDetailQueryKey,
-  patternDetailQueryOptions,
-  type PatternDetailData,
-} from "@/features/patterns/queries/patternDetailQueries";
+import { patternDetailQueryOptions } from "@/features/patterns/queries/patternDetailQueries";
+import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 type PatternDetailScreenProps = {
   patternId: number;
@@ -343,9 +341,15 @@ export default function PatternDetailScreen({
 }: PatternDetailScreenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const patternDetailQuery = useQuery(patternDetailQueryOptions(patternId));
+  const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
+  const authCacheKey = isAuthenticated
+    ? currentUser?.userId ?? currentUser?.email ?? "member"
+    : "guest";
+  const patternDetailQuery = useQuery({
+    ...patternDetailQueryOptions(patternId, authCacheKey),
+    enabled: authStatus !== "loading",
+  });
   const pattern = patternDetailQuery.data ?? null;
-  const { authStatus, isAuthenticated } = useAuthState();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
@@ -408,23 +412,15 @@ export default function PatternDetailScreen({
         shouldScrap: nextIsScrapped,
       }),
     onSuccess: (result) => {
-      queryClient.setQueryData<PatternDetailData | undefined>(
-        patternDetailQueryKey(patternId),
-        (previous) =>
-          previous
-            ? {
-                ...previous,
-                isScrapped: result.scrapped,
-                stats: {
-                  ...previous.stats,
-                  scraps: result.scrapCount,
-                },
-              }
-            : previous,
-      );
+      syncPatternScrapCaches(queryClient, {
+        patternId,
+        scrapped: result.scrapped,
+        scrapCount: result.scrapCount,
+        viewerKey: authCacheKey,
+      });
     },
     onError: (error) => {
-      if (error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
       }
     },
@@ -433,7 +429,7 @@ export default function PatternDetailScreen({
   const purchaseAccessMutation = useMutation({
     mutationFn: ({ type }: { type: PatternPurchaseType }) =>
       purchasePatternAccess({ patternId: pattern?.id ?? 0, type }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (!pattern) {
         return;
       }
@@ -450,23 +446,35 @@ export default function PatternDetailScreen({
           alternative: data.type === "yarn" ? true : previous?.alternative ?? false,
         }),
       );
-      void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
-      void queryClient.invalidateQueries({
-        queryKey: patternPurchaseQueryKey(pattern.id),
-      });
+      const invalidations = [
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet }),
+        queryClient.invalidateQueries({
+          queryKey: patternPurchaseQueryKey(pattern.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: myActivityQueryKeys.purchasedProjects,
+        }),
+      ];
+
       if (data.type === "chat") {
-        void queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey });
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: myChatRoomsQueryKey }),
+        );
       }
       if (data.type === "yarn") {
-        void queryClient.invalidateQueries({
-          queryKey: patternAlternativesQueryKey(pattern.id),
-        });
+        invalidations.push(
+          queryClient.invalidateQueries({
+            queryKey: patternAlternativesQueryKey(pattern.id),
+          }),
+        );
       }
+
+      await Promise.all(invalidations);
       setPurchaseErrorMessage(null);
       setPurchaseDialogType(null);
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         setPurchaseDialogType(null);
         showAuthRequiredToast();
         return;
@@ -556,8 +564,7 @@ export default function PatternDetailScreen({
 
   if (!pattern) {
     const errorMessage =
-      patternDetailQuery.error instanceof PatternDetailQueryError &&
-      patternDetailQuery.error.status === 404
+      isApiError(patternDetailQuery.error, 404)
         ? "요청하신 도안을 찾을 수 없어요."
         : "잠시 후 다시 시도해주세요.";
 

@@ -7,6 +7,7 @@ import {
   type ChatMessagesPage,
 } from "@/features/chat/services/fetchChatMessages";
 import type { ChatMessage } from "@/features/chat/types";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 const INITIAL_CHAT_MESSAGES_PAGE_PARAM = null;
 
@@ -15,6 +16,8 @@ export type ChatMessagesInfiniteData = InfiniteData<ChatMessagesPage, string | n
 export function chatMessagesQueryKey(roomId: string | null) {
   return ["chatMessages", roomId] as const;
 }
+
+export const chatMessagesQueryRoot = ["chatMessages"] as const;
 
 function createInitialChatMessagesData(messages: ChatMessage[] = []) {
   return {
@@ -206,6 +209,7 @@ export function useChatMessagesQuery(roomId: string | null) {
       });
     },
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
+    staleTime: QUERY_STALE_TIME.realtime,
   });
   const messages = useMemo(() => flattenChatMessagesData(query.data), [query.data]);
 

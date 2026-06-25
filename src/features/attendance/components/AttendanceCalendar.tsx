@@ -1,11 +1,19 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import ToastMessage from "@/components/common/ToastMessage";
+import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 import { AUTH_REQUIRED_MESSAGE } from "@/hooks/useAuthRequiredToast";
+import {
+  createInvalidApiResponseError,
+  isApiError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type StatusResponse = {
   data?: { rewarded?: Record<string, boolean> };
@@ -41,6 +49,7 @@ function ChevronRight() {
 }
 
 export default function AttendanceCalendar() {
+  const queryClient = useQueryClient();
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
@@ -86,7 +95,7 @@ export default function AttendanceCalendar() {
           month: String(requestedMonth).padStart(2, "0"),
         });
 
-        const response = await fetchWithAuthRetry({
+        const response = await fetchAuthenticated({
           input: buildApiUrl(`/v1/attendance/status?${params.toString()}`),
           init: {
             signal: controller.signal,
@@ -94,19 +103,25 @@ export default function AttendanceCalendar() {
           },
         });
 
-        if (response.status === 401) {
-          showToast(AUTH_REQUIRED_MESSAGE);
-          if (isCurrentMonthRequest) setTodayChecked(false);
-          return;
+        if (!response.ok) {
+          await throwApiError(response, "Failed to load attendance status.");
         }
 
-        if (!response.ok || !isMounted) {
+        if (!isMounted) {
           if (isCurrentMonthRequest) setTodayChecked(false);
           return;
         }
 
         const payload = (await response.json()) as StatusResponse;
-        if (payload.error || !payload.data?.rewarded || !isMounted) {
+        if (payload.error) {
+          throwApiPayloadError(payload.error, "Failed to load attendance status.");
+        }
+
+        if (!payload.data?.rewarded) {
+          throw createInvalidApiResponseError("Failed to load attendance status.");
+        }
+
+        if (!isMounted) {
           if (isCurrentMonthRequest) setTodayChecked(false);
           return;
         }
@@ -119,7 +134,11 @@ export default function AttendanceCalendar() {
         if (isCurrentMonthRequest) {
           setTodayChecked(dates.includes(todayStr));
         }
-      } catch {
+      } catch (error) {
+        if (isApiError(error, 401)) {
+          showToast(AUTH_REQUIRED_MESSAGE);
+        }
+
         if (isMounted && isCurrentMonthRequest) setTodayChecked(false);
         // ignore abort / network errors
       } finally {
@@ -139,16 +158,15 @@ export default function AttendanceCalendar() {
 
     setIsCheckingIn(true);
     try {
-      const response = await fetchWithAuthRetry({
+      const response = await fetchAuthenticated({
         input: buildApiUrl("/v1/attendance/check"),
         init: {
           method: "POST",
         },
       });
 
-      if (response.status === 401) {
-        showToast(AUTH_REQUIRED_MESSAGE);
-        return;
+      if (!response.ok) {
+        await throwApiError(response, "Failed to check attendance.");
       }
 
       const payload = (await response.json()) as {
@@ -156,14 +174,19 @@ export default function AttendanceCalendar() {
         error?: unknown;
       };
 
-      if (payload.error || !response.ok) {
-        showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
-        return;
+      if (payload.error) {
+        throwApiPayloadError(payload.error, "Failed to check attendance.");
       }
 
       if (payload.data?.rewarded !== true) {
         showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
         return;
+      }
+
+      if (typeof payload.data.balance === "number") {
+        queryClient.setQueryData(userQueryKeys.wallet, payload.data.balance);
+      } else {
+        void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
       }
 
       setTodayChecked(true);
@@ -174,8 +197,12 @@ export default function AttendanceCalendar() {
         setViewMonth(currentMonth);
       }
       showToast("출석체크 완료! 🎉");
-    } catch {
-      showToast("출석체크에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } catch (error) {
+      showToast(
+        isApiError(error, 401)
+          ? AUTH_REQUIRED_MESSAGE
+          : "출석체크에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
     } finally {
       setIsCheckingIn(false);
     }

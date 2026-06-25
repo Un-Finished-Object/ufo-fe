@@ -1,9 +1,14 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 import { getAccessToken } from "@/lib/auth/accessToken";
 import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type UserProfile = {
   userId: string | null;
@@ -41,24 +46,20 @@ export const userQueryKeys = {
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
   if (!getAccessToken()) {
-    const refreshResponse = await refreshAccessToken({
-      signal,
-      mode: "auto",
-    });
+    const refreshResponse = await refreshAccessToken({ mode: "auto" });
 
     if (!refreshResponse.ok) {
       return null;
     }
   }
 
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
     init: {
       method: "GET",
       credentials: "include",
       signal,
     },
-    skipRefresh: true,
   });
 
   if (response.status === 401) {
@@ -66,13 +67,17 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
   }
 
   if (!response.ok) {
-    throw new Error("Failed to load user information.");
+    await throwApiError(response, "Failed to load user information.");
   }
 
   const payload = (await response.json()) as MeResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to load user information.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load user information.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load user information.");
   }
 
   const joinDate =
@@ -99,7 +104,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
 }
 
 export async function fetchWallet({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/credits/wallet"),
     init: {
       method: "GET",
@@ -108,18 +113,18 @@ export async function fetchWallet({ signal }: { signal?: AbortSignal } = {}) {
     },
   });
 
-  if (response.status === 401) {
-    return null;
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load credit balance.");
+    await throwApiError(response, "Failed to load credit balance.");
   }
 
   const payload = (await response.json()) as WalletResponse;
 
-  if (payload.error || !payload.data || typeof payload.data.balance !== "number") {
-    throw new Error("Failed to load credit balance.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load credit balance.");
+  }
+
+  if (!payload.data || typeof payload.data.balance !== "number") {
+    throw createInvalidApiResponseError("Failed to load credit balance.");
   }
 
   return payload.data.balance;
@@ -129,7 +134,7 @@ export function meQueryOptions() {
   return queryOptions({
     queryKey: userQueryKeys.me,
     queryFn: ({ signal }) => fetchMe({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.userState,
   });
 }
 
@@ -137,6 +142,6 @@ export function walletQueryOptions() {
   return queryOptions({
     queryKey: userQueryKeys.wallet,
     queryFn: ({ signal }) => fetchWallet({ signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

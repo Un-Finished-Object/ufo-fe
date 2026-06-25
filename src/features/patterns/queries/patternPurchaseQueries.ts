@@ -1,7 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 export type PatternPurchaseType = "chat" | "yarn";
 
@@ -35,6 +40,8 @@ export function patternPurchaseQueryKey(patternId: number) {
   return ["patternPurchase", patternId] as const;
 }
 
+export const patternPurchaseQueryRoot = ["patternPurchase"] as const;
+
 function getChatRoomId(data: { chatRoomId?: number }) {
   return typeof data.chatRoomId === "number" ? data.chatRoomId : null;
 }
@@ -43,7 +50,7 @@ export async function fetchPatternPurchaseStatus(
   patternId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "GET",
@@ -52,18 +59,18 @@ export async function fetchPatternPurchaseStatus(
     },
   });
 
-  if (response.status === 401) {
-    return null;
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load pattern purchase status.");
+    await throwApiError(response, "Failed to load pattern purchase status.");
   }
 
   const payload = (await response.json()) as PatternPurchaseStatusResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to load pattern purchase status.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load pattern purchase status.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load pattern purchase status.");
   }
 
   return {
@@ -81,7 +88,7 @@ export async function purchasePatternAccess({
   patternId: number;
   type: PatternPurchaseType;
 }) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/purchase`),
     init: {
       method: "POST",
@@ -93,18 +100,18 @@ export async function purchasePatternAccess({
     },
   });
 
-  if (response.status === 401) {
-    throw new Error("Unauthorized");
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to purchase pattern access.");
+    await throwApiError(response, "Failed to purchase pattern access.");
   }
 
   const payload = (await response.json()) as PurchasePatternAccessResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to purchase pattern access.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to purchase pattern access.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to purchase pattern access.");
   }
 
   return {
@@ -118,6 +125,6 @@ export function patternPurchaseStatusQueryOptions(patternId: number) {
   return queryOptions({
     queryKey: patternPurchaseQueryKey(patternId),
     queryFn: ({ signal }) => fetchPatternPurchaseStatus(patternId, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.critical,
   });
 }

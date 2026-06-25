@@ -1,4 +1,7 @@
+import { noIndexMetadata } from "@/lib/metadata";
 import ChatConversationScreen from "@/features/chat/screens/ChatConversationScreen";
+
+export const metadata = noIndexMetadata;
 
 type ChatDetailPageProps = {
   params: Promise<{

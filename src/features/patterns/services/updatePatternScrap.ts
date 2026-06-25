@@ -1,5 +1,10 @@
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
 
 type UpdatePatternScrapResponse = {
   data?: {
@@ -21,25 +26,25 @@ export async function updatePatternScrap({
   patternId: number;
   shouldScrap: boolean;
 }) {
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/patterns/${patternId}/scrap`),
     init: {
       method: shouldScrap ? "POST" : "DELETE",
     },
   });
 
-  if (response.status === 401) {
-    throw new Error("Unauthorized");
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to update pattern scrap.");
+    await throwApiError(response, "Failed to update pattern scrap.");
   }
 
   const payload = (await response.json()) as UpdatePatternScrapResponse;
 
-  if (payload.error || !payload.data || payload.data.scrapped !== shouldScrap) {
-    throw new Error("Failed to update pattern scrap.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to update pattern scrap.");
+  }
+
+  if (!payload.data || payload.data.scrapped !== shouldScrap) {
+    throw createInvalidApiResponseError("Failed to update pattern scrap.");
   }
 
   return {

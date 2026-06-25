@@ -1,7 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchWithAuthRetry } from "@/lib/fetch/fetchWithAuthRetry";
-import { QUERY_STALE_TIME_MS } from "@/lib/query/client";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import {
+  createInvalidApiResponseError,
+  throwApiError,
+  throwApiPayloadError,
+} from "@/lib/api/ApiError";
+import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type PurchasedProjectApiItem = {
   patternId?: number;
@@ -68,9 +73,12 @@ function mapPurchasedProjectItem(item: PurchasedProjectApiItem) {
   } satisfies PurchasedProjectItem;
 }
 
-export function myPurchasedProjectsQueryKey(page: number) {
-  return ["myActivity", "purchasedProjects", page] as const;
-}
+export const myActivityQueryKeys = {
+  all: ["myActivity"] as const,
+  purchasedProjects: ["myActivity", "purchasedProjects"] as const,
+  purchasedProjectsPage: (page: number) =>
+    ["myActivity", "purchasedProjects", page] as const,
+};
 
 export async function fetchMyPurchasedProjects(
   page: number,
@@ -80,7 +88,7 @@ export async function fetchMyPurchasedProjects(
     page: String(page),
   });
 
-  const response = await fetchWithAuthRetry({
+  const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/users/me/projects?${params.toString()}`),
     init: {
       method: "GET",
@@ -89,18 +97,18 @@ export async function fetchMyPurchasedProjects(
     },
   });
 
-  if (response.status === 401) {
-    throw new Error("Unauthorized");
-  }
-
   if (!response.ok) {
-    throw new Error("Failed to load purchased projects.");
+    await throwApiError(response, "Failed to load purchased projects.");
   }
 
   const payload = (await response.json()) as PurchasedProjectsResponse;
 
-  if (payload.error || !payload.data) {
-    throw new Error("Failed to load purchased projects.");
+  if (payload.error) {
+    throwApiPayloadError(payload.error, "Failed to load purchased projects.");
+  }
+
+  if (!payload.data) {
+    throw createInvalidApiResponseError("Failed to load purchased projects.");
   }
 
   const items = Array.isArray(payload.data.projects) ? payload.data.projects : [];
@@ -120,9 +128,9 @@ export function myPurchasedProjectsQueryOptions(
   { enabled = true }: { enabled?: boolean } = {},
 ) {
   return queryOptions({
-    queryKey: myPurchasedProjectsQueryKey(page),
+    queryKey: myActivityQueryKeys.purchasedProjectsPage(page),
     enabled,
     queryFn: ({ signal }) => fetchMyPurchasedProjects(page, { signal }),
-    staleTime: QUERY_STALE_TIME_MS,
+    staleTime: QUERY_STALE_TIME.userState,
   });
 }

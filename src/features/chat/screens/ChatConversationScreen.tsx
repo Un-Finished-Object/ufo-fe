@@ -23,6 +23,7 @@ import { CHAT_MESSAGES_FORBIDDEN_MESSAGE } from "@/features/chat/services/fetchC
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { isApiError } from "@/lib/api/ApiError";
 
 type ChatConversationScreenProps = {
   patternId: string;
@@ -144,7 +145,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
       );
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Unauthorized") {
+      if (isApiError(error, 401)) {
         showAuthRequiredToast();
       }
     },
@@ -320,7 +321,7 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   }, [isFetchingNextPage, messages.length, scrollContainerElement]);
 
   const errorMessage =
-    isMessagesError && messagesError.message === CHAT_MESSAGES_FORBIDDEN_MESSAGE
+    isMessagesError && isApiError(messagesError, 403)
       ? CHAT_MESSAGES_FORBIDDEN_MESSAGE
       : isMessagesError
         ? "메시지를 불러오지 못했습니다."
