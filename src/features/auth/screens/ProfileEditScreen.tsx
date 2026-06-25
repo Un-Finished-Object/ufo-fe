@@ -15,7 +15,7 @@ import { isApiError } from "@/lib/api/ApiError";
 function LoadingState() {
   return (
     <section className="px-6 py-12">
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-ufo-border bg-white px-6 py-12 text-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-ufo-border bg-white px-6 py-12 text-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-border-light border-t-ufo-brand-pale" />
         <p className="mt-4 text-sm font-medium text-ufo-text-secondary">프로필 정보를 준비하고 있어요.</p>
       </div>
@@ -26,13 +26,13 @@ function LoadingState() {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <section className="px-6 py-12">
-      <div className="rounded-3xl border border-ufo-border bg-white px-6 py-10 text-center">
+      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
         <p className="text-base font-semibold text-ufo-text">프로필 정보를 불러오지 못했어요.</p>
         <p className="mt-2 text-sm text-ufo-text-secondary">잠시 후 다시 시도해 주세요.</p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 rounded-2xl bg-ufo-brand px-5 py-3 text-sm font-semibold text-white"
+          className="mt-5 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
         >
           다시 시도
         </button>
@@ -156,42 +156,47 @@ export default function ProfileEditScreen() {
           />
 
           <section className="px-6 pb-6 pt-7">
-            <div className="rounded-[28px] bg-ufo-brand px-5 py-6 text-white shadow-[0_16px_36px_rgba(0,0,0,0.08)]">
+            <div className="rounded-2xl bg-ufo-brand px-4 py-4 text-white">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-white/25 ring-2 ring-white/30">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white/30 shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
                   {profileImageSrc ? (
                     <Image
                       src={profileImageSrc}
                       loader={({ src }) => src}
                       unoptimized
-                      width={64}
-                      height={64}
-                      alt={`${previewNickname} profile image`}
+                      width={56}
+                      height={56}
+                      alt={`${previewNickname} 프로필 이미지`}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xl font-bold text-white">
+                    <div className="flex h-full w-full items-center justify-center text-lg font-bold text-white/90">
                       {previewNickname.charAt(0)}
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <p className="text-sm font-medium text-white/80">My Profile</p>
-                  <p className="mt-1 text-2xl font-bold tracking-[-0.03em]">{previewNickname}</p>
-                  <p className="mt-1 text-sm text-white/80">{meQuery.data.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white/80">프로필 미리보기</p>
+                  <p className="mt-1 truncate text-2xl font-bold tracking-[-0.03em]">
+                    {previewNickname}
+                  </p>
+                  <p className="mt-1 truncate text-sm text-white/80">{meQuery.data.email}</p>
                 </div>
               </div>
             </div>
           </section>
 
           <section className="px-6">
-            <form onSubmit={handleSubmit} className="rounded-[28px] border border-ufo-border bg-white px-5 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+            <form
+              onSubmit={handleSubmit}
+              className="rounded-2xl border border-ufo-border bg-white px-5 py-6"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold tracking-[-0.03em] text-ufo-text">닉네임 수정</h2>
                   <p className="mt-2 text-sm leading-5 text-ufo-text-secondary">
-                    마이페이지에 보이는 이름을 원하는 분위기로 바꿔보세요.
+                    마이페이지와 채팅에 표시되는 닉네임입니다.
                   </p>
                 </div>
                 <span className="rounded-full bg-ufo-brand-pale px-3 py-1 text-xs font-semibold text-ufo-brand">
@@ -203,7 +208,7 @@ export default function ProfileEditScreen() {
                 <label htmlFor="nickname" className="text-sm font-semibold text-ufo-text-subtle">
                   닉네임
                 </label>
-                <div className="mt-2 rounded-2xl border border-ufo-border bg-ufo-surface px-4 py-3 focus-within:border-ufo-brand">
+                <div className="mt-2 rounded-2xl border border-ufo-border bg-white px-4 py-3 focus-within:border-ufo-brand">
                   <input
                     id="nickname"
                     name="nickname"
@@ -223,10 +228,10 @@ export default function ProfileEditScreen() {
               <button
                 type="submit"
                 disabled={isSaveDisabled}
-                className={`mt-8 w-full rounded-2xl px-4 py-3.5 text-base font-semibold transition ${
+                className={`mt-8 w-full rounded-xl px-4 py-3.5 text-base font-semibold transition ${
                   isSaveDisabled
                     ? "bg-ufo-border text-ufo-text-dim"
-                    : "bg-ufo-brand text-white shadow-[0_10px_20px_rgba(0,0,0,0.08)]"
+                    : "bg-ufo-brand-soft text-white"
                 }`}
               >
                 {saveProfileMutation.isPending ? "저장 중..." : "저장하기"}
