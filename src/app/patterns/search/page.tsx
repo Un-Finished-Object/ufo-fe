@@ -1,4 +1,7 @@
+import { noIndexMetadata } from "@/lib/metadata";
 import PatternSearchScreen from "@/features/patterns/screens/PatternSearchScreen";
+
+export const metadata = noIndexMetadata;
 
 type PatternSearchPageProps = {
   searchParams?: Promise<{
