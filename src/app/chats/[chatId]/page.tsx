@@ -5,12 +5,12 @@ export const metadata = noIndexMetadata;
 
 type ChatDetailPageProps = {
   params: Promise<{
-    patternId: string;
+    chatId: string;
   }>;
 };
 
 export default async function ChatDetailPage({ params }: ChatDetailPageProps) {
-  const { patternId } = await params;
+  const { chatId } = await params;
 
-  return <ChatConversationScreen patternId={patternId} />;
+  return <ChatConversationScreen chatId={chatId} />;
 }

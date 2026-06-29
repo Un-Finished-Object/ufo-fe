@@ -26,7 +26,7 @@ import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
 
 type ChatConversationScreenProps = {
-  patternId: string;
+  chatId: string;
 };
 
 type ReplyTarget = {
@@ -35,14 +35,14 @@ type ReplyTarget = {
   text: string;
 };
 
-export default function ChatConversationScreen({ patternId }: ChatConversationScreenProps) {
-  const roomId = patternId;
+export default function ChatConversationScreen({ chatId }: ChatConversationScreenProps) {
+  const roomId = chatId;
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
   const myChatRoomsQuery = useQuery(
     myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
   );
-  const chatRoom = myChatRoomsQuery.data?.find((room) => room.patternId === roomId);
+  const chatRoom = myChatRoomsQuery.data?.find((room) => room.chatId === roomId);
   const roomMeta = chatRoom
     ? {
         title: chatRoom.name,
@@ -129,12 +129,12 @@ export default function ChatConversationScreen({ patternId }: ChatConversationSc
   const chatStatus = chatStatusQuery.data ?? mapChatRoomToStatus(roomId, chatRoom);
   const updateChatStatusMutation = useMutation({
     mutationFn: ({ favorite, hidden }: { favorite?: boolean; hidden?: boolean }) =>
-      patchChatStatus({ patternId: roomId, favorite, hidden }),
+      patchChatStatus({ chatId: roomId, favorite, hidden }),
     onSuccess: (nextChatStatus) => {
       queryClient.setQueryData<ChatStatus | null>(chatStatusQueryKey(roomId), nextChatStatus);
       queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
         previousRooms?.map((room) =>
-          room.patternId === roomId
+          room.chatId === roomId
             ? {
                 ...room,
                 favorite: nextChatStatus.favorite,

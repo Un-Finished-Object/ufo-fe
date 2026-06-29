@@ -91,7 +91,7 @@ export function applyIncomingChatMessage(
 export function incrementUnreadCount(queryClient: QueryClient, roomId: string) {
   queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
     previousRooms?.map((room) =>
-      room.patternId === roomId
+      room.chatId === roomId
         ? {
             ...room,
             unreadCount: room.unreadCount + 1,

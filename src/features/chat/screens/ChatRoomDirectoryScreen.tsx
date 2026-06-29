@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
+import YesOrNo from "@/components/dialogs/YesOrNo";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
@@ -38,8 +39,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 export default function ChatRoomDirectoryScreen() {
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<ChatRoomFilter>("전체");
+  const [activeFilter, setActiveFilter] = useState<ChatRoomFilter>("UFO");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
+  const [foConfirmRoom, setFoConfirmRoom] = useState<ChatRoom | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
@@ -58,18 +60,18 @@ export default function ChatRoomDirectoryScreen() {
       room: ChatRoom;
     }) =>
       patchChatStatus({
-        patternId: room.patternId,
+        chatId: room.chatId,
         favorite,
         hidden,
       }),
     onSuccess: (nextChatStatus, { room }) => {
       queryClient.setQueryData<ChatStatus | null>(
-        chatStatusQueryKey(room.patternId),
+        chatStatusQueryKey(room.chatId),
         nextChatStatus,
       );
       queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
         previousRooms?.map((previousRoom) =>
-          previousRoom.patternId === room.patternId
+          previousRoom.chatId === room.chatId
             ? {
                 ...previousRoom,
                 favorite: nextChatStatus.favorite,
@@ -116,7 +118,7 @@ export default function ChatRoomDirectoryScreen() {
   const isChatRoomsLoading = Boolean(meQuery.data) && myChatRoomsQuery.isPending;
   const isChatRoomsError = Boolean(meQuery.data) && myChatRoomsQuery.isError;
   const updatingRoomId = updateChatStatusMutation.isPending
-    ? updateChatStatusMutation.variables.room.patternId
+    ? updateChatStatusMutation.variables.room.chatId
     : null;
 
   const handleSettingsClick = () => {
@@ -149,11 +151,42 @@ export default function ChatRoomDirectoryScreen() {
       return;
     }
 
-    updateChatStatusMutation.mutate({
-      room,
-      hidden: !room.isHidden,
-    });
+    setFoConfirmRoom(room);
   };
+
+  const handleConfirmFoChange = () => {
+    if (!foConfirmRoom) {
+      return;
+    }
+
+    if (!meQuery.data) {
+      showAuthRequiredToast();
+      setFoConfirmRoom(null);
+      return;
+    }
+
+    updateChatStatusMutation.mutate({
+      room: foConfirmRoom,
+      hidden: !foConfirmRoom.isHidden,
+    });
+    setFoConfirmRoom(null);
+  };
+
+  const handleCloseFoConfirm = () => {
+    setFoConfirmRoom(null);
+  };
+
+  const foConfirmMainText = foConfirmRoom?.isHidden
+    ? "이 채팅방의 매듭을 푸시겠습니까?"
+    : "이 채팅방을 매듭짓겠습니까?";
+  const foConfirmSubText = foConfirmRoom?.isHidden ? (
+    <>{"'나의 채팅방'에서 채팅방을 확인할 수 있습니다."}</>
+  ) : (
+    <>
+      <p>{"'나의 채팅방 > FO'에서 채팅방을 확인할 수 있습니다."}</p>
+      <p className="mt-1">{"*FO 버튼을 한 번 더 누르면 다시 불러올 수 있습니다."}</p>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -197,6 +230,16 @@ export default function ChatRoomDirectoryScreen() {
           </>
         ) : null}
       </main>
+      {foConfirmRoom ? (
+        <YesOrNo
+          mainText={foConfirmMainText}
+          subText={foConfirmSubText}
+          yesDisabled={updateChatStatusMutation.isPending}
+          noDisabled={updateChatStatusMutation.isPending}
+          onYes={handleConfirmFoChange}
+          onNo={handleCloseFoConfirm}
+        />
+      ) : null}
       <ToastMessage message={toastMessage} />
     </div>
   );
