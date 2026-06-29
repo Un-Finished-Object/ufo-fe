@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -19,6 +19,7 @@ import {
   patternAlternativesQueryOptions,
   type PatternAlternativeItem,
 } from "@/features/patterns/queries/patternAlternativeQueries";
+import type { OriginalYarnSet } from "@/features/patterns/queries/patternDetailQueries";
 import {
   patternPurchaseQueryKey,
   patternPurchaseStatusQueryOptions,
@@ -27,6 +28,10 @@ import {
   type PatternPurchaseStatus,
 } from "@/features/patterns/queries/patternPurchaseQueries";
 import { patternDetailQueryOptions } from "@/features/patterns/queries/patternDetailQueries";
+import {
+  yarnDetailQueryOptions,
+  type YarnDetailData,
+} from "@/features/patterns/queries/yarnDetailQueries";
 import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
@@ -34,6 +39,11 @@ import { isApiError } from "@/lib/api/ApiError";
 
 type PatternDetailScreenProps = {
   patternId: number;
+};
+
+type OriginalYarnPagerState = {
+  patternId: number | null;
+  index: number;
 };
 
 const detailRows = [
@@ -308,6 +318,191 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
   );
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-4 w-4"
+    >
+      <path
+        fillRule="evenodd"
+        d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-4 w-4"
+    >
+      <path
+        fillRule="evenodd"
+        d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function getOriginalYarnIds(originalYarnSets: OriginalYarnSet[]) {
+  const yarnIds = new Set<number>();
+
+  originalYarnSets.forEach((yarnSet) => {
+    yarnIds.add(yarnSet.firstYarnId);
+
+    if (yarnSet.secondYarnId !== null) {
+      yarnIds.add(yarnSet.secondYarnId);
+    }
+
+    if (yarnSet.subYarnId !== null) {
+      yarnIds.add(yarnSet.subYarnId);
+    }
+  });
+
+  return Array.from(yarnIds);
+}
+
+function getOriginalYarnEntries(yarnSet: OriginalYarnSet) {
+  if (yarnSet.secondYarnId !== null) {
+    return [
+      { label: "메인실", yarnId: yarnSet.firstYarnId },
+      { label: "배색실", yarnId: yarnSet.secondYarnId },
+    ];
+  }
+
+  if (yarnSet.subYarnId !== null) {
+    return [
+      { label: "메인실", yarnId: yarnSet.firstYarnId },
+      { label: "합사실", yarnId: yarnSet.subYarnId },
+    ];
+  }
+
+  return [{ label: "원작실", yarnId: yarnSet.firstYarnId }];
+}
+
+function getYarnDetailItems(yarn: YarnDetailData): YarnInfoDetailItem[] {
+  return [
+    { label: "무게", value: formatAlternativeNumber(yarn.weight, "g") },
+    { label: "길이", value: formatAlternativeNumber(yarn.length, "m") },
+    { label: "구매처", value: getAlternativeText(yarn.store) },
+  ].filter((detail): detail is YarnInfoDetailItem => detail.value !== null);
+}
+
+function getYarnCardData(yarn: YarnDetailData): YarnInfoCardData {
+  return {
+    yarnName: yarn.yarnName,
+    subComponent: yarn.component,
+    cost: yarn.cost,
+    detailItems: getYarnDetailItems(yarn),
+  };
+}
+
+type YarnDetailQueryState = {
+  data?: YarnDetailData;
+  isPending: boolean;
+  isError: boolean;
+};
+
+function OriginalYarnCard({
+  label,
+  yarnId,
+  queryState,
+}: {
+  label: string;
+  yarnId: number;
+  queryState?: YarnDetailQueryState;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-xs font-bold text-ufo-text-secondary">{label}</p>
+        <p className="text-[10px] font-semibold text-ufo-text-muted">Yarn #{yarnId}</p>
+      </div>
+
+      {!queryState || queryState.isPending ? (
+        <AlternativeSectionMessage>
+          원작실 정보를 불러오고 있어요.
+        </AlternativeSectionMessage>
+      ) : queryState.isError || !queryState.data ? (
+        <AlternativeSectionMessage>
+          원작실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+        </AlternativeSectionMessage>
+      ) : (
+        <YarnInfoCard card={getYarnCardData(queryState.data)} />
+      )}
+    </div>
+  );
+}
+
+function OriginalYarnSetControls({
+  currentIndex,
+  total,
+  onPrevious,
+  onNext,
+}: {
+  currentIndex: number;
+  total: number;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={onPrevious}
+        disabled={currentIndex === 0}
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-ufo-border-light bg-white text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-35"
+        aria-label="이전 원작실 세트"
+      >
+        <ChevronLeftIcon />
+      </button>
+      <span className="min-w-9 text-center text-xs font-bold text-ufo-text-secondary">
+        {currentIndex + 1} / {total}
+      </span>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={currentIndex >= total - 1}
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-ufo-border-light bg-white text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-35"
+        aria-label="다음 원작실 세트"
+      >
+        <ChevronRightIcon />
+      </button>
+    </div>
+  );
+}
+
+function OriginalYarnSetCards({
+  yarnSet,
+  yarnQueryStateMap,
+}: {
+  yarnSet: OriginalYarnSet;
+  yarnQueryStateMap: Map<number, YarnDetailQueryState>;
+}) {
+  return (
+    <div className="space-y-3">
+      {getOriginalYarnEntries(yarnSet).map((entry) => (
+        <OriginalYarnCard
+          key={`${entry.label}-${entry.yarnId}`}
+          label={entry.label}
+          yarnId={entry.yarnId}
+          queryState={yarnQueryStateMap.get(entry.yarnId)}
+        />
+      ))}
+    </div>
+  );
+}
+
 function AlternativeYarnSection({
   title,
   action,
@@ -353,11 +548,46 @@ export default function PatternDetailScreen({
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
+  const [originalYarnPagerState, setOriginalYarnPagerState] =
+    useState<OriginalYarnPagerState>({
+      patternId: null,
+      index: 0,
+    });
   const [purchaseDialogType, setPurchaseDialogType] = useState<PurchaseDialogType | null>(null);
   const [purchaseErrorMessage, setPurchaseErrorMessage] = useState<string | null>(null);
   const profileHref = isAuthenticated ? "/my" : "/login";
   const isScrapped = pattern?.isScrapped ?? false;
   const scrapCount = pattern?.stats.scraps ?? 0;
+  const originalYarnSets = pattern?.originalYarnSets ?? [];
+  const originalYarnPagerPatternId = pattern?.id ?? null;
+  const requestedOriginalYarnSetIndex =
+    originalYarnPagerState.patternId === originalYarnPagerPatternId
+      ? originalYarnPagerState.index
+      : 0;
+  const activeOriginalYarnSetIndex = Math.min(
+    requestedOriginalYarnSetIndex,
+    Math.max(originalYarnSets.length - 1, 0),
+  );
+  const originalYarnIds = getOriginalYarnIds(originalYarnSets);
+  const originalYarnQueries = useQueries({
+    queries: originalYarnIds.map((yarnId) => yarnDetailQueryOptions(yarnId)),
+  });
+  const yarnQueryStateMap = new Map<number, YarnDetailQueryState>();
+
+  originalYarnIds.forEach((yarnId, yarnIndex) => {
+    const query = originalYarnQueries[yarnIndex];
+
+    if (!query) {
+      return;
+    }
+
+    yarnQueryStateMap.set(yarnId, {
+      data: query.data,
+      isPending: query.isPending,
+      isError: query.isError,
+    });
+  });
+
   const purchaseStatusQuery = useQuery({
     ...patternPurchaseStatusQueryOptions(pattern?.id ?? 0),
     enabled: authStatus !== "loading" && isAuthenticated && pattern !== null,
@@ -592,10 +822,7 @@ export default function PatternDetailScreen({
     );
   }
 
-  const originalYarnCard: YarnInfoCardData = {
-    yarnName: pattern.details.yarn,
-  };
-  const hasOriginalYarn = getAlternativeText(originalYarnCard.yarnName) !== null;
+  const activeOriginalYarnSet = originalYarnSets[activeOriginalYarnSetIndex] ?? null;
 
   return (
     <div className="min-h-screen bg-ufo-bg">
@@ -691,9 +918,37 @@ export default function PatternDetailScreen({
               </div>
             ) : (
               <div className="space-y-4">
-                <AlternativeYarnSection title="원작실">
-                  {hasOriginalYarn ? (
-                    <YarnInfoCard card={originalYarnCard} />
+                <AlternativeYarnSection
+                  title="원작실"
+                  action={
+                    originalYarnSets.length > 1 ? (
+                      <OriginalYarnSetControls
+                        currentIndex={activeOriginalYarnSetIndex}
+                        total={originalYarnSets.length}
+                        onPrevious={() => {
+                          setOriginalYarnPagerState({
+                            patternId: originalYarnPagerPatternId,
+                            index: Math.max(activeOriginalYarnSetIndex - 1, 0),
+                          });
+                        }}
+                        onNext={() => {
+                          setOriginalYarnPagerState({
+                            patternId: originalYarnPagerPatternId,
+                            index: Math.min(
+                              activeOriginalYarnSetIndex + 1,
+                              originalYarnSets.length - 1,
+                            ),
+                          });
+                        }}
+                      />
+                    ) : null
+                  }
+                >
+                  {activeOriginalYarnSet ? (
+                    <OriginalYarnSetCards
+                      yarnSet={activeOriginalYarnSet}
+                      yarnQueryStateMap={yarnQueryStateMap}
+                    />
                   ) : (
                     <AlternativeSectionMessage>
                       등록된 원작실 정보가 없어요.
