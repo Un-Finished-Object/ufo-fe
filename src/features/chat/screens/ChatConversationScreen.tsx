@@ -10,7 +10,7 @@ import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useChatReadReceipt } from "@/features/chat/hooks/useChatReadReceipt";
 import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
-import type { ChatMessage, ChatRoom } from "@/features/chat/types";
+import type { ChatMessage } from "@/features/chat/types";
 import { useChatMessagesQuery } from "@/features/chat/hooks/useChatMessagesQuery";
 import {
   chatStatusQueryKey,
@@ -18,7 +18,11 @@ import {
   type ChatStatus,
   useChatStatusQuery,
 } from "@/features/chat/hooks/useChatStatusQuery";
-import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import {
+  myChatRoomsQueryKey,
+  myChatRoomsQueryOptions,
+  type MyChatRoomsResult,
+} from "@/features/chat/queries/chatQueries";
 import { CHAT_MESSAGES_FORBIDDEN_MESSAGE } from "@/features/chat/services/fetchChatMessages";
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
@@ -42,14 +46,23 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const myChatRoomsQuery = useQuery(
     myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
   );
-  const chatRoom = myChatRoomsQuery.data?.find((room) => room.chatId === roomId);
+  const queryClient = useQueryClient();
+  const cachedChatRoom = useMemo(
+    () =>
+      queryClient
+        .getQueriesData<MyChatRoomsResult>({ queryKey: myChatRoomsQueryKey })
+        .flatMap(([, result]) => result?.rooms ?? [])
+        .find((room) => room.chatId === roomId),
+    [queryClient, roomId],
+  );
+  const chatRoom =
+    myChatRoomsQuery.data?.rooms.find((room) => room.chatId === roomId) ?? cachedChatRoom;
   const roomMeta = chatRoom
     ? {
         title: chatRoom.name,
         participants: "",
       }
     : null;
-  const queryClient = useQueryClient();
   const chatStatusQuery = useChatStatusQuery(roomId);
   const [messageText, setMessageText] = useState("");
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
@@ -132,16 +145,23 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       patchChatStatus({ chatId: roomId, favorite, hidden }),
     onSuccess: (nextChatStatus) => {
       queryClient.setQueryData<ChatStatus | null>(chatStatusQueryKey(roomId), nextChatStatus);
-      queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
-        previousRooms?.map((room) =>
-          room.chatId === roomId
+      queryClient.setQueriesData<MyChatRoomsResult>(
+        { queryKey: myChatRoomsQueryKey },
+        (previousResult) =>
+          previousResult
             ? {
-                ...room,
-                favorite: nextChatStatus.favorite,
-                isHidden: nextChatStatus.isHidden,
+                ...previousResult,
+                rooms: previousResult.rooms.map((room) =>
+                  room.chatId === roomId
+                    ? {
+                        ...room,
+                        favorite: nextChatStatus.favorite,
+                        isHidden: nextChatStatus.isHidden,
+                      }
+                    : room,
+                ),
               }
-            : room,
-        ),
+            : previousResult,
       );
     },
     onError: (error) => {

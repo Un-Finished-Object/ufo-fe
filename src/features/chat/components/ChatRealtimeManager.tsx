@@ -6,8 +6,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 import {
   applyIncomingChatMessage,
-  incrementUnreadCount,
   parseIncomingChatMessageEvent,
+  updateChatRoomLastMessage,
 } from "@/features/chat/lib/chatMessageEvents";
 import { myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
 import { addStompConnectListener, getStompClient } from "@/features/chat/lib/stompClient";
@@ -18,7 +18,7 @@ export default function ChatRealtimeManager() {
   const { isAuthenticated } = useAuthState();
   const roomsQuery = useQuery(myChatRoomsQueryOptions({ enabled: isAuthenticated }));
   const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
-  const rooms = useMemo(() => roomsQuery.data ?? [], [roomsQuery.data]);
+  const rooms = useMemo(() => roomsQuery.data?.rooms ?? [], [roomsQuery.data]);
   const roomsSignature = useMemo(
     () => rooms.map((room) => `${room.chatId}:${room.name}`).join("|"),
     [rooms],
@@ -74,10 +74,13 @@ export default function ChatRealtimeManager() {
 
           if (currentRoomId === roomId) {
             applyIncomingChatMessage(queryClient, roomId, event.message);
+            updateChatRoomLastMessage(queryClient, roomId, event.message.text);
             return;
           }
 
-          incrementUnreadCount(queryClient, roomId);
+          updateChatRoomLastMessage(queryClient, roomId, event.message.text, {
+            incrementUnread: true,
+          });
           showToast({
             roomName: room.name,
             senderName: event.message.senderName?.trim() || "알 수 없는 사용자",

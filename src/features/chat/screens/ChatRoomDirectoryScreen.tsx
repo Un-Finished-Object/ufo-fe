@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "@/components/common/Pagination";
 import ToastMessage from "@/components/common/ToastMessage";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
@@ -10,7 +11,11 @@ import TopBar from "@/components/navigation/TopBar";
 import { chatRoomFilters, type ChatRoomFilter } from "@/features/chat/constants";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { chatStatusQueryKey, type ChatStatus } from "@/features/chat/hooks/useChatStatusQuery";
-import { myChatRoomsQueryKey, myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
+import {
+  myChatRoomsQueryKey,
+  myChatRoomsQueryOptions,
+  type MyChatRoomsResult,
+} from "@/features/chat/queries/chatQueries";
 import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import type { ChatRoom } from "@/features/chat/types";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
@@ -42,12 +47,13 @@ export default function ChatRoomDirectoryScreen() {
   const [activeFilter, setActiveFilter] = useState<ChatRoomFilter>("UFO");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [foConfirmRoom, setFoConfirmRoom] = useState<ChatRoom | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const normalizedQuery = query.trim().toLowerCase();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const meQuery = useMeQuery();
   const queryClient = useQueryClient();
   const myChatRoomsQuery = useQuery(
-    myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data) }),
+    myChatRoomsQueryOptions({ enabled: Boolean(meQuery.data), page: currentPage }),
   );
   const updateChatStatusMutation = useMutation({
     mutationFn: ({
@@ -69,16 +75,23 @@ export default function ChatRoomDirectoryScreen() {
         chatStatusQueryKey(room.chatId),
         nextChatStatus,
       );
-      queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
-        previousRooms?.map((previousRoom) =>
-          previousRoom.chatId === room.chatId
+      queryClient.setQueriesData<MyChatRoomsResult>(
+        { queryKey: myChatRoomsQueryKey },
+        (previousResult) =>
+          previousResult
             ? {
-                ...previousRoom,
-                favorite: nextChatStatus.favorite,
-                isHidden: nextChatStatus.isHidden,
+                ...previousResult,
+                rooms: previousResult.rooms.map((previousRoom) =>
+                  previousRoom.chatId === room.chatId
+                    ? {
+                        ...previousRoom,
+                        favorite: nextChatStatus.favorite,
+                        isHidden: nextChatStatus.isHidden,
+                      }
+                    : previousRoom,
+                ),
               }
-            : previousRoom,
-        ),
+            : previousResult,
       );
     },
     onError: (error) => {
@@ -95,7 +108,7 @@ export default function ChatRoomDirectoryScreen() {
   }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
   const filteredMyRooms = useMemo(() => {
-    const searchedRooms = (myChatRoomsQuery.data ?? []).filter((room) =>
+    const searchedRooms = (myChatRoomsQuery.data?.rooms ?? []).filter((room) =>
       room.name.toLowerCase().includes(normalizedQuery),
     );
 
@@ -117,9 +130,21 @@ export default function ChatRoomDirectoryScreen() {
   const nickname = meQuery.data?.nickname ?? "회원";
   const isChatRoomsLoading = Boolean(meQuery.data) && myChatRoomsQuery.isPending;
   const isChatRoomsError = Boolean(meQuery.data) && myChatRoomsQuery.isError;
+  const chatRoomsPage = myChatRoomsQuery.data?.page ?? currentPage;
+  const nextPage = myChatRoomsQuery.data?.nextPage ?? 0;
   const updatingRoomId = updateChatStatusMutation.isPending
     ? updateChatStatusMutation.variables.room.chatId
     : null;
+
+  const handleFilterChange = (filter: ChatRoomFilter) => {
+    setActiveFilter(filter);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    setCurrentPage(1);
+  };
 
   const handleSettingsClick = () => {
     setIsSettingsMode((currentIsSettingsMode) => !currentIsSettingsMode);
@@ -199,7 +224,7 @@ export default function ChatRoomDirectoryScreen() {
           showBottomBorder
         />
 
-        <SearchBar value={query} onChange={setQuery} placeholder="채팅방명을 검색하세요" />
+        <SearchBar value={query} onChange={handleSearchChange} placeholder="채팅방명을 검색하세요" />
 
         <section className="border-b border-ufo-border-light px-8 pb-2" aria-label="채팅 사용자 정보">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ufo-text-subtle">
@@ -218,7 +243,7 @@ export default function ChatRoomDirectoryScreen() {
               rooms={filteredMyRooms}
               filters={chatRoomFilters}
               activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
+              onFilterChange={handleFilterChange}
               showSettingsButton
               isSettingsMode={isSettingsMode}
               updatingRoomId={updatingRoomId}
@@ -226,6 +251,11 @@ export default function ChatRoomDirectoryScreen() {
               onFavoriteChange={handleFavoriteChange}
               onHiddenChange={handleHiddenChange}
               emptyText="검색 결과가 없습니다."
+            />
+            <Pagination
+              currentPage={chatRoomsPage}
+              nextPage={nextPage}
+              onPageChange={setCurrentPage}
             />
           </>
         ) : null}

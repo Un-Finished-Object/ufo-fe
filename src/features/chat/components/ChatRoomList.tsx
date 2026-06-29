@@ -66,8 +66,8 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
           <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
           {room.favorite ? <FavoriteIcon /> : null}
         </div>
-        <p className="mt-1 text-xs leading-none text-ufo-text-dim">
-          {room.favorite ? "즐겨찾기 채팅방" : room.isHidden ? "FO 보관 채팅방" : "채팅방"}
+        <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
+          {room.lastMessage}
         </p>
       </div>
 
