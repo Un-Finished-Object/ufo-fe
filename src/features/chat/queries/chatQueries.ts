@@ -17,12 +17,15 @@ type MyChatItem = {
   favorite?: boolean;
   isHidden?: boolean;
   unRead?: number;
+  lastMessage?: string | null;
   createdAt?: string;
 };
 
 type MyChatsResponse = {
   data?: {
     chats?: MyChatItem[];
+    page?: number;
+    nextPage?: number;
   };
   error?: unknown;
 };
@@ -41,6 +44,13 @@ export const myChatRoomsQueryKey = ["myChatRooms"] as const;
 
 type MyChatRoomsQueryOptionsParams = {
   enabled?: boolean;
+  page?: number;
+};
+
+export type MyChatRoomsResult = {
+  rooms: ChatRoom[];
+  page: number;
+  nextPage: number;
 };
 
 function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
@@ -59,9 +69,18 @@ function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
   return `/${chatImageUrl}`;
 }
 
-export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}) {
+export async function fetchMyChatRooms({
+  page = 1,
+  signal,
+}: {
+  page?: number;
+  signal?: AbortSignal;
+} = {}): Promise<MyChatRoomsResult> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+  });
   const response = await fetchAuthenticated({
-    input: buildApiUrl("/v1/users/me/chats"),
+    input: buildApiUrl(`/v1/users/me/chats?${searchParams.toString()}`),
     init: {
       method: "GET",
       credentials: "include",
@@ -83,34 +102,41 @@ export async function fetchMyChatRooms({ signal }: { signal?: AbortSignal } = {}
     throw createInvalidApiResponseError("Failed to load chat rooms.");
   }
 
-  return payload.data.chats
-    .filter(
-      (chat): chat is ValidMyChatItem =>
-        typeof chat.patternId === "number" &&
-        typeof chat.chatId === "number" &&
-        typeof chat.chatName === "string" &&
-        typeof chat.favorite === "boolean" &&
-        typeof chat.isHidden === "boolean" &&
-        typeof chat.unRead === "number" &&
-        typeof chat.createdAt === "string",
-    )
-    .map((chat) => ({
-      chatId: String(chat.chatId),
-      patternId: String(chat.patternId),
-      name: chat.chatName,
-      imageUrl: normalizeChatImageUrl(chat.chatImageUrl),
-      favorite: chat.favorite,
-      isHidden: chat.isHidden,
-      unreadCount: chat.unRead,
-      createdAt: chat.createdAt,
-    } satisfies ChatRoom));
+  return {
+    rooms: payload.data.chats
+      .filter(
+        (chat): chat is ValidMyChatItem =>
+          typeof chat.patternId === "number" &&
+          typeof chat.chatId === "number" &&
+          typeof chat.chatName === "string" &&
+          typeof chat.favorite === "boolean" &&
+          typeof chat.isHidden === "boolean" &&
+          typeof chat.unRead === "number" &&
+          typeof chat.createdAt === "string",
+      )
+      .map((chat) => ({
+        chatId: String(chat.chatId),
+        patternId: String(chat.patternId),
+        name: chat.chatName,
+        imageUrl: normalizeChatImageUrl(chat.chatImageUrl),
+        lastMessage: typeof chat.lastMessage === "string" ? chat.lastMessage : "",
+        favorite: chat.favorite,
+        isHidden: chat.isHidden,
+        unreadCount: chat.unRead,
+        createdAt: chat.createdAt,
+      } satisfies ChatRoom)),
+    page: typeof payload.data.page === "number" ? payload.data.page : page,
+    nextPage: typeof payload.data.nextPage === "number" ? payload.data.nextPage : 0,
+  };
 }
 
 export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = {}) {
+  const page = params.page ?? 1;
+
   return queryOptions({
-    queryKey: myChatRoomsQueryKey,
+    queryKey: [...myChatRoomsQueryKey, page] as const,
     enabled: params.enabled ?? true,
-    queryFn: ({ signal }) => fetchMyChatRooms({ signal }),
+    queryFn: ({ signal }) => fetchMyChatRooms({ page, signal }),
     staleTime: QUERY_STALE_TIME.critical,
   });
 }

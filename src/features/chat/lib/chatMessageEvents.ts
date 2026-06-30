@@ -5,8 +5,8 @@ import {
   type ChatMessagesInfiniteData,
   upsertIncomingChatMessageInData,
 } from "@/features/chat/hooks/useChatMessagesQuery";
-import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
-import type { ChatMessage, ChatRoom } from "@/features/chat/types";
+import { myChatRoomsQueryKey, type MyChatRoomsResult } from "@/features/chat/queries/chatQueries";
+import type { ChatMessage } from "@/features/chat/types";
 
 type MessageCreatedPayload = {
   messageId?: number | null;
@@ -88,15 +88,28 @@ export function applyIncomingChatMessage(
   );
 }
 
-export function incrementUnreadCount(queryClient: QueryClient, roomId: string) {
-  queryClient.setQueryData<ChatRoom[]>(myChatRoomsQueryKey, (previousRooms) =>
-    previousRooms?.map((room) =>
-      room.patternId === roomId
+export function updateChatRoomLastMessage(
+  queryClient: QueryClient,
+  roomId: string,
+  lastMessage: string,
+  options: { incrementUnread?: boolean } = {},
+) {
+  queryClient.setQueriesData<MyChatRoomsResult>(
+    { queryKey: myChatRoomsQueryKey },
+    (previousResult) =>
+      previousResult
         ? {
-            ...room,
-            unreadCount: room.unreadCount + 1,
+            ...previousResult,
+            rooms: previousResult.rooms.map((room) =>
+              room.chatId === roomId
+                ? {
+                    ...room,
+                    lastMessage,
+                    unreadCount: options.incrementUnread ? room.unreadCount + 1 : room.unreadCount,
+                  }
+                : room,
+            ),
           }
-        : room,
-    ),
+        : previousResult,
   );
 }

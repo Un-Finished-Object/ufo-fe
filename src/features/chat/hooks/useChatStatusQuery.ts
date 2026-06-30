@@ -9,29 +9,29 @@ export type ChatStatus = {
   isHidden: boolean;
 };
 
-export function chatStatusQueryKey(patternId: string) {
-  return ["chatStatus", patternId] as const;
+export function chatStatusQueryKey(chatId: string) {
+  return ["chatStatus", chatId] as const;
 }
 
 export const chatStatusQueryRoot = ["chatStatus"] as const;
 
-export function mapChatRoomToStatus(patternId: string, chatRoom?: ChatRoom) {
-  const chatId = Number(chatRoom?.chatId ?? patternId);
+export function mapChatRoomToStatus(chatId: string, chatRoom?: ChatRoom) {
+  const numericChatId = Number(chatRoom?.chatId ?? chatId);
 
-  if (!chatRoom || Number.isNaN(chatId)) {
+  if (!chatRoom || Number.isNaN(numericChatId)) {
     return null;
   }
 
   return {
-    chatId,
+    chatId: numericChatId,
     favorite: chatRoom.favorite,
     isHidden: chatRoom.isHidden,
   } satisfies ChatStatus;
 }
 
-export function useChatStatusQuery(patternId: string) {
+export function useChatStatusQuery(chatId: string) {
   return useQuery<ChatStatus | null>({
-    queryKey: chatStatusQueryKey(patternId),
+    queryKey: chatStatusQueryKey(chatId),
     queryFn: async () => null,
     enabled: false,
     staleTime: Number.POSITIVE_INFINITY,
