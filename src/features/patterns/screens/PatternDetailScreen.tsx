@@ -414,21 +414,12 @@ type YarnDetailQueryState = {
 };
 
 function OriginalYarnCard({
-  label,
-  yarnId,
   queryState,
 }: {
-  label: string;
-  yarnId: number;
   queryState?: YarnDetailQueryState;
 }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-3 px-1">
-        <p className="text-xs font-bold text-ufo-text-secondary">{label}</p>
-        <p className="text-[10px] font-semibold text-ufo-text-muted">Yarn #{yarnId}</p>
-      </div>
-
+    <div>
       {!queryState || queryState.isPending ? (
         <AlternativeSectionMessage>
           원작실 정보를 불러오고 있어요.
@@ -494,8 +485,6 @@ function OriginalYarnSetCards({
       {getOriginalYarnEntries(yarnSet).map((entry) => (
         <OriginalYarnCard
           key={`${entry.label}-${entry.yarnId}`}
-          label={entry.label}
-          yarnId={entry.yarnId}
           queryState={yarnQueryStateMap.get(entry.yarnId)}
         />
       ))}
