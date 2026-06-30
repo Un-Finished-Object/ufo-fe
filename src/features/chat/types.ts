@@ -15,6 +15,7 @@ export type ChatRoom = {
   patternId: string;
   name: string;
   imageUrl: string | null;
+  lastMessage: string;
   favorite: boolean;
   isHidden: boolean;
   unreadCount: number;

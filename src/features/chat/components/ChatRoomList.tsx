@@ -25,6 +25,26 @@ function FavoriteIcon() {
   return <span className="text-ufo-brand-soft" aria-hidden="true">★</span>;
 }
 
+function CheckIcon() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M4.5 10.3L8.2 14L15.5 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ChatRoomSummary({ room }: { room: ChatRoom }) {
   return (
     <>
@@ -46,8 +66,8 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
           <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
           {room.favorite ? <FavoriteIcon /> : null}
         </div>
-        <p className="mt-1 text-xs leading-none text-ufo-text-dim">
-          {room.favorite ? "즐겨찾기 채팅방" : room.isHidden ? "FO 보관 채팅방" : "채팅방"}
+        <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
+          {room.lastMessage}
         </p>
       </div>
 
@@ -106,20 +126,20 @@ function ChatRoomItem({
       <li className="border-b border-[#e5e5e5] px-4 py-3">
         <div className="flex items-center gap-3">
           <ChatRoomSummary room={room} />
-        </div>
-        <div className="mt-3 flex justify-end gap-2">
-          <StatusToggleButton
-            active={room.favorite}
-            disabled={isUpdating}
-            label="즐겨찾기"
-            onClick={() => onFavoriteChange?.(room)}
-          />
-          <StatusToggleButton
-            active={room.isHidden}
-            disabled={isUpdating}
-            label="FO"
-            onClick={() => onHiddenChange?.(room)}
-          />
+          <div className="flex shrink-0 gap-2">
+            <StatusToggleButton
+              active={room.favorite}
+              disabled={isUpdating}
+              label="즐겨찾기"
+              onClick={() => onFavoriteChange?.(room)}
+            />
+            <StatusToggleButton
+              active={room.isHidden}
+              disabled={isUpdating}
+              label="FO"
+              onClick={() => onHiddenChange?.(room)}
+            />
+          </div>
         </div>
       </li>
     );
@@ -128,7 +148,7 @@ function ChatRoomItem({
   return (
     <li className="border-b border-[#e5e5e5]">
       <Link
-        href={`/chats/${room.patternId}`}
+        href={`/chats/${room.chatId}`}
         className="flex items-center gap-3 px-4 py-3"
         aria-label={`${room.name} 채팅방 입장`}
       >
@@ -164,9 +184,9 @@ export default function ChatRoomList({
             className={`rounded-full p-1 ${
               isSettingsMode ? "text-ufo-brand" : "text-[#f2a4aa]"
             }`}
-            aria-label="채팅방 설정"
+            aria-label={isSettingsMode ? "채팅방 설정 완료" : "채팅방 설정"}
           >
-            <SlidersIcon />
+            {isSettingsMode ? <CheckIcon /> : <SlidersIcon />}
           </button>
         ) : null}
       </div>
@@ -200,7 +220,7 @@ export default function ChatRoomList({
         {rooms.length > 0 ? (
           rooms.map((room) => (
             <ChatRoomItem
-              key={room.patternId}
+              key={room.chatId}
               room={room}
               isSettingsMode={isSettingsMode}
               isUpdating={updatingRoomId !== null}

@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/ApiError";
 
 type PatchChatStatusParams = {
-  patternId: string;
+  chatId: string;
   favorite?: boolean;
   hidden?: boolean;
 };
@@ -23,12 +23,12 @@ type PatchChatStatusResponse = {
 };
 
 export async function patchChatStatus({
-  patternId,
+  chatId,
   favorite,
   hidden,
 }: PatchChatStatusParams) {
   const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/chat/${patternId}/status`),
+    input: buildApiUrl(`/v1/chat/${chatId}/status`),
     init: {
       method: "PATCH",
       credentials: "include",
