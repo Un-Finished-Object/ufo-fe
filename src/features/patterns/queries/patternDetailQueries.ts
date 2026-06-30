@@ -26,7 +26,7 @@ type PatternDetailResponse = {
       category?: string;
       subCategory?: string;
       gauge?: string;
-      originalYarn?: string;
+      originalYarn?: OriginalYarnSetResponse[];
       originalNeedle?: string;
       requiredYarnAmount?: string;
       size?: string;
@@ -36,6 +36,18 @@ type PatternDetailResponse = {
   error?: unknown;
 };
 
+type OriginalYarnSetResponse = {
+  firstYarnId?: number | null;
+  secondYarnId?: number | null;
+  subYarnId?: number | null;
+};
+
+export type OriginalYarnSet = {
+  firstYarnId: number;
+  secondYarnId: number | null;
+  subYarnId: number | null;
+};
+
 export type PatternDetailData = {
   id: number;
   title: string;
@@ -43,6 +55,7 @@ export type PatternDetailData = {
   credits: number;
   image: string;
   isScrapped: boolean;
+  originalYarnSets: OriginalYarnSet[];
   stats: {
     views: number;
     scraps: number;
@@ -61,6 +74,30 @@ export type PatternDetailData = {
 function getSafeText(value?: string | null) {
   const trimmedValue = value?.trim();
   return trimmedValue ? trimmedValue : "-";
+}
+
+function normalizeOriginalYarnSets(
+  originalYarn?: OriginalYarnSetResponse[],
+): OriginalYarnSet[] {
+  if (!Array.isArray(originalYarn)) {
+    return [];
+  }
+
+  return originalYarn
+    .filter(
+      (yarnSet): yarnSet is OriginalYarnSetResponse & { firstYarnId: number } =>
+        typeof yarnSet.firstYarnId === "number",
+    )
+    .map((yarnSet) => ({
+      firstYarnId: yarnSet.firstYarnId,
+      secondYarnId:
+        typeof yarnSet.secondYarnId === "number" ? yarnSet.secondYarnId : null,
+      subYarnId: typeof yarnSet.subYarnId === "number" ? yarnSet.subYarnId : null,
+    }));
+}
+
+function formatOriginalYarnSummary(originalYarnSets: OriginalYarnSet[]) {
+  return originalYarnSets.length > 0 ? `${originalYarnSets.length}세트` : "-";
 }
 
 export function patternDetailQueryKey(patternId: number, viewerKey: string) {
@@ -99,6 +136,8 @@ export async function fetchPatternDetail(
     throw createInvalidApiResponseError("Invalid pattern detail response.");
   }
 
+  const originalYarnSets = normalizeOriginalYarnSets(payload.data.meta?.originalYarn);
+
   return {
     id: payload.data.id,
     title: payload.data.title,
@@ -106,6 +145,7 @@ export async function fetchPatternDetail(
     image: payload.data.images?.[0] || "/image/UFO.svg",
     isScrapped: Boolean(payload.data.my?.scrapped),
     credits: 20,
+    originalYarnSets,
     stats: {
       views: payload.data.stats?.views ?? 0,
       scraps: payload.data.stats?.scraps ?? 0,
@@ -118,7 +158,7 @@ export async function fetchPatternDetail(
       size: getSafeText(payload.data.meta?.size),
       measurement: getSafeText(payload.data.meta?.actualSize),
       needle: getSafeText(payload.data.meta?.originalNeedle),
-      yarn: getSafeText(payload.data.meta?.originalYarn),
+      yarn: formatOriginalYarnSummary(originalYarnSets),
       amount: getSafeText(payload.data.meta?.requiredYarnAmount),
       gauge: getSafeText(payload.data.meta?.gauge),
     },
