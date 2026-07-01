@@ -3,7 +3,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
@@ -11,6 +18,7 @@ import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQue
 import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
+import { IMAGE_UPLOAD_ACCEPT, uploadImageFiles } from "@/services/images/uploadImageFiles";
 
 function LoadingState() {
   return (
@@ -45,8 +53,19 @@ export default function ProfileEditScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const meQuery = useMeQuery();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [draftNickname, setDraftNickname] = useState<string | null>(null);
+  const [draftProfileImage, setDraftProfileImage] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
+
+  useEffect(() => {
+    return () => {
+      if (previewImageUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+    };
+  }, [previewImageUrl]);
 
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
@@ -54,8 +73,48 @@ export default function ProfileEditScreen() {
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
 
+  const uploadProfileImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const [publicUrl] = await uploadImageFiles({ files: [file], purpose: "PROFILE" });
+
+      if (!publicUrl) {
+        throw new Error("프로필 이미지 업로드에 실패했어요.");
+      }
+
+      return publicUrl;
+    },
+    onSuccess: (publicUrl) => {
+      setDraftProfileImage(publicUrl);
+    },
+    onError: (error) => {
+      setPreviewImageUrl(null);
+      setDraftProfileImage(null);
+
+      if (isApiError(error, 401)) {
+        showAuthRequiredToast();
+        return;
+      }
+
+      showToast(error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했어요.");
+    },
+  });
+
   const saveProfileMutation = useMutation({
-    mutationFn: (nextNickname: string) => updateMyProfile({ nickname: nextNickname }),
+    mutationFn: ({
+      nextNickname,
+      nextProfileImage,
+      shouldUpdateNickname,
+      shouldUpdateProfileImage,
+    }: {
+      nextNickname: string;
+      nextProfileImage: string;
+      shouldUpdateNickname: boolean;
+      shouldUpdateProfileImage: boolean;
+    }) =>
+      updateMyProfile({
+        userName: shouldUpdateNickname ? nextNickname : null,
+        profileImage: shouldUpdateProfileImage ? nextProfileImage : null,
+      }),
     onSuccess: (result) => {
       queryClient.setQueryData<UserProfile | null>(userQueryKeys.me, (previous) => {
         if (!previous) {
@@ -64,7 +123,8 @@ export default function ProfileEditScreen() {
 
         return {
           ...previous,
-          nickname: result.nickname,
+          nickname: result.nickname ?? previous.nickname,
+          profileImage: result.profileImage ?? previous.profileImage,
         };
       });
 
@@ -83,17 +143,40 @@ export default function ProfileEditScreen() {
   const nickname = draftNickname ?? meQuery.data?.nickname ?? "";
   const normalizedNickname = nickname.trim();
   const initialNickname = meQuery.data?.nickname ?? "";
+  const initialProfileImage = meQuery.data?.profileImage ?? "";
+  const nextProfileImage = draftProfileImage ?? initialProfileImage;
+  const hasNicknameChanged = normalizedNickname !== initialNickname;
+  const hasProfileImageChanged = nextProfileImage !== initialProfileImage;
   const isSaveDisabled =
     meQuery.isPending ||
     saveProfileMutation.isPending ||
+    uploadProfileImageMutation.isPending ||
     normalizedNickname.length === 0 ||
-    normalizedNickname === initialNickname;
-  const profileImageSrc = meQuery.data?.profileImage?.trim() ? meQuery.data.profileImage : null;
-  const previewNickname = normalizedNickname || meQuery.data?.nickname || "회원";
+    (!hasNicknameChanged && !hasProfileImageChanged);
+  const profileImageSrc =
+    previewImageUrl ?? (nextProfileImage.trim() ? nextProfileImage : null);
+  const profileImageAlt = `${normalizedNickname || meQuery.data?.nickname || "회원"} 프로필 이미지`;
 
   const handleRetry = useCallback(() => {
     void meQuery.refetch();
   }, [meQuery]);
+
+  const handleProfileImageClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleProfileImageChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    setDraftProfileImage(null);
+    setPreviewImageUrl(URL.createObjectURL(file));
+    uploadProfileImageMutation.mutate(file);
+  }, [uploadProfileImageMutation]);
 
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -103,9 +186,21 @@ export default function ProfileEditScreen() {
         return;
       }
 
-      saveProfileMutation.mutate(normalizedNickname);
+      saveProfileMutation.mutate({
+        nextNickname: normalizedNickname,
+        nextProfileImage,
+        shouldUpdateNickname: hasNicknameChanged,
+        shouldUpdateProfileImage: hasProfileImageChanged,
+      });
     },
-    [isSaveDisabled, normalizedNickname, saveProfileMutation],
+    [
+      hasNicknameChanged,
+      hasProfileImageChanged,
+      isSaveDisabled,
+      nextProfileImage,
+      normalizedNickname,
+      saveProfileMutation,
+    ],
   );
 
   if (meQuery.isPending) {
@@ -155,56 +250,64 @@ export default function ProfileEditScreen() {
             showBottomBorder
           />
 
-          <section className="px-6 pb-6 pt-7">
-            <div className="rounded-2xl bg-ufo-brand px-4 py-4 text-white">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white/30 shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
+          <section className="px-6">
+            <form onSubmit={handleSubmit} className="pt-8">
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={handleProfileImageClick}
+                  disabled={uploadProfileImageMutation.isPending}
+                  aria-label="프로필 이미지 변경"
+                  className="relative h-28 w-28 overflow-hidden rounded-full bg-ufo-brand-pale shadow-[0_2px_10px_rgba(0,0,0,0.08)] disabled:cursor-not-allowed disabled:opacity-70"
+                >
                   {profileImageSrc ? (
                     <Image
                       src={profileImageSrc}
                       loader={({ src }) => src}
                       unoptimized
-                      width={56}
-                      height={56}
-                      alt={`${previewNickname} 프로필 이미지`}
+                      width={112}
+                      height={112}
+                      alt={profileImageAlt}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-lg font-bold text-white/90">
-                      {previewNickname.charAt(0)}
-                    </div>
+                    <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-ufo-brand">
+                      {(normalizedNickname || meQuery.data.nickname || "회원").charAt(0)}
+                    </span>
                   )}
-                </div>
 
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white/80">프로필 미리보기</p>
-                  <p className="mt-1 truncate text-2xl font-bold tracking-[-0.03em]">
-                    {previewNickname}
-                  </p>
-                  <p className="mt-1 truncate text-sm text-white/80">{meQuery.data.email}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="px-6">
-            <form
-              onSubmit={handleSubmit}
-              className="rounded-2xl border border-ufo-border bg-white px-5 py-6"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold tracking-[-0.03em] text-ufo-text">닉네임 수정</h2>
-                  <p className="mt-2 text-sm leading-5 text-ufo-text-secondary">
-                    마이페이지와 채팅에 표시되는 닉네임입니다.
-                  </p>
-                </div>
-                <span className="rounded-full bg-ufo-brand-pale px-3 py-1 text-xs font-semibold text-ufo-brand">
-                  공개 프로필
-                </span>
+                  <span className="absolute inset-x-0 bottom-0 bg-ufo-brand py-2 text-xs font-semibold text-white">
+                    {uploadProfileImageMutation.isPending ? "업로드 중" : "변경"}
+                  </span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={IMAGE_UPLOAD_ACCEPT}
+                  onChange={handleProfileImageChange}
+                  className="sr-only"
+                  aria-label="프로필 이미지 선택"
+                />
               </div>
 
-              <div className="mt-6">
+              <div className="mt-9">
+                <label htmlFor="email" className="text-sm font-semibold text-ufo-text-subtle">
+                  이메일
+                </label>
+                <div className="mt-2 rounded-2xl border border-ufo-border bg-ufo-bg px-4 py-3">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={meQuery.data.email}
+                    readOnly
+                    className="w-full bg-transparent text-base font-medium text-ufo-text-secondary outline-none"
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5">
                 <label htmlFor="nickname" className="text-sm font-semibold text-ufo-text-subtle">
                   닉네임
                 </label>
@@ -220,9 +323,6 @@ export default function ProfileEditScreen() {
                     autoComplete="nickname"
                   />
                 </div>
-                <p className="mt-2 text-sm text-ufo-text-secondary">
-                  저장하면 마이페이지와 채팅에서 새로운 닉네임이 보입니다.
-                </p>
               </div>
 
               <button
@@ -231,7 +331,7 @@ export default function ProfileEditScreen() {
                 className={`mt-8 w-full rounded-xl px-4 py-3.5 text-base font-semibold transition ${
                   isSaveDisabled
                     ? "bg-ufo-border text-ufo-text-dim"
-                    : "bg-ufo-brand-soft text-white"
+                    : "bg-ufo-brand text-white"
                 }`}
               >
                 {saveProfileMutation.isPending ? "저장 중..." : "저장하기"}
