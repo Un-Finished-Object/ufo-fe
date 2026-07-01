@@ -4,13 +4,19 @@ import { throwApiError, throwApiPayloadError } from "@/lib/api/ApiError";
 
 type UpdateMyProfileResponse = {
   data?: {
-    nickname?: string;
+    userName?: string;
+    profileImage?: string;
   };
   error?: unknown;
 };
 
-export async function updateMyProfile({ nickname }: { nickname: string }) {
-  // Assumption: profile updates are handled by PATCH /v1/users/me.
+export async function updateMyProfile({
+  userName,
+  profileImage,
+}: {
+  userName: string | null;
+  profileImage: string | null;
+}) {
   const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
     init: {
@@ -18,7 +24,7 @@ export async function updateMyProfile({ nickname }: { nickname: string }) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ nickname }),
+      body: JSON.stringify({ userName, profileImage }),
     },
   });
 
@@ -27,13 +33,13 @@ export async function updateMyProfile({ nickname }: { nickname: string }) {
   }
 
   if (response.status === 204) {
-    return { nickname };
+    return { nickname: userName, profileImage };
   }
 
   const responseText = await response.text();
 
   if (!responseText.trim()) {
-    return { nickname };
+    return { nickname: userName, profileImage };
   }
 
   const payload = JSON.parse(responseText) as UpdateMyProfileResponse;
@@ -43,6 +49,7 @@ export async function updateMyProfile({ nickname }: { nickname: string }) {
   }
 
   return {
-    nickname: typeof payload.data?.nickname === "string" ? payload.data.nickname : nickname,
+    nickname: typeof payload.data?.userName === "string" ? payload.data.userName : userName,
+    profileImage: typeof payload.data?.profileImage === "string" ? payload.data.profileImage : profileImage,
   };
 }
