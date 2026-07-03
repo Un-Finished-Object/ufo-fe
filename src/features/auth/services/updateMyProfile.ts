@@ -12,10 +12,10 @@ type UpdateMyProfileResponse = {
 
 export async function updateMyProfile({
   userName,
-  profileImage,
+  profileImageKey,
 }: {
   userName: string | null;
-  profileImage: string | null;
+  profileImageKey: string | null;
 }) {
   const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
@@ -24,7 +24,7 @@ export async function updateMyProfile({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ userName, profileImage }),
+      body: JSON.stringify({ userName, profileImageKey }),
     },
   });
 
@@ -33,13 +33,13 @@ export async function updateMyProfile({
   }
 
   if (response.status === 204) {
-    return { nickname: userName, profileImage };
+    return { nickname: userName, profileImage: null };
   }
 
   const responseText = await response.text();
 
   if (!responseText.trim()) {
-    return { nickname: userName, profileImage };
+    return { nickname: userName, profileImage: null };
   }
 
   const payload = JSON.parse(responseText) as UpdateMyProfileResponse;
@@ -50,6 +50,6 @@ export async function updateMyProfile({
 
   return {
     nickname: typeof payload.data?.userName === "string" ? payload.data.userName : userName,
-    profileImage: typeof payload.data?.profileImage === "string" ? payload.data.profileImage : profileImage,
+    profileImage: typeof payload.data?.profileImage === "string" ? payload.data.profileImage : null,
   };
 }
