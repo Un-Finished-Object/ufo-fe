@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -20,7 +21,11 @@ import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQue
 import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
-import { IMAGE_UPLOAD_ACCEPT, uploadImageFiles } from "@/services/images/uploadImageFiles";
+import {
+  IMAGE_UPLOAD_ACCEPT,
+  uploadImageFiles,
+  type UploadedImageFile,
+} from "@/services/images/uploadImageFiles";
 
 export default function ProfileEditScreen() {
   const router = useRouter();
@@ -28,7 +33,7 @@ export default function ProfileEditScreen() {
   const meQuery = useMeQuery();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draftNickname, setDraftNickname] = useState<string | null>(null);
-  const [draftProfileImage, setDraftProfileImage] = useState<string | null>(null);
+  const [draftProfileImage, setDraftProfileImage] = useState<UploadedImageFile | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
 
@@ -48,16 +53,16 @@ export default function ProfileEditScreen() {
 
   const uploadProfileImageMutation = useMutation({
     mutationFn: async (file: File) => {
-      const [publicUrl] = await uploadImageFiles({ files: [file], purpose: "PROFILE" });
+      const [uploadedImage] = await uploadImageFiles({ files: [file], purpose: "PROFILE" });
 
-      if (!publicUrl) {
+      if (!uploadedImage) {
         throw new Error("프로필 이미지 업로드에 실패했어요.");
       }
 
-      return publicUrl;
+      return uploadedImage;
     },
-    onSuccess: (publicUrl) => {
-      setDraftProfileImage(publicUrl);
+    onSuccess: (uploadedImage) => {
+      setDraftProfileImage(uploadedImage);
     },
     onError: (error) => {
       setPreviewImageUrl(null);
@@ -80,15 +85,15 @@ export default function ProfileEditScreen() {
       shouldUpdateProfileImage,
     }: {
       nextNickname: string;
-      nextProfileImage: string;
+      nextProfileImage: UploadedImageFile;
       shouldUpdateNickname: boolean;
       shouldUpdateProfileImage: boolean;
     }) =>
       updateMyProfile({
         userName: shouldUpdateNickname ? nextNickname : null,
-        profileImage: shouldUpdateProfileImage ? nextProfileImage : null,
+        profileImageKey: shouldUpdateProfileImage ? nextProfileImage.imageKey : null,
       }),
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       queryClient.setQueryData<UserProfile | null>(userQueryKeys.me, (previous) => {
         if (!previous) {
           return previous;
@@ -97,7 +102,11 @@ export default function ProfileEditScreen() {
         return {
           ...previous,
           nickname: result.nickname ?? previous.nickname,
-          profileImage: result.profileImage ?? previous.profileImage,
+          profileImage:
+            result.profileImage ??
+            (variables.shouldUpdateProfileImage
+              ? variables.nextProfileImage.imageUrl
+              : previous.profileImage),
         };
       });
 
@@ -117,9 +126,16 @@ export default function ProfileEditScreen() {
   const normalizedNickname = nickname.trim();
   const initialNickname = meQuery.data?.nickname ?? "";
   const initialProfileImage = meQuery.data?.profileImage ?? "";
-  const nextProfileImage = draftProfileImage ?? initialProfileImage;
+  const nextProfileImage = useMemo(
+    () =>
+      draftProfileImage ?? {
+        imageKey: "",
+        imageUrl: initialProfileImage,
+      },
+    [draftProfileImage, initialProfileImage],
+  );
   const hasNicknameChanged = normalizedNickname !== initialNickname;
-  const hasProfileImageChanged = nextProfileImage !== initialProfileImage;
+  const hasProfileImageChanged = nextProfileImage.imageUrl !== initialProfileImage;
   const isSaveDisabled =
     meQuery.isPending ||
     saveProfileMutation.isPending ||
@@ -127,7 +143,7 @@ export default function ProfileEditScreen() {
     normalizedNickname.length === 0 ||
     (!hasNicknameChanged && !hasProfileImageChanged);
   const profileImageSrc =
-    previewImageUrl ?? (nextProfileImage.trim() ? nextProfileImage : null);
+    previewImageUrl ?? (nextProfileImage.imageUrl.trim() ? nextProfileImage.imageUrl : null);
   const profileImageAlt = `${normalizedNickname || meQuery.data?.nickname || "회원"} 프로필 이미지`;
 
   const handleRetry = useCallback(() => {
