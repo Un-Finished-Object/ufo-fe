@@ -11,7 +11,9 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQueries";
@@ -19,35 +21,6 @@ import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
 import { IMAGE_UPLOAD_ACCEPT, uploadImageFiles } from "@/services/images/uploadImageFiles";
-
-function LoadingState() {
-  return (
-    <section className="px-6 py-12">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-ufo-border bg-white px-6 py-12 text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-border-light border-t-ufo-brand-pale" />
-        <p className="mt-4 text-sm font-medium text-ufo-text-secondary">프로필 정보를 준비하고 있어요.</p>
-      </div>
-    </section>
-  );
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <section className="px-6 py-12">
-      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
-        <p className="text-base font-semibold text-ufo-text">프로필 정보를 불러오지 못했어요.</p>
-        <p className="mt-2 text-sm text-ufo-text-secondary">잠시 후 다시 시도해 주세요.</p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-5 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
-        >
-          다시 시도
-        </button>
-      </div>
-    </section>
-  );
-}
 
 export default function ProfileEditScreen() {
   const router = useRouter();
@@ -205,33 +178,35 @@ export default function ProfileEditScreen() {
 
   if (meQuery.isPending) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
+      <MobileShell>
           <TopBar
             left="back"
             onLeftClick={() => router.back()}
             title="프로필 수정"
             showBottomBorder
           />
-          <LoadingState />
-        </main>
-      </div>
+          <StateBlock type="loading" title="프로필 정보를 준비하고 있어요." />
+      </MobileShell>
     );
   }
 
   if (meQuery.isError) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
+      <MobileShell>
           <TopBar
             left="back"
             onLeftClick={() => router.back()}
             title="프로필 수정"
             showBottomBorder
           />
-          <ErrorState onRetry={handleRetry} />
-        </main>
-      </div>
+          <StateBlock
+            type="error"
+            title="프로필 정보를 불러오지 못했어요."
+            description="잠시 후 다시 시도해 주세요."
+            actionLabel="다시 시도"
+            onAction={handleRetry}
+          />
+      </MobileShell>
     );
   }
 
@@ -241,8 +216,7 @@ export default function ProfileEditScreen() {
 
   return (
     <>
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-8 text-ufo-text">
+      <MobileShell surfaceClassName="pb-8">
           <TopBar
             left="back"
             onLeftClick={() => router.back()}
@@ -338,8 +312,7 @@ export default function ProfileEditScreen() {
               </button>
             </form>
           </section>
-        </main>
-      </div>
+      </MobileShell>
 
       <ToastMessage message={toastMessage} />
     </>

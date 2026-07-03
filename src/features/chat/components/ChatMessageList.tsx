@@ -1,6 +1,7 @@
 "use client";
 
 import { type RefCallback, useEffect, useRef } from "react";
+import StateBlock from "@/components/common/StateBlock";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
@@ -262,15 +263,15 @@ export default function ChatMessageList({
   onResendFailedMessage,
 }: ChatMessageListProps) {
   if (isLoading) {
-    return <p className="px-4 py-6 text-sm text-ufo-text-dim">메시지를 불러오는 중입니다.</p>;
+    return <StateBlock type="loading" title="메시지를 불러오는 중입니다." variant="plain" />;
   }
 
   if (errorMessage) {
-    return <p className="px-4 py-6 text-sm text-red-500">{errorMessage}</p>;
+    return <StateBlock type="error" title={errorMessage} variant="plain" />;
   }
 
   if (messages.length === 0) {
-    return <p className="px-4 py-6 text-sm text-ufo-text-dim">아직 메시지가 없습니다.</p>;
+    return <StateBlock type="empty" title="아직 메시지가 없습니다." variant="plain" />;
   }
 
   const messageById = new Map(

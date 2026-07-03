@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Footer from "@/components/common/Footer";
+import StateBlock from "@/components/common/StateBlock";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import SearchBar from "@/components/common/SearchBar";
 import NavBar from "@/components/navigation/NavBar";
@@ -43,8 +45,7 @@ export default function StyleFeedScreen() {
   );
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="logo"
           leftHref="/"
@@ -67,9 +68,7 @@ export default function StyleFeedScreen() {
           </div>
 
           {isLoading ? (
-            <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
-              스타일 피드를 불러오는 중입니다.
-            </div>
+            <StateBlock type="loading" title="스타일 피드를 불러오는 중입니다." className="px-0 py-0" />
           ) : filteredPosts.length > 0 ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-4">
               {filteredPosts.map((post) => (
@@ -97,13 +96,10 @@ export default function StyleFeedScreen() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
-              스타일 피드가 아직 없습니다.
-            </div>
+            <StateBlock type="empty" title="스타일 피드가 아직 없습니다." className="px-0 py-0" />
           )}
         </section>
         <Footer />
-      </main>
-    </div>
+    </MobileShell>
   );
 }

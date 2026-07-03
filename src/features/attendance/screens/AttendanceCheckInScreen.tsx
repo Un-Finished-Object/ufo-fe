@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import AttendanceCalendar from "@/features/attendance/components/AttendanceCalendar";
 import Footer from "@/components/common/Footer";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
 
@@ -12,8 +13,7 @@ export default function AttendancePage() {
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -26,7 +26,6 @@ export default function AttendancePage() {
         />
         <AttendanceCalendar />
         <Footer />
-      </main>
-    </div>
+    </MobileShell>
   );
 }

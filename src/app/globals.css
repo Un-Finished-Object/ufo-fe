@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1f1f1f;
 }
 
 @theme inline {
@@ -22,18 +22,14 @@
   --color-ufo-brand-soft: #fecbc8;
   --color-ufo-brand-pale: #fff1ed;
   --color-ufo-credit: #49eaff;
+  --color-ufo-divider: #e5e5e5;
+  --color-ufo-chat-unread: #ff2d2d;
+  --color-ufo-chat-thumbnail: #f4e9e5;
   --color-ufo-kakao: #fee500;
   --color-ufo-naver: #03a94d;
   --color-ufo-error: #d04949;
   --font-sans: var(--font-pretendard);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

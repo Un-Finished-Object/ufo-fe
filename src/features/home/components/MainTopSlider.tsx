@@ -158,7 +158,7 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
             ) : (
               <article
                 key={post.id}
-                className={`${articleClass} bg-gradient-to-r from-[#f2bcc8] via-[#f1b8be] to-[#e4e1a8] px-6 py-5`}
+                className={`${articleClass} bg-gradient-to-r from-ufo-brand-soft via-ufo-brand to-ufo-credit/40 px-6 py-5`}
               >
                 <p className="absolute bottom-5 left-6 whitespace-pre-line text-lg font-bold leading-6 text-white">
                   {post.title}

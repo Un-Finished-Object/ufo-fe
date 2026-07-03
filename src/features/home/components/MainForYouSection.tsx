@@ -222,7 +222,7 @@ export default function MainForYouSection({
         >
           <div className="w-full max-w-[430px] bg-ufo-text px-4 pb-6 pt-5">
             <div className="mb-4 flex items-start justify-between">
-              <h3 className="ml-2 text-l leading-tight font-bold text-white">관심사를 알려주세요!</h3>
+              <h3 className="ml-2 text-lg leading-tight font-bold text-white">관심사를 알려주세요!</h3>
               <button
                 type="button"
                 onClick={closeModal}
@@ -232,10 +232,10 @@ export default function MainForYouSection({
                 닫기
               </button>
             </div>
-            <p className="ml-2 text-l font-medium text-white">
+            <p className="ml-2 text-lg font-medium text-white">
               선택한 관심사를 바탕으로 도안을 추천해 드려요.
             </p>
-            <p className="ml-2 mb-5 mt-1 text-l text-ufo-brand-soft">
+            <p className="ml-2 mb-5 mt-1 text-lg text-ufo-brand-soft">
               *관심사는 최대 {MAX_INTEREST_COUNT}개까지 설정할 수 있습니다.
             </p>
 

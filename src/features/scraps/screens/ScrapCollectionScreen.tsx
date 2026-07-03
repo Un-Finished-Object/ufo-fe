@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import Footer from "@/components/common/Footer";
 import Pagination from "@/components/common/Pagination";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import SearchBar from "@/components/common/SearchBar";
 import NavBar from "@/components/navigation/NavBar";
@@ -53,8 +55,8 @@ export default function ScrapCollectionScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <>
+      <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="logo"
           leftHref="/"
@@ -68,17 +70,11 @@ export default function ScrapCollectionScreen() {
 
         <section className="px-4 pt-5">
           {!isAuthenticated ? (
-            <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
-              로그인 후 찜한 항목을 확인할 수 있습니다.
-            </div>
+            <StateBlock type="empty" title="로그인 후 찜한 항목을 확인할 수 있습니다." className="px-0 py-0" />
           ) : patternScrapsQuery.isPending ? (
-            <p className="py-12 text-center text-sm text-ufo-text-muted">
-              불러오는 중...
-            </p>
+            <StateBlock type="loading" title="불러오는 중..." variant="plain" />
           ) : patternScrapsQuery.isError ? (
-            <p className="py-12 text-center text-sm text-ufo-text-muted">
-              찜 목록을 불러오지 못했습니다.
-            </p>
+            <StateBlock type="error" title="찜 목록을 불러오지 못했습니다." variant="plain" />
           ) : (
             filteredPatternScraps.length > 0 ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6">
@@ -111,9 +107,7 @@ export default function ScrapCollectionScreen() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
-                찜한 도안이 아직 없습니다.
-              </div>
+              <StateBlock type="empty" title="찜한 도안이 아직 없습니다." className="px-0 py-0" />
             )
           )}
         </section>
@@ -125,8 +119,8 @@ export default function ScrapCollectionScreen() {
           />
         ) : null}
         <Footer />
-      </main>
+      </MobileShell>
       <ToastMessage message={toastMessage} />
-    </div>
+    </>
   );
 }

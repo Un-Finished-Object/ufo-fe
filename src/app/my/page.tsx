@@ -4,9 +4,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import EditIcon from "@/components/icons/EditIcon";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
@@ -24,7 +26,7 @@ type MenuItem = {
 function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
   return (
     <section>
-      <h2 className="ml-8 pb-2 text-md font-medium text-ufo-text-muted">{title}</h2>
+      <h2 className="ml-8 pb-2 text-sm font-medium text-ufo-text-muted">{title}</h2>
       <div className="border-t border-ufo-border py-4">
       <ul className="space-y-3 text-lg leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle ml-10">
         {items.map((item) => (
@@ -39,39 +41,6 @@ function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
           </li>
         ))}
       </ul>
-      </div>
-    </section>
-  );
-}
-
-function LoadingState() {
-  return (
-    <section className="px-8 py-14">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-ufo-border bg-white px-6 py-12 text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-border-light border-t-ufo-brand-pale" />
-        <p className="mt-4 text-sm font-medium text-ufo-text-secondary">
-          회원 정보를 불러오고 있어요.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <section className="px-8 py-14">
-      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
-        <p className="text-base font-semibold text-ufo-text">회원 정보를 불러오지 못했어요.</p>
-        <p className="mt-2 text-sm text-ufo-text-secondary">
-          잠시 후 다시 시도하거나 새로고침해 주세요.
-        </p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-5 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
-        >
-          다시 시도
-        </button>
       </div>
     </section>
   );
@@ -151,8 +120,7 @@ export default function MyPage() {
   if (isLoading) {
     return (
       <>
-        <div className="min-h-screen bg-ufo-bg">
-          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+        <MobileShell>
             <TopBar
               left="back"
               leftHref="/"
@@ -160,9 +128,8 @@ export default function MyPage() {
               right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
               showBottomBorder
             />
-            <LoadingState />
-          </main>
-        </div>
+            <StateBlock type="loading" title="회원 정보를 불러오고 있어요." className="px-8 py-14" />
+        </MobileShell>
         <ToastMessage message={toastMessage} />
       </>
     );
@@ -171,8 +138,7 @@ export default function MyPage() {
   if (isError) {
     return (
       <>
-        <div className="min-h-screen bg-ufo-bg">
-          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+        <MobileShell>
             <TopBar
               left="back"
               leftHref="/"
@@ -180,9 +146,15 @@ export default function MyPage() {
               right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
               showBottomBorder
             />
-            <ErrorState onRetry={handleRetry} />
-          </main>
-        </div>
+            <StateBlock
+              type="error"
+              title="회원 정보를 불러오지 못했어요."
+              description="잠시 후 다시 시도하거나 새로고침해 주세요."
+              actionLabel="다시 시도"
+              onAction={handleRetry}
+              className="px-8 py-14"
+            />
+        </MobileShell>
         <ToastMessage message={toastMessage} />
       </>
     );
@@ -191,8 +163,7 @@ export default function MyPage() {
   if (!meQuery.data) {
     return (
       <>
-        <div className="min-h-screen bg-ufo-bg">
-          <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+        <MobileShell>
             <TopBar
               left="back"
               leftHref="/"
@@ -200,9 +171,8 @@ export default function MyPage() {
               right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
               showBottomBorder
             />
-            <LoadingState />
-          </main>
-        </div>
+            <StateBlock type="loading" title="회원 정보를 불러오고 있어요." className="px-8 py-14" />
+        </MobileShell>
         <ToastMessage message={toastMessage} />
       </>
     );
@@ -210,8 +180,7 @@ export default function MyPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface">
+      <MobileShell>
         <TopBar
           left="back"
           leftHref="/"
@@ -262,14 +231,14 @@ export default function MyPage() {
               </button>
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-b border-white/70 pb-2 text-l font-medium tracking-[-0.02em]">
+            <div className="mt-3 flex items-center justify-between border-b border-white/70 pb-2 text-base font-medium tracking-[-0.02em]">
               <span>{sinceText}</span>
             </div>
 
             <button
               type="button"
               onClick={handleMyActivityClick}
-              className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-l font-semibold tracking-[-0.02em] text-ufo-text-neutral"
+              className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-base font-semibold tracking-[-0.02em] text-ufo-text-neutral"
             >
               나의 활동 보기
             </button>
@@ -277,8 +246,7 @@ export default function MyPage() {
         </section>
 
         <MenuSection title="도움말" items={helpMenuItems} />
-        </main>
-      </div>
+      </MobileShell>
       <ToastMessage message={toastMessage} />
     </>
   );

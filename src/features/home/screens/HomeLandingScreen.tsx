@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Footer from "@/components/common/Footer";
+import StateBlock from "@/components/common/StateBlock";
+import MobileShell from "@/components/layout/MobileShell";
 import MainTopSlider from "@/features/home/components/MainTopSlider";
 import MainForYouSection from "@/features/home/components/MainForYouSection";
 import NavBar from "@/components/navigation/NavBar";
@@ -36,11 +38,7 @@ const bannerPosts: BannerItem[] = [
 ];
 
 function EmptyPatternSection({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-ufo-border bg-white px-4 py-10 text-center text-sm text-ufo-text-secondary">
-      {message}
-    </div>
-  );
+  return <StateBlock type="empty" title={message} className="px-0 py-0" />;
 }
 
 export default function HomeLandingScreen() {
@@ -77,8 +75,7 @@ export default function HomeLandingScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="logo"
           leftHref="/"
@@ -152,7 +149,6 @@ export default function HomeLandingScreen() {
           )}
         </section>
         <Footer />
-      </main>
-    </div>
+    </MobileShell>
   );
 }

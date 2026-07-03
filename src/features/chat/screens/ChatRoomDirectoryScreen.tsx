@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/common/Pagination";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
 import YesOrNo from "@/components/dialogs/YesOrNo";
+import MobileShell from "@/components/layout/MobileShell";
 import ChatRoomList from "@/features/chat/components/ChatRoomList";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
@@ -20,27 +22,6 @@ import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import type { ChatRoom } from "@/features/chat/types";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
-
-function LoadingState() {
-  return <p className="px-4 py-8 text-sm text-ufo-text-dim">채팅방 목록을 불러오는 중입니다.</p>;
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="px-4 py-8">
-      <div className="rounded-2xl border border-ufo-border bg-white px-5 py-6 text-center">
-        <p className="text-sm font-semibold text-ufo-text">채팅방 목록을 불러오지 못했어요.</p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-4 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
-        >
-          다시 시도
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function ChatRoomDirectoryScreen() {
   const [query, setQuery] = useState("");
@@ -214,8 +195,8 @@ export default function ChatRoomDirectoryScreen() {
   );
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
+    <>
+      <MobileShell>
         <TopBar
           left="back"
           leftHref="/"
@@ -228,13 +209,27 @@ export default function ChatRoomDirectoryScreen() {
 
         <section className="border-b border-ufo-border-light px-8 pb-2" aria-label="채팅 사용자 정보">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ufo-text-subtle">
-            <span className="inline-block h-3 w-3 rounded-full bg-[#f8a8a8]" aria-hidden="true" />
+            <span className="inline-block h-3 w-3 rounded-full bg-ufo-brand" aria-hidden="true" />
             {nickname}님
           </h2>
         </section>
 
-        {isChatRoomsLoading ? <LoadingState /> : null}
-        {isChatRoomsError ? <ErrorState onRetry={() => void myChatRoomsQuery.refetch()} /> : null}
+        {isChatRoomsLoading ? (
+          <StateBlock
+            type="loading"
+            title="채팅방 목록을 불러오는 중입니다."
+            variant="plain"
+          />
+        ) : null}
+        {isChatRoomsError ? (
+          <StateBlock
+            type="error"
+            title="채팅방 목록을 불러오지 못했어요."
+            actionLabel="다시 시도"
+            onAction={() => void myChatRoomsQuery.refetch()}
+            className="px-4 py-8"
+          />
+        ) : null}
 
         {!isChatRoomsLoading && !isChatRoomsError ? (
           <>
@@ -259,7 +254,7 @@ export default function ChatRoomDirectoryScreen() {
             />
           </>
         ) : null}
-      </main>
+      </MobileShell>
       {foConfirmRoom ? (
         <YesOrNo
           mainText={foConfirmMainText}
@@ -271,6 +266,6 @@ export default function ChatRoomDirectoryScreen() {
         />
       ) : null}
       <ToastMessage message={toastMessage} />
-    </div>
+    </>
   );
 }
