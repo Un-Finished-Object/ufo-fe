@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ToastMessage from "@/components/common/ToastMessage";
+import MobileShell from "@/components/layout/MobileShell";
 import NavBar from "@/components/navigation/NavBar";
 import TopBar from "@/components/navigation/TopBar";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
@@ -13,8 +14,8 @@ export default function StylesPage() {
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col overflow-hidden bg-ufo-surface text-ufo-text">
+    <>
+      <MobileShell surfaceClassName="flex flex-col overflow-hidden">
         <TopBar
           left="logo"
           leftHref="/"
@@ -54,8 +55,8 @@ export default function StylesPage() {
             </div>
           </div>
         </section>
-      </main>
+      </MobileShell>
       <ToastMessage message={toastMessage} />
-    </div>
+    </>
   );
 }

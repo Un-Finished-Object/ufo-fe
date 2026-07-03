@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/common/Footer";
 import NavBar from "@/components/navigation/NavBar";
 import Pagination from "@/components/common/Pagination";
+import StateBlock from "@/components/common/StateBlock";
+import MobileShell from "@/components/layout/MobileShell";
 import PatternCard from "@/components/patterns/PatternCard";
 import SearchBar from "@/components/common/SearchBar";
 import TopBar from "@/components/navigation/TopBar";
@@ -117,8 +119,7 @@ export default function PatternCatalogScreen() {
   }, [isSortOpen]);
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="logo"
           leftHref="/"
@@ -220,17 +221,17 @@ export default function PatternCatalogScreen() {
         <section className="px-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
             {patternCatalogQuery.isPending ? (
-              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
-                불러오는 중...
-              </p>
+              <div className="col-span-2">
+                <StateBlock type="loading" title="불러오는 중..." variant="plain" />
+              </div>
             ) : patternCatalogQuery.isError ? (
-              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
-                도안을 불러오지 못했습니다.
-              </p>
+              <div className="col-span-2">
+                <StateBlock type="error" title="도안을 불러오지 못했습니다." variant="plain" />
+              </div>
             ) : patternItems.length === 0 ? (
-              <p className="col-span-2 py-12 text-center text-sm text-ufo-text-muted">
-                도안이 없습니다.
-              </p>
+              <div className="col-span-2">
+                <StateBlock type="empty" title="도안이 없습니다." variant="plain" />
+              </div>
             ) : (
               patternItems.map((item) => (
                 <article key={item.id}>
@@ -255,7 +256,6 @@ export default function PatternCatalogScreen() {
           onPageChange={setCurrentPage}
         />
         <Footer />
-      </main>
-    </div>
+    </MobileShell>
   );
 }

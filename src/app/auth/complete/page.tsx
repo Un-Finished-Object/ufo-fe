@@ -9,6 +9,7 @@ import {
   meQueryOptions,
   walletQueryOptions,
 } from "@/features/auth/queries/userQueries";
+import MobileShell from "@/components/layout/MobileShell";
 
 export default function AuthCompletePage() {
   const router = useRouter();
@@ -58,11 +59,11 @@ export default function AuthCompletePage() {
   }, [queryClient, router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-ufo-bg px-4">
-      <section className="flex w-full max-w-[430px] flex-col items-center justify-center rounded-2xl bg-ufo-surface py-14 shadow-sm">
+    <MobileShell surfaceClassName="flex items-center justify-center px-4">
+      <section className="flex w-full flex-col items-center justify-center rounded-2xl bg-ufo-surface py-14 shadow-sm">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-brand-soft border-t-ufo-brand" />
         <p className="mt-4 text-sm font-medium text-ufo-text">Signing you in…</p>
       </section>
-    </main>
+    </MobileShell>
   );
 }

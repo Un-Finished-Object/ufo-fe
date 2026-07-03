@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ToastMessage from "@/components/common/ToastMessage";
 import YesOrNo from "@/components/dialogs/YesOrNo";
+import MobileShell from "@/components/layout/MobileShell";
 import ChatInput from "@/features/chat/components/ChatInput";
 import ChatMessageList from "@/features/chat/components/ChatMessageList";
 import ChatRoomTopBar from "@/features/chat/components/ChatRoomTopBar";
@@ -415,8 +416,8 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   );
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto flex h-screen min-h-screen w-full max-w-[430px] flex-col bg-ufo-surface text-ufo-text">
+    <>
+      <MobileShell fullHeight>
         <ChatRoomTopBar
           leftHref="/chats"
           title={roomMeta?.title ?? "채팅방"}
@@ -473,7 +474,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
             onSendMessage={handleSendMessage}
           />
         </footer>
-      </main>
+      </MobileShell>
 
       {isFoConfirmOpen ? (
         <YesOrNo
@@ -486,6 +487,6 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
         />
       ) : null}
       <ToastMessage message={toastMessage} />
-    </div>
+    </>
   );
 }

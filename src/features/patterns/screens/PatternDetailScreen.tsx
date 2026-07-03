@@ -4,10 +4,12 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import HeartIcon from "@/components/icons/HeartIcon";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
@@ -189,7 +191,7 @@ function AlternativePurchaseGate({
         }`}
       >
         <div className="pointer-events-auto w-full max-w-[430px] bg-ufo-border px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8">
-          <p className="text-l leading-[1.25] tracking-[-0.02em] text-ufo-text">
+          <p className="text-lg leading-[1.25] tracking-[-0.02em] text-ufo-text">
             더 많은 대체실 정보를 확인해보세요.
           </p>
           <p className="mt-3 text-[14px] leading-6 text-ufo-text-secondary">
@@ -759,8 +761,7 @@ export default function PatternDetailScreen({
 
   if (patternDetailQuery.isPending) {
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
+      <MobileShell surfaceClassName="pb-20">
           <TopBar
             left="back"
             onLeftClick={() => router.back()}
@@ -771,13 +772,8 @@ export default function PatternDetailScreen({
             ]}
           />
 
-          <section className="px-4 py-16">
-            <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
-              <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오고 있어요.</p>
-            </div>
-          </section>
-        </main>
-      </div>
+          <StateBlock type="loading" title="도안 정보를 불러오고 있어요." className="px-4 py-16" />
+      </MobileShell>
     );
   }
 
@@ -788,8 +784,7 @@ export default function PatternDetailScreen({
         : "잠시 후 다시 시도해주세요.";
 
     return (
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-20 text-ufo-text">
+      <MobileShell surfaceClassName="pb-20">
           <TopBar
             left="back"
             onLeftClick={() => router.back()}
@@ -800,22 +795,21 @@ export default function PatternDetailScreen({
             ]}
           />
 
-          <section className="px-4 py-16">
-            <div className="rounded-2xl border border-ufo-border bg-white px-5 py-10 text-center">
-              <p className="text-base font-semibold text-ufo-text">도안 정보를 불러오지 못했어요.</p>
-              <p className="mt-2 text-sm text-ufo-text-secondary">{errorMessage}</p>
-            </div>
-          </section>
-        </main>
-      </div>
+          <StateBlock
+            type="error"
+            title="도안 정보를 불러오지 못했어요."
+            description={errorMessage}
+            className="px-4 py-16"
+          />
+      </MobileShell>
     );
   }
 
   const activeOriginalYarnSet = originalYarnSets[activeOriginalYarnSetIndex] ?? null;
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-28 text-ufo-text">
+    <>
+      <MobileShell surfaceClassName="pb-28">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -1007,7 +1001,7 @@ export default function PatternDetailScreen({
             )}
           </div>
         </section>
-      </main>
+      </MobileShell>
 
       {isPurchaseDialogOpen ? (
         <YesOrNo
@@ -1041,6 +1035,6 @@ export default function PatternDetailScreen({
         />
       ) : null}
       <ToastMessage message={toastMessage} />
-    </div>
+    </>
   );
 }

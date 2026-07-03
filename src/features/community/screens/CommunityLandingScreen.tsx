@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Footer from "@/components/common/Footer";
+import StateBlock from "@/components/common/StateBlock";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import SearchBar from "@/components/common/SearchBar";
 import NavBar from "@/components/navigation/NavBar";
@@ -13,8 +15,7 @@ export default function CommunityLandingScreen() {
   const profileHref = isAuthenticated ? "/my" : "/login";
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+    <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="logo"
           leftHref="/"
@@ -25,11 +26,10 @@ export default function CommunityLandingScreen() {
         />
         <SearchBar value={query} onChange={setQuery} />
         <NavBar />
-        <section className="px-4 py-12 text-center text-base font-semibold text-ufo-text-secondary">
-          빈 페이지
+        <section className="px-4 py-12">
+          <StateBlock type="empty" title="빈 페이지" className="px-0 py-0" />
         </section>
         <Footer />
-      </main>
-    </div>
+    </MobileShell>
   );
 }

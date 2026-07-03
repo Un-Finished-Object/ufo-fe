@@ -1,9 +1,9 @@
 import Link from "next/link";
+import MobileShell from "@/components/layout/MobileShell";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-ufo-bg">
-      <main className="relative mx-auto flex min-h-screen w-full max-w-[430px] flex-col overflow-hidden bg-ufo-surface px-5 pb-10 pt-8 text-ufo-text">
+    <MobileShell surfaceClassName="relative flex flex-col overflow-hidden px-5 pb-10 pt-8">
         <div
           aria-hidden="true"
           className="absolute left-1/2 top-20 h-44 w-44 -translate-x-1/2 rounded-full bg-ufo-brand-pale blur-3xl"
@@ -53,7 +53,6 @@ export default function NotFound() {
             </div>
           </div>
         </section>
-      </main>
-    </div>
+    </MobileShell>
   );
 }
