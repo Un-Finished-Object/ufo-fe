@@ -48,7 +48,7 @@ function CheckIcon() {
 function ChatRoomSummary({ room }: { room: ChatRoom }) {
   return (
     <>
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] bg-[#f4e9e5]">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] bg-ufo-chat-thumbnail">
         {room.imageUrl ? (
           <Image
             src={room.imageUrl}
@@ -63,7 +63,7 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="truncate text-base font-semibold leading-tight text-[#666666]">{room.name}</p>
+          <p className="truncate text-base font-semibold leading-tight text-ufo-text-secondary">{room.name}</p>
           {room.favorite ? <FavoriteIcon /> : null}
         </div>
         <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
@@ -72,7 +72,7 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
       </div>
 
       {room.unreadCount > 0 ? (
-        <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-[#ff2d2d] px-2 py-1 text-base font-semibold leading-none text-white">
+        <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-ufo-chat-unread px-2 py-1 text-base font-semibold leading-none text-white">
           {room.unreadCount}
         </span>
       ) : null}
@@ -123,7 +123,7 @@ function ChatRoomItem({
 }) {
   if (isSettingsMode) {
     return (
-      <li className="border-b border-[#e5e5e5] px-4 py-3">
+      <li className="border-b border-ufo-divider px-4 py-3">
         <div className="flex items-center gap-3">
           <ChatRoomSummary room={room} />
           <div className="flex shrink-0 gap-2">
@@ -146,7 +146,7 @@ function ChatRoomItem({
   }
 
   return (
-    <li className="border-b border-[#e5e5e5]">
+    <li className="border-b border-ufo-divider">
       <Link
         href={`/chats/${room.chatId}`}
         className="flex items-center gap-3 px-4 py-3"
@@ -175,14 +175,14 @@ export default function ChatRoomList({
   return (
     <section aria-label={`${title} 섹션`}>
       <div className="mb-3 flex items-center justify-between px-4 pt-3">
-        <h2 className="text-sm font-bold text-[#222222]">{title}</h2>
+        <h2 className="text-sm font-bold text-ufo-text">{title}</h2>
         {showSettingsButton ? (
           <button
             type="button"
             onClick={onSettingsClick}
             aria-pressed={isSettingsMode}
             className={`rounded-full p-1 ${
-              isSettingsMode ? "text-ufo-brand" : "text-[#f2a4aa]"
+              isSettingsMode ? "text-ufo-brand" : "text-ufo-brand"
             }`}
             aria-label={isSettingsMode ? "채팅방 설정 완료" : "채팅방 설정"}
           >
@@ -204,8 +204,8 @@ export default function ChatRoomList({
                 aria-pressed={activeFilter === chip}
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   (activeFilter ?? filters[0]) === chip
-                    ? "bg-[#fff1ed] text-ufo-brand"
-                    : "bg-[#fff1ed] text-ufo-text-neutral"
+                    ? "bg-ufo-brand-pale text-ufo-brand"
+                    : "bg-ufo-brand-pale text-ufo-text-neutral"
                 }`}
                 aria-label={`${chip} 필터`}
               >
@@ -216,7 +216,7 @@ export default function ChatRoomList({
         </ul>
       ) : null}
 
-      <ul aria-label={`${title} 목록`} className="border-t border-[#e5e5e5]">
+      <ul aria-label={`${title} 목록`} className="border-t border-ufo-divider">
         {rooms.length > 0 ? (
           rooms.map((room) => (
             <ChatRoomItem

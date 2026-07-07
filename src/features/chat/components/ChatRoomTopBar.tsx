@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import BackIcon from "@/components/icons/BackIcon";
 
 type ChatTopBarActionType = "favorite" | "search" | "fo";
 
@@ -19,22 +20,6 @@ type ChatTopBarProps = {
   onLeftClick?: () => void;
   right?: ChatTopBarAction[];
 };
-
-function BackIcon() {
-  return (
-    <svg
-      width="34"
-      height="34"
-      viewBox="0 0 34 34"
-      fill="currentColor"
-      className="h-6 w-6 text-ufo-brand"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path d="M11.0854 18.4166L19.0187 26.35L17 28.3333L5.66663 17L17 5.66663L19.0187 7.64996L11.0854 15.5833H28.3333V18.4166H11.0854Z" />
-    </svg>
-  );
-}
 
 function FavoriteIcon({ active = false }: { active?: boolean }) {
   return (
@@ -113,10 +98,10 @@ export default function ChatTopBar({
             <button
               type="button"
               onClick={handleBackClick}
-              className="rounded-full p-1"
+              className="flex h-8 w-8 items-center justify-start rounded-full text-ufo-brand"
               aria-label={leftAriaLabel}
             >
-              <BackIcon />
+              <BackIcon className="h-6 w-6" />
             </button>
           </div>
 
@@ -133,7 +118,7 @@ export default function ChatTopBar({
                 key={`${action.type}-${action.ariaLabel ?? action.type}`}
                 type="button"
                 onClick={action.onClick}
-                className="rounded-full p-1 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-8 w-8 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label={action.ariaLabel ?? action.type}
                 aria-pressed={typeof action.active === "boolean" ? action.active : undefined}
                 disabled={action.disabled}

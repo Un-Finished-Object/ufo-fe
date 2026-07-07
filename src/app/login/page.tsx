@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Footer from "@/components/common/Footer";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
@@ -84,9 +85,9 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-ufo-bg">
+    <>
       <ToastMessage message={toastMessage} />
-      <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface pb-10 text-ufo-text">
+      <MobileShell surfaceClassName="pb-10">
         <TopBar
           left="back"
           onLeftClick={() => router.back()}
@@ -96,7 +97,7 @@ function LoginPageContent() {
             { type: "home", href: "/", ariaLabel: "홈" },
           ]}
         />
-        <section className="mx-auto w-full max-w-[430px] bg-ufo-surface p-6 text-ufo-text">
+        <section className="p-6">
           <div className="mb-10">
             <h1 className="mt-6 text-3xl text-ufo-border text-center tracking-tight"><b>UFO</b>에 <br/> 오신 걸 환영합니다!</h1>
           </div>
@@ -141,8 +142,8 @@ function LoginPageContent() {
           ) : null}
         </section>
         <Footer />
-      </main>
-    </div>
+      </MobileShell>
+    </>
   );
 }
 

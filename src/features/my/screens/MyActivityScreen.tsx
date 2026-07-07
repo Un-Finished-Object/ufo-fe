@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
 import Pagination from "@/components/common/Pagination";
+import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import {
@@ -39,52 +41,6 @@ function formatPurchaseDate(value: string | null) {
 
 function CreditDot() {
   return <span aria-hidden="true" className="mt-0.5 h-2.5 w-2.5 rounded-full bg-ufo-credit" />;
-}
-
-function LoadingState() {
-  return (
-    <section className="px-4 py-12">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-ufo-border bg-white px-6 py-12 text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-ufo-border-light border-t-ufo-brand-pale" />
-        <p className="mt-4 text-sm font-medium text-ufo-text-secondary">
-          구매한 프로젝트를 불러오고 있어요.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <section className="px-4 py-12">
-      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
-        <p className="text-base font-semibold text-ufo-text">구매한 프로젝트를 불러오지 못했어요.</p>
-        <p className="mt-2 text-sm text-ufo-text-secondary">
-          잠시 후 다시 시도하거나 새로고침해 주세요.
-        </p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-5 rounded-xl bg-ufo-brand-soft px-4 py-2 text-sm font-semibold text-white"
-        >
-          다시 시도
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function EmptyState() {
-  return (
-    <section className="px-4 py-12">
-      <div className="rounded-2xl border border-ufo-border bg-white px-6 py-10 text-center">
-        <p className="text-base font-semibold text-ufo-text">구매한 프로젝트가 아직 없어요.</p>
-        <p className="mt-2 text-sm text-ufo-text-secondary">
-          프로젝트를 구매하면 이곳에서 채팅방과 대체실 정보를 확인할 수 있어요.
-        </p>
-      </div>
-    </section>
-  );
 }
 
 function ActivityActionButton({
@@ -224,8 +180,7 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
 
   return (
     <>
-      <div className="min-h-screen bg-ufo-bg">
-        <main className="mx-auto min-h-screen w-full max-w-[430px] bg-ufo-surface text-ufo-text">
+      <MobileShell>
         <TopBar
           left="back"
           leftHref="/my"
@@ -240,9 +195,31 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
           </h2>
         </section>
 
-        {isLoading ? <LoadingState /> : null}
-        {isError ? <ErrorState onRetry={handleRetry} /> : null}
-        {!isLoading && !isError && purchasedProjects.length === 0 ? <EmptyState /> : null}
+        {isLoading ? (
+          <StateBlock
+            type="loading"
+            title="구매한 프로젝트를 불러오고 있어요."
+            className="px-4 py-12"
+          />
+        ) : null}
+        {isError ? (
+          <StateBlock
+            type="error"
+            title="구매한 프로젝트를 불러오지 못했어요."
+            description="잠시 후 다시 시도하거나 새로고침해 주세요."
+            actionLabel="다시 시도"
+            onAction={handleRetry}
+            className="px-4 py-12"
+          />
+        ) : null}
+        {!isLoading && !isError && purchasedProjects.length === 0 ? (
+          <StateBlock
+            type="empty"
+            title="구매한 프로젝트가 아직 없어요."
+            description="프로젝트를 구매하면 이곳에서 채팅방과 대체실 정보를 확인할 수 있어요."
+            className="px-4 py-12"
+          />
+        ) : null}
 
         {!isLoading && !isError && purchasedProjects.length > 0 ? (
           <>
@@ -261,8 +238,7 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
             />
           </>
         ) : null}
-        </main>
-      </div>
+      </MobileShell>
       <ToastMessage message={toastMessage} />
     </>
   );

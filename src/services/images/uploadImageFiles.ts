@@ -15,6 +15,12 @@ type ImageUploadPurpose = "PATTERN" | "STYLE" | "PROFILE";
 
 type PresignedImageUpload = {
   presignedUrl: string;
+  imageKey: string;
+  imageUrl: string;
+};
+
+export type UploadedImageFile = {
+  imageKey: string;
   imageUrl: string;
 };
 
@@ -47,7 +53,7 @@ function validatePresignedResponse(payload: PresignedImageResponse, files: File[
   });
 
   payload.data.urls.forEach((url) => {
-    if (!url.presignedUrl?.trim() || !url.imageUrl?.trim()) {
+    if (!url.presignedUrl?.trim() || !url.imageKey?.trim() || !url.imageUrl?.trim()) {
       throw createInvalidApiResponseError("Failed to create image upload URLs.");
     }
   });
@@ -141,5 +147,8 @@ export async function uploadImageFiles({
     }),
   );
 
-  return uploads.map((upload) => upload.imageUrl);
+  return uploads.map((upload) => ({
+    imageKey: upload.imageKey,
+    imageUrl: upload.imageUrl,
+  })) satisfies UploadedImageFile[];
 }

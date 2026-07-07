@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
+import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
@@ -297,7 +298,7 @@ export default function AttendanceCalendar() {
 
           {/* Calendar cells */}
           {isFetchingMonth ? (
-            <div className="py-10 text-center text-sm text-ufo-text-muted">불러오는 중...</div>
+            <StateBlock type="loading" title="출석 정보를 불러오는 중입니다." variant="plain" />
           ) : (
             <div className="grid grid-cols-7 gap-y-2">
               {cells.map((day, idx) => {
