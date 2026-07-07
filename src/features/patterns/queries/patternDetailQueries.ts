@@ -37,15 +37,37 @@ type PatternDetailResponse = {
 };
 
 type OriginalYarnSetResponse = {
-  firstYarnId?: number | null;
-  secondYarnId?: number | null;
-  subYarnId?: number | null;
+  originalYarnSetId?: number;
+  firstYarn?: OriginalYarnResponse | null;
+  secondYarn?: OriginalYarnResponse | null;
+  subYarn?: OriginalYarnResponse | null;
+};
+
+type OriginalYarnResponse = {
+  yarnId?: number | null;
+  yarnName?: string | null;
+  weight?: number | null;
+  cost?: number | null;
+  component?: string | null;
+  store?: string | null;
+  length?: number | null;
+};
+
+export type OriginalYarn = {
+  yarnId: number;
+  yarnName: string;
+  weight: number | null;
+  cost: number | null;
+  component: string;
+  store: string;
+  length: number | null;
 };
 
 export type OriginalYarnSet = {
-  firstYarnId: number;
-  secondYarnId: number | null;
-  subYarnId: number | null;
+  originalYarnSetId: number | null;
+  firstYarn: OriginalYarn;
+  secondYarn: OriginalYarn | null;
+  subYarn: OriginalYarn | null;
 };
 
 export type PatternDetailData = {
@@ -76,6 +98,29 @@ function getSafeText(value?: string | null) {
   return trimmedValue ? trimmedValue : "-";
 }
 
+function getOptionalText(value?: string | null) {
+  const trimmedValue = value?.trim();
+  return trimmedValue ? trimmedValue : "";
+}
+
+function normalizeOriginalYarn(
+  yarn?: OriginalYarnResponse | null,
+): OriginalYarn | null {
+  if (!yarn || typeof yarn.yarnId !== "number") {
+    return null;
+  }
+
+  return {
+    yarnId: yarn.yarnId,
+    yarnName: getOptionalText(yarn.yarnName),
+    weight: typeof yarn.weight === "number" ? yarn.weight : null,
+    cost: typeof yarn.cost === "number" ? yarn.cost : null,
+    component: getOptionalText(yarn.component),
+    store: getOptionalText(yarn.store),
+    length: typeof yarn.length === "number" ? yarn.length : null,
+  };
+}
+
 function normalizeOriginalYarnSets(
   originalYarn?: OriginalYarnSetResponse[],
 ): OriginalYarnSet[] {
@@ -83,17 +128,25 @@ function normalizeOriginalYarnSets(
     return [];
   }
 
-  return originalYarn
-    .filter(
-      (yarnSet): yarnSet is OriginalYarnSetResponse & { firstYarnId: number } =>
-        typeof yarnSet.firstYarnId === "number",
-    )
-    .map((yarnSet) => ({
-      firstYarnId: yarnSet.firstYarnId,
-      secondYarnId:
-        typeof yarnSet.secondYarnId === "number" ? yarnSet.secondYarnId : null,
-      subYarnId: typeof yarnSet.subYarnId === "number" ? yarnSet.subYarnId : null,
-    }));
+  return originalYarn.reduce<OriginalYarnSet[]>((normalizedSets, yarnSet) => {
+    const firstYarn = normalizeOriginalYarn(yarnSet.firstYarn);
+
+    if (!firstYarn) {
+      return normalizedSets;
+    }
+
+    normalizedSets.push({
+      originalYarnSetId:
+        typeof yarnSet.originalYarnSetId === "number"
+          ? yarnSet.originalYarnSetId
+          : null,
+      firstYarn,
+      secondYarn: normalizeOriginalYarn(yarnSet.secondYarn),
+      subYarn: normalizeOriginalYarn(yarnSet.subYarn),
+    });
+
+    return normalizedSets;
+  }, []);
 }
 
 function formatOriginalYarnSummary(originalYarnSets: OriginalYarnSet[]) {
