@@ -242,8 +242,14 @@ export default function MyPage() {
                     안녕하세요! {nickname}님
                   </p>
                   <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{email}</p>
-                  <div className="pt-3">
+                  <div className="flex flex-wrap items-center gap-2 pt-3">
                     <CreditBadge credits={walletQuery.data ?? 0} />
+                    <Link
+                      href="/my/credits"
+                      className="inline-flex min-h-7 items-center rounded-full bg-white/20 px-3 text-[11px] font-semibold text-white"
+                    >
+                      사용 기록
+                    </Link>
                   </div>
                 </div>
               </div>
