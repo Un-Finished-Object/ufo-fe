@@ -12,17 +12,29 @@ type PatternAlternativeItemResponse = {
   altId?: number | null;
   yarnId?: number | null;
   yarnName?: string | null;
+  ply?: number | null;
   weight?: number | null;
   cost?: number | null;
-  subComponent?: string | null;
+  component?: string | null;
   store?: string | null;
   length?: number | null;
+  componentScore?: number | null;
+  lengthScore?: number | null;
+  gaugeScore?: number | null;
+  needleScore?: number | null;
   username?: string | null;
+};
+
+type PatternAlternativeSetResponse = {
+  originalYarnSetId?: number | null;
+  firstYarn?: PatternAlternativeItemResponse | null;
+  secondYarn?: PatternAlternativeItemResponse | null;
+  subYarn?: PatternAlternativeItemResponse | null;
 };
 
 type PatternAlternativesResponse = {
   data?: {
-    items?: PatternAlternativeItemResponse[];
+    items?: PatternAlternativeSetResponse[];
   };
   error?: unknown;
 };
@@ -31,12 +43,24 @@ export type PatternAlternativeItem = {
   altId: number | null;
   yarnId: number | null;
   yarnName: string;
+  ply: number | null;
   weight: number | null;
   cost: number | null;
-  subComponent: string;
+  component: string;
   store: string;
   length: number | null;
+  componentScore: number | null;
+  lengthScore: number | null;
+  gaugeScore: number | null;
+  needleScore: number | null;
   username: string;
+};
+
+export type PatternAlternativeSet = {
+  originalYarnSetId: number | null;
+  firstYarn: PatternAlternativeItem | null;
+  secondYarn: PatternAlternativeItem | null;
+  subYarn: PatternAlternativeItem | null;
 };
 
 function getSafeText(value?: string | null) {
@@ -51,27 +75,50 @@ function mapPatternAlternativeItem(
     altId: typeof item.altId === "number" ? item.altId : null,
     yarnId: typeof item.yarnId === "number" ? item.yarnId : null,
     yarnName: getSafeText(item.yarnName),
+    ply: typeof item.ply === "number" ? item.ply : null,
     weight: typeof item.weight === "number" ? item.weight : null,
     cost: typeof item.cost === "number" ? item.cost : null,
-    subComponent: getSafeText(item.subComponent),
+    component: getSafeText(item.component),
     store: getSafeText(item.store),
     length: typeof item.length === "number" ? item.length : null,
+    componentScore: typeof item.componentScore === "number" ? item.componentScore : null,
+    lengthScore: typeof item.lengthScore === "number" ? item.lengthScore : null,
+    gaugeScore: typeof item.gaugeScore === "number" ? item.gaugeScore : null,
+    needleScore: typeof item.needleScore === "number" ? item.needleScore : null,
     username: getSafeText(item.username),
   };
 }
 
-export function patternAlternativesQueryKey(patternId: number) {
-  return ["patternAlternatives", patternId] as const;
+function mapNullablePatternAlternativeItem(
+  item?: PatternAlternativeItemResponse | null,
+) {
+  return item ? mapPatternAlternativeItem(item) : null;
+}
+
+function mapPatternAlternativeSet(
+  item: PatternAlternativeSetResponse,
+): PatternAlternativeSet {
+  return {
+    originalYarnSetId:
+      typeof item.originalYarnSetId === "number" ? item.originalYarnSetId : null,
+    firstYarn: mapNullablePatternAlternativeItem(item.firstYarn),
+    secondYarn: mapNullablePatternAlternativeItem(item.secondYarn),
+    subYarn: mapNullablePatternAlternativeItem(item.subYarn),
+  };
+}
+
+export function patternAlternativesQueryKey(originalYarnSetId: number) {
+  return ["patternAlternatives", originalYarnSetId] as const;
 }
 
 export const patternAlternativesQueryRoot = ["patternAlternatives"] as const;
 
 export async function fetchPatternAlternatives(
-  patternId: number,
+  originalYarnSetId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
   const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/patterns/${patternId}/alternatives`),
+    input: buildApiUrl(`/v1/yarns/alternatives/${originalYarnSetId}`),
     init: {
       method: "GET",
       credentials: "include",
@@ -93,14 +140,13 @@ export async function fetchPatternAlternatives(
     throw createInvalidApiResponseError("Failed to load pattern alternatives.");
   }
 
-  return payload.data.items
-    .map(mapPatternAlternativeItem)
+  return payload.data.items.map(mapPatternAlternativeSet);
 }
 
-export function patternAlternativesQueryOptions(patternId: number) {
+export function patternAlternativesQueryOptions(originalYarnSetId: number) {
   return queryOptions({
-    queryKey: patternAlternativesQueryKey(patternId),
-    queryFn: ({ signal }) => fetchPatternAlternatives(patternId, { signal }),
+    queryKey: patternAlternativesQueryKey(originalYarnSetId),
+    queryFn: ({ signal }) => fetchPatternAlternatives(originalYarnSetId, { signal }),
     staleTime: QUERY_STALE_TIME.reference,
   });
 }

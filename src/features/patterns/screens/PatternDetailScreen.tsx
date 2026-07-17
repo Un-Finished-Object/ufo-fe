@@ -17,9 +17,10 @@ import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
 import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import {
-  patternAlternativesQueryKey,
+  patternAlternativesQueryRoot,
   patternAlternativesQueryOptions,
   type PatternAlternativeItem,
+  type PatternAlternativeSet,
 } from "@/features/patterns/queries/patternAlternativeQueries";
 import type {
   OriginalYarn,
@@ -236,38 +237,72 @@ type YarnInfoDetailItem = {
   value: string;
 };
 
+type YarnInfoScoreItem = {
+  label: string;
+  value: number | null;
+};
+
 type YarnInfoCardData = {
   yarnName: string;
   subComponent?: string;
   cost?: number | null;
   detailItems?: YarnInfoDetailItem[];
+  scoreItems?: YarnInfoScoreItem[];
 };
 
 function getAlternativeDetailItems(item: PatternAlternativeItem): YarnInfoDetailItem[] {
   return [
     { label: "무게", value: formatAlternativeNumber(item.weight, "g") },
     { label: "길이", value: formatAlternativeNumber(item.length, "m") },
+    { label: "실 합수", value: formatAlternativeNumber(item.ply, "겹") },
     { label: "구매처", value: getAlternativeText(item.store) },
     { label: "작성자", value: getAlternativeText(item.username) },
   ].filter((detail): detail is { label: string; value: string } => detail.value !== null);
 }
 
+function getAlternativeScoreItems(item: PatternAlternativeItem): YarnInfoScoreItem[] {
+  return [
+    { label: "성분", value: item.componentScore },
+    { label: "길이", value: item.lengthScore },
+    { label: "게이지", value: item.gaugeScore },
+    { label: "바늘", value: item.needleScore },
+  ];
+}
+
 function hasVisibleAlternativeInfo(item: PatternAlternativeItem) {
   return (
     getAlternativeText(item.yarnName) !== null ||
-    getAlternativeText(item.subComponent) !== null ||
+    getAlternativeText(item.component) !== null ||
     formatAlternativeNumber(item.cost, "원") !== null ||
-    getAlternativeDetailItems(item).length > 0
+    getAlternativeDetailItems(item).length > 0 ||
+    getAlternativeScoreItems(item).some((score) => score.value !== null)
   );
 }
 
 function getAlternativeCardData(item: PatternAlternativeItem): YarnInfoCardData {
   return {
     yarnName: item.yarnName,
-    subComponent: item.subComponent,
+    subComponent: item.component,
     cost: item.cost,
     detailItems: getAlternativeDetailItems(item),
+    scoreItems: getAlternativeScoreItems(item),
   };
+}
+
+function getAlternativeYarnEntries(yarnSet: PatternAlternativeSet) {
+  return [
+    yarnSet.firstYarn ? { label: "메인실", yarn: yarnSet.firstYarn } : null,
+    yarnSet.secondYarn ? { label: "배색실", yarn: yarnSet.secondYarn } : null,
+    yarnSet.subYarn ? { label: "합사실", yarn: yarnSet.subYarn } : null,
+  ].filter(
+    (entry): entry is { label: string; yarn: PatternAlternativeItem } => entry !== null,
+  );
+}
+
+function hasVisibleAlternativeSetInfo(yarnSet: PatternAlternativeSet) {
+  return getAlternativeYarnEntries(yarnSet).some((entry) =>
+    hasVisibleAlternativeInfo(entry.yarn),
+  );
 }
 
 function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
@@ -275,6 +310,8 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
   const subComponent = card.subComponent ? getAlternativeText(card.subComponent) : null;
   const cost = formatAlternativeNumber(card.cost ?? null, "원");
   const detailItems = card.detailItems ?? [];
+  const scoreItems = card.scoreItems ?? [];
+  const visibleScoreItems = scoreItems.filter((score) => score.value !== null);
   const hasHeaderContent = yarnName !== null || subComponent !== null || cost !== null;
 
   return (
@@ -314,6 +351,37 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
             </div>
           ))}
         </dl>
+      ) : null}
+
+      {visibleScoreItems.length > 0 ? (
+        <div
+          className={`grid grid-cols-4 gap-1.5 ${
+            hasHeaderContent || detailItems.length > 0 ? "mt-3" : ""
+          }`}
+        >
+          {scoreItems.map((score) => {
+            const scoreValue = score.value ?? 0;
+            const percent = Math.max(0, Math.min(100, scoreValue));
+            const scoreText = score.value === null ? "-" : `${Math.round(scoreValue)}점`;
+
+            return (
+              <div key={score.label} className="min-w-0" aria-label={`${score.label} 점수 ${scoreText}`}>
+                <span className="block truncate text-[10px] font-bold text-ufo-text-subtle">
+                  {score.label} {scoreText}
+                </span>
+                <span
+                  className="relative mt-1 block h-1.5 overflow-hidden rounded-full bg-ufo-border-light"
+                  aria-hidden="true"
+                >
+                  <span
+                    className="absolute inset-y-0 left-0 rounded-full bg-ufo-brand"
+                    style={{ width: `${percent}%` }}
+                  />
+                </span>
+              </div>
+            );
+          })}
+        </div>
       ) : null}
     </article>
   );
@@ -657,6 +725,40 @@ function OriginalYarnSetCards({
   );
 }
 
+function AlternativeYarnSetCards({
+  yarnSet,
+  setIndex,
+}: {
+  yarnSet: PatternAlternativeSet;
+  setIndex: number;
+}) {
+  const entries = getAlternativeYarnEntries(yarnSet).filter((entry) =>
+    hasVisibleAlternativeInfo(entry.yarn),
+  );
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      {setIndex > 0 ? (
+        <p className="px-1 text-xs font-bold text-ufo-brand">
+          대체 조합 {setIndex + 1}
+        </p>
+      ) : null}
+      {entries.map((entry, entryIndex) => (
+        <div key={`${entry.label}-${entry.yarn.altId ?? entry.yarn.yarnId ?? entryIndex}`}>
+          <p className="mb-1 px-1 text-xs font-bold text-ufo-text-secondary">
+            {entry.label}
+          </p>
+          <YarnInfoCard card={getAlternativeCardData(entry.yarn)} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AlternativeYarnSection({
   title,
   action,
@@ -725,6 +827,7 @@ export default function PatternDetailScreen({
     Math.max(originalYarnSets.length - 1, 0),
   );
   const activeOriginalYarnSet = originalYarnSets[activeOriginalYarnSetIndex] ?? null;
+  const activeOriginalYarnSetId = activeOriginalYarnSet?.originalYarnSetId ?? null;
   const selectedOriginalYarnOptions =
     activeOriginalYarnSet && selectedOriginalYarnRole
       ? getOriginalYarnRoleOptions(
@@ -742,12 +845,13 @@ export default function PatternDetailScreen({
   const purchasedChatroomId = purchaseStatusQuery.data?.chatroomId ?? null;
   const hasAlternativePurchase = purchaseStatusQuery.data?.alternative === true;
   const patternAlternativesQuery = useQuery({
-    ...patternAlternativesQueryOptions(pattern?.id ?? 0),
+    ...patternAlternativesQueryOptions(activeOriginalYarnSetId ?? 0),
     enabled:
       authStatus !== "loading" &&
       isAuthenticated &&
       pattern !== null &&
-      hasAlternativePurchase,
+      hasAlternativePurchase &&
+      activeOriginalYarnSetId !== null,
   });
   const isResolvingChatPurchase =
     pattern === null ||
@@ -774,8 +878,8 @@ export default function PatternDetailScreen({
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
       : "채팅방 구매에 실패했어요. 잠시 후 다시 시도해주세요.";
-  const visibleAlternativeItems =
-    patternAlternativesQuery.data?.filter(hasVisibleAlternativeInfo) ?? [];
+  const visibleAlternativeSets =
+    patternAlternativesQuery.data?.filter(hasVisibleAlternativeSetInfo) ?? [];
 
   const toggleScrapMutation = useMutation<
     Awaited<ReturnType<typeof updatePatternScrap>>,
@@ -840,7 +944,7 @@ export default function PatternDetailScreen({
       if (data.type === "yarn") {
         invalidations.push(
           queryClient.invalidateQueries({
-            queryKey: patternAlternativesQueryKey(pattern.id),
+            queryKey: patternAlternativesQueryRoot,
           }),
         );
       }
@@ -1116,7 +1220,11 @@ export default function PatternDetailScreen({
                       구매 정보를 확인하고 있어요.
                     </AlternativeSectionMessage>
                   ) : hasAlternativePurchase ? (
-                    patternAlternativesQuery.isPending ? (
+                    activeOriginalYarnSetId === null ? (
+                      <AlternativeSectionMessage>
+                        대체실 정보를 조회할 원작실 세트가 없어요.
+                      </AlternativeSectionMessage>
+                    ) : patternAlternativesQuery.isPending ? (
                       <AlternativeSectionMessage>
                         대체실 정보를 불러오고 있어요.
                       </AlternativeSectionMessage>
@@ -1124,12 +1232,13 @@ export default function PatternDetailScreen({
                       <AlternativeSectionMessage>
                         대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
                       </AlternativeSectionMessage>
-                    ) : visibleAlternativeItems.length > 0 ? (
-                      <div className="space-y-2">
-                        {visibleAlternativeItems.map((item, itemIndex) => (
-                          <YarnInfoCard
-                            key={item.altId ?? `${item.yarnId ?? "unknown"}-${itemIndex}`}
-                            card={getAlternativeCardData(item)}
+                    ) : visibleAlternativeSets.length > 0 ? (
+                      <div className="space-y-4">
+                        {visibleAlternativeSets.map((item, itemIndex) => (
+                          <AlternativeYarnSetCards
+                            key={`${item.originalYarnSetId ?? "unknown"}-${itemIndex}`}
+                            yarnSet={item}
+                            setIndex={itemIndex}
                           />
                         ))}
                       </div>
