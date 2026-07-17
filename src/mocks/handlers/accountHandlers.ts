@@ -20,11 +20,11 @@ export const accountHandlers = [
     return apiSuccess({ items: [
       { id: "credit-1", type: "earn", amount: 5, balanceAfter: 120, reason: "attendance", createdAt: "2026-07-17T09:00:00+09:00" },
       { id: "credit-2", type: "spend", amount: -20, balanceAfter: 115, reason: "chat", createdAt: "2026-07-16T11:00:00+09:00" },
-    ], page: 1 });
+    ], page: 1, nextPage: 0 });
   }),
   http.get("/v1/users/me/projects", ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    return apiSuccess({ projects: [{ patternId: 1, patternName: mockPatterns[0].title, thumbnailUrl: mockPatterns[0].thumbnailUrl, author: mockPatterns[0].author, purchaseYarn: true, purchaseYarnDate: "2026-07-10", purchaseChat: true, purchaseChatId: 101, purchaseChatDate: "2026-07-11" }], nextPage: 1 });
+    return apiSuccess({ projects: [{ patternId: 1, patternName: mockPatterns[0].title, thumbnailUrl: mockPatterns[0].thumbnailUrl, author: mockPatterns[0].author, purchaseYarn: true, purchaseYarnDate: "2026-07-10", purchaseChat: true, purchaseChatId: 101, purchaseChatDate: "2026-07-11" }], nextPage: 0 });
   }),
   http.get("/v1/attendance/status", ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");

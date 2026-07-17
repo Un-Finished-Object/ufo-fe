@@ -112,14 +112,17 @@ export async function fetchMyPurchasedProjects(
   }
 
   const items = Array.isArray(payload.data.projects) ? payload.data.projects : [];
-  const nextPageNumber = typeof payload.data.nextPage === "number" ? payload.data.nextPage : null;
+  const nextPage =
+    typeof payload.data.nextPage === "number"
+      ? Math.min(5, Math.max(0, payload.data.nextPage))
+      : 0;
 
   return {
     items: items
       .map(mapPurchasedProjectItem)
       .filter((item): item is PurchasedProjectItem => item !== null),
     page,
-    nextPage: nextPageNumber === null ? 0 : Math.max(nextPageNumber - page, 0),
+    nextPage,
   } satisfies PurchasedProjectsResult;
 }
 

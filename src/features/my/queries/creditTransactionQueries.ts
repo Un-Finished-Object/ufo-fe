@@ -23,6 +23,7 @@ type CreditTransactionApiItem = {
 type CreditTransactionsPayload = {
   items?: CreditTransactionApiItem[];
   page?: number;
+  nextPage?: number;
 };
 
 type CreditTransactionsResponse = {
@@ -50,8 +51,6 @@ export type CreditTransactionsQueryParams = {
   type: CreditTransactionTypeFilter;
   reason: CreditTransactionReasonFilter;
 };
-
-const PAGE_SIZE = 20;
 
 export const creditTransactionQueryKeys = {
   all: ["creditTransactions"] as const,
@@ -128,7 +127,10 @@ export async function fetchCreditTransactions(
   return {
     items: mappedItems,
     page: payload.data.page,
-    nextPage: mappedItems.length >= PAGE_SIZE ? 1 : 0,
+    nextPage:
+      typeof payload.data.nextPage === "number"
+        ? Math.min(5, Math.max(0, payload.data.nextPage))
+        : 0,
   } satisfies CreditTransactionsResult;
 }
 
