@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPageMetadata, siteConfig } from "@/lib/metadata";
 import PatternDetailScreen from "@/features/patterns/screens/PatternDetailScreen";
+import { mockPatternDetail, mockPatterns } from "@/mocks/fixtures/core";
+import { isMockMode } from "@/mocks/config";
 
 type PatternDetailPageProps = {
   params: Promise<{
@@ -25,6 +27,13 @@ function buildPatternMetadataApiUrl(patternId: number) {
 }
 
 async function fetchPatternMetadata(patternId: number) {
+  if (isMockMode()) {
+    const pattern = mockPatterns.find((item) => item.id === patternId);
+    return pattern
+      ? { id: pattern.id, title: pattern.title, image: pattern.thumbnailUrl }
+      : { id: mockPatternDetail.id, title: mockPatternDetail.title, image: mockPatternDetail.images[0] };
+  }
+
   try {
     const response = await fetch(buildPatternMetadataApiUrl(patternId), {
       next: { revalidate: 300 },

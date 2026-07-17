@@ -10,6 +10,7 @@ import ChatRealtimeManager from "@/features/chat/components/ChatRealtimeManager"
 import ChatRealtimeToastHost from "@/features/chat/components/ChatRealtimeToastHost";
 import { createQueryClient } from "@/lib/query/client";
 import { activateStompClient, deactivateStompClient } from "@/features/chat/lib/stompClient";
+import { isMockMode } from "@/mocks/config";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -37,6 +38,10 @@ function WebSocketConnectionManager() {
   const isConnectedRef = useRef(false);
 
   useEffect(() => {
+    if (isMockMode()) {
+      return;
+    }
+
     if (authStatus === "loading") {
       return;
     }
@@ -76,7 +81,7 @@ export default function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthRefreshManager />
       <WebSocketConnectionManager />
-      <ChatRealtimeManager />
+      {!isMockMode() && <ChatRealtimeManager />}
       <ChatRealtimeToastHost />
       {children}
     </QueryClientProvider>
