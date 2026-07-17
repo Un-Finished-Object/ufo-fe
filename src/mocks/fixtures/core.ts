@@ -32,6 +32,7 @@ export const mockPatternDetail = {
       firstYarn: {
         yarnId: 1,
         yarnName: "메리노 포근",
+        ply: 2,
         weight: 50,
         cost: 9000,
         component: "메리노울 100%",
@@ -43,6 +44,48 @@ export const mockPatternDetail = {
     }],
   },
 };
+
+const mockYarnNames = [
+  "데일리 메리노",
+  "앨모",
+  "포근 알파카",
+  "클라우드 울",
+  "소프트 캐시미어",
+];
+
+function createMockAlternativeYarns(roleOffset: number) {
+  return Array.from({ length: 15 }, (_, index) => {
+    const ranking = index + 1;
+    const altId = roleOffset + ranking;
+
+    return {
+      altId,
+      ranking,
+      yarnId: altId + 100,
+      yarnName: `${mockYarnNames[index % mockYarnNames.length]} ${ranking}`,
+      ply: (index % 4) + 1,
+      weight: 50 + (index % 3) * 25,
+      cost: 7500 + index * 500,
+      component: index % 2 === 0 ? "메리노울 100%" : "알파카 90%, 나일론 10%",
+      store: index % 2 === 0 ? "UFO 실가게" : "솜솜뜨개",
+      length: 120 + index * 5,
+      componentScore: Math.max(70, 100 - index),
+      lengthScore: Math.max(70, 98 - index),
+      gaugeScore: Math.max(70, 96 - index),
+      needleScore: Math.max(70, 94 - index),
+      username: "admin",
+    };
+  });
+}
+
+export function createMockPatternAlternatives(originalYarnSetId: number) {
+  return [{
+    originalYarnSetId,
+    firstYarn: createMockAlternativeYarns(0),
+    secondYarn: createMockAlternativeYarns(100),
+    subYarn: createMockAlternativeYarns(200),
+  }];
+}
 
 export const mockChats = [{
   patternId: 1,

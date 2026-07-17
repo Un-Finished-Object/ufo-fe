@@ -3,8 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import StateBlock from "@/components/common/StateBlock";
+import Pagination from "@/components/common/Pagination";
 import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
@@ -22,6 +23,17 @@ import {
   type PatternAlternativeItem,
   type PatternAlternativeSet,
 } from "@/features/patterns/queries/patternAlternativeQueries";
+import {
+  alternativeReactionQueryKey,
+  alternativeReactionQueryOptions,
+  updateAlternativeReaction,
+  type AlternativeReaction,
+} from "@/features/patterns/queries/patternAlternativeReactionQueries";
+import {
+  alternativeCommentsQueryOptions,
+  alternativeCommentsQueryRoot,
+  createAlternativeComment,
+} from "@/features/patterns/queries/patternAlternativeCommentQueries";
 import type {
   OriginalYarn,
   OriginalYarnSet,
@@ -69,7 +81,12 @@ const detailTabOptions = [
 const alternativePreviewCards = [0, 1, 2] as const;
 
 const currencyFormatter = new Intl.NumberFormat("ko-KR");
+const commentDateFormatter = new Intl.DateTimeFormat("ko-KR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
 const patternAccessCredits = 10;
+const alternativesPerPage = 5;
 
 type DetailTabSwitchProps = {
   value: DetailTabValue;
@@ -244,6 +261,8 @@ type YarnInfoScoreItem = {
 
 type YarnInfoCardData = {
   yarnName: string;
+  ranking?: number | null;
+  altId?: number | null;
   subComponent?: string;
   cost?: number | null;
   detailItems?: YarnInfoDetailItem[];
@@ -252,11 +271,10 @@ type YarnInfoCardData = {
 
 function getAlternativeDetailItems(item: PatternAlternativeItem): YarnInfoDetailItem[] {
   return [
+    { label: "실 합수", value: formatAlternativeNumber(item.ply, "합") },
     { label: "무게", value: formatAlternativeNumber(item.weight, "g") },
     { label: "길이", value: formatAlternativeNumber(item.length, "m") },
-    { label: "실 합수", value: formatAlternativeNumber(item.ply, "겹") },
     { label: "구매처", value: getAlternativeText(item.store) },
-    { label: "작성자", value: getAlternativeText(item.username) },
   ].filter((detail): detail is { label: string; value: string } => detail.value !== null);
 }
 
@@ -282,6 +300,8 @@ function hasVisibleAlternativeInfo(item: PatternAlternativeItem) {
 function getAlternativeCardData(item: PatternAlternativeItem): YarnInfoCardData {
   return {
     yarnName: item.yarnName,
+    ranking: item.ranking,
+    altId: item.altId,
     subComponent: item.component,
     cost: item.cost,
     detailItems: getAlternativeDetailItems(item),
@@ -289,19 +309,161 @@ function getAlternativeCardData(item: PatternAlternativeItem): YarnInfoCardData 
   };
 }
 
-function getAlternativeYarnEntries(yarnSet: PatternAlternativeSet) {
-  return [
-    yarnSet.firstYarn ? { label: "메인실", yarn: yarnSet.firstYarn } : null,
-    yarnSet.secondYarn ? { label: "배색실", yarn: yarnSet.secondYarn } : null,
-    yarnSet.subYarn ? { label: "합사실", yarn: yarnSet.subYarn } : null,
-  ].filter(
-    (entry): entry is { label: string; yarn: PatternAlternativeItem } => entry !== null,
+function hasVisibleAlternativeSetInfo(yarnSet: PatternAlternativeSet) {
+  return [...yarnSet.firstYarn, ...yarnSet.secondYarn, ...yarnSet.subYarn].some(
+    hasVisibleAlternativeInfo,
   );
 }
 
-function hasVisibleAlternativeSetInfo(yarnSet: PatternAlternativeSet) {
-  return getAlternativeYarnEntries(yarnSet).some((entry) =>
-    hasVisibleAlternativeInfo(entry.yarn),
+function AlternativeReactionButton({ altId }: { altId: number }) {
+  const queryClient = useQueryClient();
+  const reactionQuery = useQuery(alternativeReactionQueryOptions(altId));
+  const reactionMutation = useMutation({
+    mutationFn: (type: 1 | 2) => updateAlternativeReaction({ altId, type }),
+    onSuccess: (reaction) => {
+      queryClient.setQueryData<AlternativeReaction>(
+        alternativeReactionQueryKey(altId),
+        reaction,
+      );
+    },
+  });
+  const isLiked = reactionQuery.data?.type === 1;
+  const likesCount = reactionQuery.data?.likesCount ?? 0;
+
+  return (
+    <button
+      type="button"
+      onClick={() => reactionMutation.mutate(isLiked ? 2 : 1)}
+      disabled={reactionQuery.isPending || reactionMutation.isPending}
+      className="flex min-h-8 items-center gap-1 rounded-full px-2 text-xs font-semibold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label={isLiked ? `좋아요 취소, 현재 ${likesCount}개` : `좋아요, 현재 ${likesCount}개`}
+      aria-pressed={isLiked}
+    >
+      <HeartIcon
+        variant={isLiked ? "filled" : "outline"}
+        className={isLiked ? "h-4 w-4 fill-ufo-brand stroke-ufo-brand" : "h-4 w-4 stroke-ufo-brand"}
+      />
+      <span>{likesCount}</span>
+    </button>
+  );
+}
+
+function AlternativeComments({
+  altSetId,
+  reactionAction,
+}: {
+  altSetId: number;
+  reactionAction: ReactNode;
+}) {
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [content, setContent] = useState("");
+  const commentsQuery = useQuery({
+    ...alternativeCommentsQueryOptions(altSetId, currentPage),
+    enabled: isOpen,
+  });
+  const createCommentMutation = useMutation({
+    mutationFn: (nextContent: string) =>
+      createAlternativeComment({ altSetId, content: nextContent }),
+    onSuccess: async () => {
+      setContent("");
+      setCurrentPage(1);
+      await queryClient.invalidateQueries({
+        queryKey: [...alternativeCommentsQueryRoot, altSetId],
+      });
+    },
+  });
+  const comments = commentsQuery.data?.comments ?? [];
+  const responsePage = commentsQuery.data?.page ?? currentPage;
+  const nextPage = commentsQuery.data?.nextPage ?? 0;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent || createCommentMutation.isPending) {
+      return;
+    }
+
+    createCommentMutation.mutate(trimmedContent);
+  };
+
+  return (
+    <div className="border-t border-ufo-border-light">
+      <div className="flex items-center justify-between pt-1.5">
+        <button
+          type="button"
+          onClick={() => setIsOpen((previous) => !previous)}
+          className="min-h-8 rounded-full px-2 text-xs font-semibold text-ufo-text-secondary"
+          aria-expanded={isOpen}
+        >
+          댓글 {isOpen ? "접기" : "보기"}
+        </button>
+        {reactionAction}
+      </div>
+
+      {isOpen ? (
+        <div className="space-y-3 pb-1 pt-2">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <label htmlFor={`alternative-comment-${altSetId}`} className="sr-only">
+              대체실 댓글
+            </label>
+            <input
+              id={`alternative-comment-${altSetId}`}
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              maxLength={500}
+              placeholder="댓글을 입력해주세요."
+              className="min-w-0 flex-1 rounded-lg border border-ufo-border-light bg-white px-3 py-2 text-xs text-ufo-text outline-none focus:border-ufo-brand"
+            />
+            <button
+              type="submit"
+              disabled={!content.trim() || createCommentMutation.isPending}
+              className="shrink-0 rounded-lg bg-ufo-brand px-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {createCommentMutation.isPending ? "등록 중" : "등록"}
+            </button>
+          </form>
+
+          {createCommentMutation.isError ? (
+            <p className="text-xs text-ufo-error">댓글을 등록하지 못했어요.</p>
+          ) : null}
+          {commentsQuery.isPending ? (
+            <p className="text-xs text-ufo-text-muted">댓글을 불러오고 있어요.</p>
+          ) : commentsQuery.isError ? (
+            <p className="text-xs text-ufo-error">댓글을 불러오지 못했어요.</p>
+          ) : comments.length > 0 ? (
+            <div className="space-y-2">
+              {comments.map((comment, index) => (
+                <div
+                  key={`${comment.username}-${comment.createdAt}-${index}`}
+                  className="rounded-lg bg-ufo-brand-pale px-3 py-2"
+                >
+                  <p className="whitespace-pre-wrap break-words text-xs leading-5 text-ufo-text">
+                    {comment.content}
+                  </p>
+                  <time
+                    dateTime={comment.createdAt}
+                    className="mt-1 block text-right text-[10px] text-ufo-text-muted"
+                  >
+                    {commentDateFormatter.format(new Date(comment.createdAt))}
+                  </time>
+                </div>
+              ))}
+              <Pagination
+                currentPage={responsePage}
+                nextPage={nextPage}
+                onPageChange={setCurrentPage}
+                className="py-2"
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-ufo-text-muted">첫 댓글을 남겨보세요.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -321,7 +483,12 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
           {yarnName || subComponent ? (
             <div className="min-w-0 flex-1">
               {yarnName ? (
-                <p className="break-words text-sm font-bold leading-5 text-ufo-text">{yarnName}</p>
+                <p className="flex items-start gap-1.5 break-words text-sm font-bold leading-5 text-ufo-text">
+                  {card.ranking !== null && card.ranking !== undefined ? (
+                    <span className="shrink-0 text-ufo-brand">{card.ranking}위</span>
+                  ) : null}
+                  <span>{yarnName}</span>
+                </p>
               ) : null}
               {subComponent ? (
                 <p className="mt-0.5 break-words text-[11px] font-medium leading-4 text-ufo-text-secondary">
@@ -383,6 +550,14 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
           })}
         </div>
       ) : null}
+      {typeof card.altId === "number" ? (
+        <div className="mt-2">
+          <AlternativeComments
+            altSetId={card.altId}
+            reactionAction={<AlternativeReactionButton altId={card.altId} />}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -421,6 +596,7 @@ function getYarnSelectSubtitle(yarn: OriginalYarn) {
 
 function getOriginalYarnDetailItems(yarn: OriginalYarn): YarnInfoDetailItem[] {
   return [
+    { label: "실 합수", value: formatAlternativeNumber(yarn.ply, "합") },
     { label: "무게", value: formatAlternativeNumber(yarn.weight, "g") },
     { label: "길이", value: formatAlternativeNumber(yarn.length, "m") },
     { label: "구매처", value: getAlternativeText(yarn.store) },
@@ -725,36 +901,55 @@ function OriginalYarnSetCards({
   );
 }
 
-function AlternativeYarnSetCards({
-  yarnSet,
-  setIndex,
+function RankedAlternativeYarnList({
+  label,
+  items,
 }: {
-  yarnSet: PatternAlternativeSet;
-  setIndex: number;
+  label: string;
+  items: PatternAlternativeItem[];
 }) {
-  const entries = getAlternativeYarnEntries(yarnSet).filter((entry) =>
-    hasVisibleAlternativeInfo(entry.yarn),
+  const [currentPage, setCurrentPage] = useState(1);
+  const visibleItems = items.filter(hasVisibleAlternativeInfo);
+  const totalPages = Math.ceil(visibleItems.length / alternativesPerPage);
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const pageItems = visibleItems.slice(
+    (safeCurrentPage - 1) * alternativesPerPage,
+    safeCurrentPage * alternativesPerPage,
   );
 
-  if (entries.length === 0) {
+  if (visibleItems.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-3">
-      {setIndex > 0 ? (
-        <p className="px-1 text-xs font-bold text-ufo-brand">
-          대체 조합 {setIndex + 1}
-        </p>
-      ) : null}
-      {entries.map((entry, entryIndex) => (
-        <div key={`${entry.label}-${entry.yarn.altId ?? entry.yarn.yarnId ?? entryIndex}`}>
-          <p className="mb-1 px-1 text-xs font-bold text-ufo-text-secondary">
-            {entry.label}
-          </p>
-          <YarnInfoCard card={getAlternativeCardData(entry.yarn)} />
-        </div>
+      <p className="px-1 text-xs font-bold text-ufo-text-secondary">{label}</p>
+      {pageItems.map((item, itemIndex) => (
+        <YarnInfoCard
+          key={item.altId ?? `${item.yarnId ?? "unknown"}-${item.ranking ?? itemIndex}`}
+          card={getAlternativeCardData(item)}
+        />
       ))}
+      <Pagination
+        currentPage={safeCurrentPage}
+        nextPage={Math.max(totalPages - safeCurrentPage, 0)}
+        onPageChange={setCurrentPage}
+        className="py-2"
+      />
+    </div>
+  );
+}
+
+function RankedAlternativeYarnGroups({ sets }: { sets: PatternAlternativeSet[] }) {
+  const firstYarns = sets.flatMap((set) => set.firstYarn);
+  const secondYarns = sets.flatMap((set) => set.secondYarn);
+  const subYarns = sets.flatMap((set) => set.subYarn);
+
+  return (
+    <div className="space-y-5">
+      <RankedAlternativeYarnList label="메인실" items={firstYarns} />
+      <RankedAlternativeYarnList label="배색실" items={secondYarns} />
+      <RankedAlternativeYarnList label="합사실" items={subYarns} />
     </div>
   );
 }
@@ -1198,23 +1393,7 @@ export default function PatternDetailScreen({
                   )}
                 </AlternativeYarnSection>
 
-                <AlternativeYarnSection
-                  title="UFO 등록 대체실"
-                  action={
-                    hasAlternativePurchase ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void patternAlternativesQuery.refetch();
-                        }}
-                        disabled={patternAlternativesQuery.isFetching}
-                        className="shrink-0 rounded-full border border-ufo-border-light bg-white px-2.5 py-1 text-xs font-semibold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        새로고침
-                      </button>
-                    ) : null
-                  }
-                >
+                <AlternativeYarnSection title="UFO 추천 대체실 순위">
                   {isResolvingAlternativePurchase ? (
                     <AlternativeSectionMessage>
                       구매 정보를 확인하고 있어요.
@@ -1233,15 +1412,10 @@ export default function PatternDetailScreen({
                         대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
                       </AlternativeSectionMessage>
                     ) : visibleAlternativeSets.length > 0 ? (
-                      <div className="space-y-4">
-                        {visibleAlternativeSets.map((item, itemIndex) => (
-                          <AlternativeYarnSetCards
-                            key={`${item.originalYarnSetId ?? "unknown"}-${itemIndex}`}
-                            yarnSet={item}
-                            setIndex={itemIndex}
-                          />
-                        ))}
-                      </div>
+                      <RankedAlternativeYarnGroups
+                        key={activeOriginalYarnSetId}
+                        sets={visibleAlternativeSets}
+                      />
                     ) : (
                       <AlternativeSectionMessage>
                         등록된 대체실 정보가 아직 없어요.
@@ -1254,12 +1428,6 @@ export default function PatternDetailScreen({
                       onPurchaseClick={handleAlternativePurchaseClick}
                     />
                   )}
-                </AlternativeYarnSection>
-
-                <AlternativeYarnSection title="사용자 등록 대체실">
-                  <AlternativeSectionMessage>
-                    등록된 사용자 대체실 정보가 아직 없어요.
-                  </AlternativeSectionMessage>
                 </AlternativeYarnSection>
               </div>
             )}
