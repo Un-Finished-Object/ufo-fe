@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import StateBlock from "@/components/common/StateBlock";
@@ -17,9 +18,12 @@ import { clearAccessToken } from "@/lib/auth/accessToken";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { buildApiUrl } from "@/lib/api/client";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
+import { myHelpMenuItems } from "@/features/my/lib/helpPages";
 
 type MenuItem = {
   label: string;
+  href?: string;
+  external?: boolean;
   onClick?: () => void | Promise<void>;
 };
 
@@ -28,19 +32,27 @@ function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
     <section>
       <h2 className="ml-8 pb-2 text-sm font-medium text-ufo-text-muted">{title}</h2>
       <div className="border-t border-ufo-border py-4">
-      <ul className="space-y-3 text-lg leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle ml-10">
-        {items.map((item) => (
-          <li key={item.label}>
-            {item.onClick ? (
-              <button type="button" onClick={item.onClick} className="text-inherit">
-                {item.label}
-              </button>
-            ) : (
-              item.label
-            )}
-          </li>
-        ))}
-      </ul>
+        <ul className="ml-10 space-y-3 text-lg leading-[1.15] tracking-[-0.02em] text-ufo-text-subtle">
+          {items.map((item) => (
+            <li key={item.label}>
+              {item.href && item.external ? (
+                <a href={item.href} target="_blank" rel="noreferrer" className="text-inherit">
+                  {item.label}
+                </a>
+              ) : item.href ? (
+                <Link href={item.href} className="text-inherit">
+                  {item.label}
+                </Link>
+              ) : item.onClick ? (
+                <button type="button" onClick={item.onClick} className="text-inherit">
+                  {item.label}
+                </button>
+              ) : (
+                item.label
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -105,16 +117,30 @@ export default function MyPage() {
 
   const isLoading = meQuery.isPending || (Boolean(meQuery.data) && walletQuery.isPending);
   const isError = meQuery.isError || walletQuery.isError;
+  const helpPageMenuItems = myHelpMenuItems.map((item) => ({
+    label: item.title,
+    href: item.href,
+    external: "external" in item ? item.external : undefined,
+  }));
+  const [
+    faqMenuItem,
+    noticesMenuItem,
+    creditGuideMenuItem,
+    inquiryMenuItem,
+    privacyPolicyMenuItem,
+    termsMenuItem,
+    withdrawalMenuItem,
+  ] = helpPageMenuItems;
   const helpMenuItems: MenuItem[] = [
-    { label: "FAQ" },
-    { label: "공지사항" },
+    faqMenuItem,
+    noticesMenuItem,
+    creditGuideMenuItem,
     { label: "출석체크", onClick: handleAttendanceClick },
-    { label: "1:1 문의" },
-    { label: "주문 조회" },
-    { label: "개인정보 처리방침" },
-    { label: "서비스 이용약관" },
+    inquiryMenuItem,
+    privacyPolicyMenuItem,
+    termsMenuItem,
     { label: "로그아웃", onClick: handleLogout },
-    { label: "회원탈퇴" },
+    withdrawalMenuItem,
   ];
 
   if (isLoading) {
@@ -216,8 +242,14 @@ export default function MyPage() {
                     안녕하세요! {nickname}님
                   </p>
                   <p className="pt-1 text-sm underline decoration-white/70 underline-offset-2">{email}</p>
-                  <div className="pt-3">
+                  <div className="flex flex-wrap items-center gap-2 pt-3">
                     <CreditBadge credits={walletQuery.data ?? 0} />
+                    <Link
+                      href="/my/credits"
+                      className="inline-flex min-h-7 items-center rounded-full bg-white/20 px-3 text-[11px] font-semibold text-white"
+                    >
+                      사용 기록
+                    </Link>
                   </div>
                 </div>
               </div>

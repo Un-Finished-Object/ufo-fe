@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import FilterChipGroup from "@/components/common/FilterChipGroup";
 import Footer from "@/components/common/Footer";
 import NavBar from "@/components/navigation/NavBar";
 import Pagination from "@/components/common/Pagination";
@@ -138,22 +139,15 @@ export default function PatternCatalogScreen() {
         <NavBar />
 
         <section className="mb-3 mt-2 px-4">
-          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {mainCategories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => handleMainCategoryClick(category)}
-                className={`h-7 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
-                  selectedMainCategory === category
-                    ? "bg-ufo-brand-soft text-ufo-text"
-                    : "border border-ufo-border bg-transparent text-ufo-text-secondary"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          <FilterChipGroup
+            options={mainCategories.map((category) => ({
+              label: category,
+              value: category,
+            }))}
+            value={selectedMainCategory}
+            onChange={handleMainCategoryClick}
+            wrap={false}
+          />
         </section>
 
         {selectedMainCategory === "의류" ? (
@@ -163,25 +157,19 @@ export default function PatternCatalogScreen() {
                 <button
                   type="button"
                   onClick={() => setSelectedClothingSubCategory(null)}
-                  className="whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 py-1.5 text-xs leading-none font-semibold text-ufo-text"
+                  className="h-7 whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 text-xs font-semibold text-ufo-text"
                 >
                   {selectedClothingSubCategory}
                 </button>
               ) : (
-                clothingSubCategories.map((subCategory) => (
-                  <button
-                    key={subCategory}
-                    type="button"
-                    onClick={() => handleClothingSubCategoryClick(subCategory)}
-                    className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs leading-none font-semibold ${
-                      selectedClothingSubCategory === subCategory
-                        ? "bg-ufo-brand-soft text-ufo-text"
-                        : "border border-ufo-border bg-transparent text-ufo-text-secondary"
-                    }`}
-                  >
-                    {subCategory}
-                  </button>
-                ))
+                <FilterChipGroup
+                  options={clothingSubCategories.map((subCategory) => ({
+                    label: subCategory,
+                    value: subCategory,
+                  }))}
+                  value={selectedClothingSubCategory ?? ""}
+                  onChange={handleClothingSubCategoryClick}
+                />
               )}
             </div>
           </section>
