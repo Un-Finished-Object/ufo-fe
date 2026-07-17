@@ -891,7 +891,7 @@ function OriginalYarnSetCards({
     <div className="space-y-3">
       {getOriginalYarnEntries(yarnSet).map((entry) => (
         <div key={`${entry.label}-${entry.yarn.yarnId}`}>
-          <p className="mb-1 px-1 text-xs font-bold text-ufo-text-secondary">
+          <p className="mb-1 px-1 text-sm font-bold text-ufo-text-secondary">
             {entry.label}
           </p>
           <YarnInfoCard card={getOriginalYarnCardData(entry.yarn)} />
@@ -923,7 +923,7 @@ function RankedAlternativeYarnList({
 
   return (
     <div className="space-y-3">
-      <p className="px-1 text-xs font-bold text-ufo-text-secondary">{label}</p>
+      <p className="px-1 text-sm font-bold text-ufo-text-secondary">{label}</p>
       {pageItems.map((item, itemIndex) => (
         <YarnInfoCard
           key={item.altId ?? `${item.yarnId ?? "unknown"}-${item.ranking ?? itemIndex}`}
@@ -966,7 +966,7 @@ function AlternativeYarnSection({
   return (
     <section className="border-t border-ufo-border-light pt-4 first:border-t-0 first:pt-0">
       <div className="mb-2 flex items-center justify-between gap-3 px-1">
-        <h3 className="text-sm font-bold text-ufo-text">{title}</h3>
+        <h3 className="text-base font-bold text-ufo-text">{title}</h3>
         {action}
       </div>
       {children}
