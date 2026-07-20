@@ -151,7 +151,7 @@ export default function SignupScreen() {
             }
           : previous,
       );
-      router.replace("/");
+      router.replace("/onboarding");
     },
     onError: (error) => {
       setToastMessage(
