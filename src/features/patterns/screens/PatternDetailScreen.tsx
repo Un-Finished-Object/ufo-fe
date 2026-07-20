@@ -3,7 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import StateBlock from "@/components/common/StateBlock";
 import Pagination from "@/components/common/Pagination";
 import ToastMessage from "@/components/common/ToastMessage";
@@ -145,93 +152,247 @@ function AlternativePurchaseGate({
   disabled,
   onPurchaseClick,
 }: AlternativePurchaseGateProps) {
-  const [isFooterVisible, setIsFooterVisible] = useState(false);
-  const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sentinel = bottomSentinelRef.current;
-
-      if (!sentinel) {
-        return;
-      }
-
-      const sentinelTop = sentinel.getBoundingClientRect().top;
-      const viewportHeight = window.innerHeight;
-      const hasUserScrolled = window.scrollY > 24;
-
-      setIsFooterVisible(hasUserScrolled && sentinelTop <= viewportHeight - 24);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
-
   return (
-    <div className="pb-44">
-      <div aria-hidden="true" className="space-y-4 px-5 pb-4 pt-2">
-        {alternativePreviewCards.map((cardIndex) => (
+    <div className="overflow-hidden rounded-2xl border border-ufo-border-light bg-ufo-brand-pale">
+      <div className="relative px-4 pb-5 pt-4">
+        <div aria-hidden="true" className="space-y-3 opacity-70">
+          {alternativePreviewCards.slice(0, 2).map((cardIndex) => (
           <article
             key={cardIndex}
-            className={`rounded-[18px] border border-ufo-text-muted/35 bg-ufo-brand-pale px-4 py-4 ${
-              cardIndex === 0 ? "" : "opacity-60 blur-[1.5px]"
-            }`}
+            className="rounded-xl border border-ufo-border-light bg-ufo-surface px-3 py-3 blur-[1px]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <span className="block h-4 w-24 rounded-full bg-ufo-surface/90" />
-                <div className="mt-3 space-y-2">
-                  <span className="block h-2.5 w-full max-w-[168px] rounded-full bg-white/95" />
-                  <span className="block h-2.5 w-full max-w-[132px] rounded-full bg-white/75" />
+                <span className="block h-3.5 w-24 rounded-full bg-ufo-brand-soft" />
+                <div className="mt-2.5 space-y-2">
+                  <span className="block h-2.5 w-full max-w-[168px] rounded-full bg-ufo-brand-pale" />
+                  <span className="block h-2.5 w-full max-w-[132px] rounded-full bg-ufo-brand-pale" />
                 </div>
               </div>
-              <span className="mt-1 block h-10 w-10 rounded-full bg-white/85" />
-            </div>
-
-            <div className="mt-4 flex items-end justify-between">
-              <span className="block h-3 w-20 rounded-full bg-white/70" />
-              <span className="block h-4 w-16 rounded-full bg-ufo-border/60" />
+              <span className="mt-1 block h-8 w-12 rounded-full bg-ufo-brand-pale" />
             </div>
           </article>
-        ))}
+          ))}
+        </div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-ufo-surface/80 px-5 text-center">
+          <span className="text-sm font-bold text-ufo-text">추천 대체실 정보가 잠겨 있어요</span>
+          <span className="mt-1 text-xs leading-5 text-ufo-text-secondary">
+            순위와 유사도, 구매 정보를 평생 확인해보세요.
+          </span>
+        </div>
       </div>
 
-      <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
+      <div className="border-t border-ufo-border-light bg-ufo-surface p-3">
+        <button
+          type="button"
+          onClick={onPurchaseClick}
+          disabled={disabled}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-ufo-brand px-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span>대체실 정보 평생 소장하기</span>
+          <CreditBadge credits={credits} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
+type AlternativePurchaseSheetProps = {
+  credits: number;
+  currentCreditText: string;
+  walletStatus: "loading" | "error" | "ready";
+  hasEnoughCredits: boolean;
+  isPending: boolean;
+  errorMessage: string | null;
+  onPurchase: () => void;
+  onRetryWallet: () => void;
+  onClose: () => void;
+};
+
+function AlternativePurchaseSheet({
+  credits,
+  currentCreditText,
+  walletStatus,
+  hasEnoughCredits,
+  isPending,
+  errorMessage,
+  onPurchase,
+  onRetryWallet,
+  onClose,
+}: AlternativePurchaseSheetProps) {
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const canPurchase = walletStatus === "ready" && hasEnoughCredits && !isPending;
+  const benefits = [
+    "원작실 조합별 추천 대체실 순위",
+    "성분·길이·게이지·바늘 유사도",
+    "실 가격과 구매처 정보",
+    "사용자 좋아요와 댓글",
+  ];
+
+  useEffect(() => {
+    const previouslyFocusedElement = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previouslyFocusedElement instanceof HTMLElement) {
+        previouslyFocusedElement.focus();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape" && !isPending) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isPending, onClose]);
+
+  const handleSheetKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      sheetRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements.at(-1);
+
+    if (!firstElement || !lastElement) {
+      event.preventDefault();
+      return;
+    }
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="alternative-purchase-title"
+    >
+      <button
+        type="button"
+        aria-label="구매 안내 닫기"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+        disabled={isPending}
+        tabIndex={-1}
+      />
       <div
-        className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center transition-all duration-500 ease-out ${
-          isFooterVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
+        ref={sheetRef}
+        onKeyDown={handleSheetKeyDown}
+        className="relative max-h-[90dvh] w-full max-w-[430px] overflow-y-auto rounded-t-2xl bg-ufo-surface px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-lg"
       >
-        <div className="pointer-events-auto w-full max-w-[430px] bg-ufo-border px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8">
-          <p className="text-lg leading-[1.25] tracking-[-0.02em] text-ufo-text">
-            더 많은 대체실 정보를 확인해보세요.
-          </p>
-          <p className="mt-3 text-[14px] leading-6 text-ufo-text-secondary">
-            아래 버튼을 클릭하시면, 해당 도안의 유용한 대체실 정보를 구매하실 수 있습니다.
-          </p>
-
+        <div aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-ufo-border-light" />
+        <div className="mt-5 flex items-start justify-between gap-3">
+          <div>
+            <h2 id="alternative-purchase-title" className="text-lg font-bold text-ufo-text">
+              추천 대체실 평생 소장
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-ufo-text-secondary">
+              이 도안의 모든 원작실 조합에 대한 추천 정보를 계속 확인할 수 있어요.
+            </p>
+          </div>
           <button
+            ref={closeButtonRef}
             type="button"
-            onClick={onPurchaseClick}
-            disabled={disabled}
-            className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-ufo-surface px-3 text-sm font-bold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onClose}
+            disabled={isPending}
+            className="min-h-8 shrink-0 rounded-full px-2 text-xs font-semibold text-ufo-text-secondary disabled:opacity-50"
           >
-            <span>대체실 정보 평생소장하기</span>
-            <CreditBadge
-              credits={credits}
-              className="bg-transparent text-ufo-credit"
-              circleClassName="text-ufo-credit"
-              starClassName="text-ufo-surface"
-            />
+            닫기
           </button>
         </div>
+
+        <ul className="mt-5 space-y-3 rounded-xl bg-ufo-brand-pale p-4">
+          {benefits.map((benefit) => (
+            <li key={benefit} className="flex items-start gap-2 text-sm text-ufo-text-secondary">
+              <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ufo-brand" />
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
+
+        <dl className="mt-5 space-y-2 border-y border-ufo-border-light py-4 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-ufo-text-secondary">필요 크레딧</dt>
+            <dd className="font-bold text-ufo-text">{credits} 크레딧</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-ufo-text-secondary">보유 크레딧</dt>
+            <dd
+              className={`font-bold ${
+                walletStatus === "error" ||
+                (walletStatus === "ready" && !hasEnoughCredits)
+                  ? "text-ufo-error"
+                  : "text-ufo-text"
+              }`}
+            >
+              {currentCreditText}
+            </dd>
+          </div>
+        </dl>
+
+        {walletStatus === "error" ? (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-ufo-error">크레딧 정보를 불러오지 못했어요.</p>
+            <button
+              type="button"
+              onClick={onRetryWallet}
+              className="min-h-8 shrink-0 rounded-full px-2 text-xs font-bold text-ufo-brand"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : walletStatus === "ready" && !hasEnoughCredits ? (
+          <p className="mt-3 text-xs text-ufo-error">
+            보유 크레딧이 부족해 구매할 수 없어요.
+          </p>
+        ) : null}
+
+        {errorMessage ? (
+          <p className="mt-3 text-xs text-ufo-error">{errorMessage}</p>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={onPurchase}
+          disabled={!canPurchase}
+          className="mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-ufo-brand px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isPending
+            ? "구매 처리 중..."
+            : walletStatus === "loading"
+              ? "크레딧 확인 중..."
+              : walletStatus === "error"
+                ? "크레딧 확인 필요"
+                : !hasEnoughCredits
+                  ? "크레딧이 부족해요"
+                  : `${credits} 크레딧 사용하고 소장하기`}
+        </button>
+        <p className="mt-2 text-center text-[11px] text-ufo-text-muted">
+          구매한 정보는 기간 제한 없이 확인할 수 있어요.
+        </p>
       </div>
     </div>
   );
@@ -1105,14 +1266,19 @@ export default function PatternDetailScreen({
     (isAuthenticated && purchaseStatusQuery.isPending);
   const shouldShowChatCreditBadge =
     pattern !== null && authStatus !== "loading" && !hasChatPurchase;
-  const currentCreditText = walletQuery.isPending
-    ? "불러오는 중..."
-    : `${walletQuery.data ?? 0} 크레딧`;
-  const isPurchaseDialogOpen = purchaseDialogType !== null;
-  const purchaseDialogTitle =
-    purchaseDialogType === "alternative"
-      ? "대체실 정보를 구매하시겠습니까?"
-      : "채팅방에 입장하시겠습니까?";
+  const walletStatus = walletQuery.isPending || walletQuery.isFetching
+    ? "loading"
+    : walletQuery.isError
+      ? "error"
+      : "ready";
+  const currentCreditText =
+    walletStatus === "loading"
+      ? "불러오는 중..."
+      : walletStatus === "error"
+        ? "확인할 수 없음"
+        : `${walletQuery.data ?? 0} 크레딧`;
+  const hasEnoughCredits =
+    walletStatus === "ready" && (walletQuery.data ?? 0) >= patternAccessCredits;
   const purchaseDialogErrorText =
     purchaseDialogType === "alternative"
       ? "대체실 정보 구매에 실패했어요. 잠시 후 다시 시도해주세요."
@@ -1476,9 +1642,9 @@ export default function PatternDetailScreen({
         </section>
       </MobileShell>
 
-      {isPurchaseDialogOpen ? (
+      {purchaseDialogType === "chat" ? (
         <YesOrNo
-          mainText={purchaseDialogTitle}
+          mainText="채팅방에 입장하시겠습니까?"
           subText={
             <>
               <span className="block">현재 크레딧 {currentCreditText}</span>
@@ -1501,9 +1667,32 @@ export default function PatternDetailScreen({
           }}
           onYes={() => {
             setPurchaseErrorMessage(null);
-            purchaseAccessMutation.mutate({
-              type: purchaseDialogType === "alternative" ? "yarn" : "chat",
-            });
+            purchaseAccessMutation.mutate({ type: "chat" });
+          }}
+        />
+      ) : null}
+      {purchaseDialogType === "alternative" ? (
+        <AlternativePurchaseSheet
+          credits={patternAccessCredits}
+          currentCreditText={currentCreditText}
+          walletStatus={walletStatus}
+          hasEnoughCredits={hasEnoughCredits}
+          isPending={purchaseAccessMutation.isPending}
+          errorMessage={purchaseErrorMessage}
+          onRetryWallet={() => {
+            void walletQuery.refetch();
+          }}
+          onClose={() => {
+            if (purchaseAccessMutation.isPending) {
+              return;
+            }
+
+            setPurchaseErrorMessage(null);
+            setPurchaseDialogType(null);
+          }}
+          onPurchase={() => {
+            setPurchaseErrorMessage(null);
+            purchaseAccessMutation.mutate({ type: "yarn" });
           }}
         />
       ) : null}
