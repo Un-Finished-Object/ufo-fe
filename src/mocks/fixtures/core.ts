@@ -27,22 +27,156 @@ export const mockPatternDetail = {
     requiredYarnAmount: "약 900m",
     size: "S (M) L",
     actualSize: "가슴둘레 96 (104) 112cm",
-    originalYarn: [{
-      originalYarnSetId: 1,
-      firstYarn: {
-        yarnId: 1,
-        yarnName: "메리노 포근",
-        weight: 50,
-        cost: 9000,
-        component: "메리노울 100%",
-        store: "UFO 실가게",
-        length: 120,
+    originalYarn: [
+      {
+        originalYarnSetId: 1,
+        firstYarn: {
+          yarnId: 1,
+          yarnName: "메리노 포근",
+          ply: 2,
+          weight: 50,
+          cost: 9000,
+          component: "메리노울 100%",
+          store: "UFO 실가게",
+          length: 120,
+        },
+        secondYarn: {
+          yarnId: 2,
+          yarnName: "메리노 포인트 핑크",
+          ply: 2,
+          weight: 50,
+          cost: 8500,
+          component: "메리노울 100%",
+          store: "UFO 실가게",
+          length: 120,
+        },
+        subYarn: null,
       },
-      secondYarn: null,
-      subYarn: null,
-    }],
+      {
+        originalYarnSetId: 2,
+        firstYarn: {
+          yarnId: 1,
+          yarnName: "메리노 포근",
+          ply: 2,
+          weight: 50,
+          cost: 9000,
+          component: "메리노울 100%",
+          store: "UFO 실가게",
+          length: 120,
+        },
+        secondYarn: {
+          yarnId: 3,
+          yarnName: "메리노 포인트 블루",
+          ply: 2,
+          weight: 50,
+          cost: 8500,
+          component: "메리노울 100%",
+          store: "UFO 실가게",
+          length: 120,
+        },
+        subYarn: null,
+      },
+      {
+        originalYarnSetId: 3,
+        firstYarn: {
+          yarnId: 4,
+          yarnName: "알파카 포근",
+          ply: 1,
+          weight: 50,
+          cost: 11000,
+          component: "알파카 90%, 나일론 10%",
+          store: "솜솜뜨개",
+          length: 130,
+        },
+        secondYarn: {
+          yarnId: 5,
+          yarnName: "알파카 포인트",
+          ply: 1,
+          weight: 50,
+          cost: 10500,
+          component: "알파카 90%, 나일론 10%",
+          store: "솜솜뜨개",
+          length: 130,
+        },
+        subYarn: null,
+      },
+    ],
   },
 };
+
+export const mockPatternDetails = Object.fromEntries(
+  mockPatterns.map((pattern) => [
+    pattern.id,
+    {
+      ...mockPatternDetail,
+      ...pattern,
+      images: [pattern.thumbnailUrl],
+      meta: {
+        ...mockPatternDetail.meta,
+        originalYarn:
+          pattern.id === mockPatternDetail.id
+            ? mockPatternDetail.meta.originalYarn
+            : [],
+      },
+    },
+  ]),
+);
+
+const mockYarnNames = [
+  "데일리 메리노",
+  "앨모",
+  "포근 알파카",
+  "클라우드 울",
+  "소프트 캐시미어",
+];
+
+function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: number) {
+  return Array.from({ length: 15 }, (_, index) => {
+    const ranking = index + 1;
+    const altId = originalYarnSetId * 1000 + roleOffset + ranking;
+
+    return {
+      altId,
+      ranking,
+      yarnId: altId + 100,
+      yarnName: `${mockYarnNames[index % mockYarnNames.length]} ${ranking}`,
+      ply: (index % 4) + 1,
+      weight: 50 + (index % 3) * 25,
+      cost: 7500 + index * 500,
+      component: index % 2 === 0 ? "메리노울 100%" : "알파카 90%, 나일론 10%",
+      store: index % 2 === 0 ? "UFO 실가게" : "솜솜뜨개",
+      length: 120 + index * 5,
+      componentScore: Math.max(70, 100 - index),
+      lengthScore: Math.max(70, 98 - index),
+      gaugeScore: Math.max(70, 96 - index),
+      needleScore: Math.max(70, 94 - index),
+      username: "admin",
+    };
+  });
+}
+
+export function createMockPatternAlternatives(originalYarnSetId: number) {
+  const originalYarnSet = mockPatternDetail.meta.originalYarn.find(
+    (yarnSet) => yarnSet.originalYarnSetId === originalYarnSetId,
+  );
+
+  if (!originalYarnSet) {
+    return [];
+  }
+
+  return [{
+    originalYarnSetId,
+    firstYarn: originalYarnSet.firstYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 0)
+      : [],
+    secondYarn: originalYarnSet.secondYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 100)
+      : [],
+    subYarn: originalYarnSet.subYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 200)
+      : [],
+  }];
+}
 
 export const mockChats = [{
   patternId: 1,

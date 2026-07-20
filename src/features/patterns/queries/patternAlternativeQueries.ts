@@ -10,6 +10,7 @@ import {
 
 type PatternAlternativeItemResponse = {
   altId?: number | null;
+  ranking?: number | null;
   yarnId?: number | null;
   yarnName?: string | null;
   ply?: number | null;
@@ -27,9 +28,9 @@ type PatternAlternativeItemResponse = {
 
 type PatternAlternativeSetResponse = {
   originalYarnSetId?: number | null;
-  firstYarn?: PatternAlternativeItemResponse | null;
-  secondYarn?: PatternAlternativeItemResponse | null;
-  subYarn?: PatternAlternativeItemResponse | null;
+  firstYarn?: PatternAlternativeItemResponse[] | null;
+  secondYarn?: PatternAlternativeItemResponse[] | null;
+  subYarn?: PatternAlternativeItemResponse[] | null;
 };
 
 type PatternAlternativesResponse = {
@@ -41,6 +42,7 @@ type PatternAlternativesResponse = {
 
 export type PatternAlternativeItem = {
   altId: number | null;
+  ranking: number | null;
   yarnId: number | null;
   yarnName: string;
   ply: number | null;
@@ -58,9 +60,9 @@ export type PatternAlternativeItem = {
 
 export type PatternAlternativeSet = {
   originalYarnSetId: number | null;
-  firstYarn: PatternAlternativeItem | null;
-  secondYarn: PatternAlternativeItem | null;
-  subYarn: PatternAlternativeItem | null;
+  firstYarn: PatternAlternativeItem[];
+  secondYarn: PatternAlternativeItem[];
+  subYarn: PatternAlternativeItem[];
 };
 
 function getSafeText(value?: string | null) {
@@ -73,6 +75,7 @@ function mapPatternAlternativeItem(
 ): PatternAlternativeItem {
   return {
     altId: typeof item.altId === "number" ? item.altId : null,
+    ranking: typeof item.ranking === "number" ? item.ranking : null,
     yarnId: typeof item.yarnId === "number" ? item.yarnId : null,
     yarnName: getSafeText(item.yarnName),
     ply: typeof item.ply === "number" ? item.ply : null,
@@ -89,10 +92,8 @@ function mapPatternAlternativeItem(
   };
 }
 
-function mapNullablePatternAlternativeItem(
-  item?: PatternAlternativeItemResponse | null,
-) {
-  return item ? mapPatternAlternativeItem(item) : null;
+function mapPatternAlternativeItems(items?: PatternAlternativeItemResponse[] | null) {
+  return Array.isArray(items) ? items.map(mapPatternAlternativeItem) : [];
 }
 
 function mapPatternAlternativeSet(
@@ -101,9 +102,9 @@ function mapPatternAlternativeSet(
   return {
     originalYarnSetId:
       typeof item.originalYarnSetId === "number" ? item.originalYarnSetId : null,
-    firstYarn: mapNullablePatternAlternativeItem(item.firstYarn),
-    secondYarn: mapNullablePatternAlternativeItem(item.secondYarn),
-    subYarn: mapNullablePatternAlternativeItem(item.subYarn),
+    firstYarn: mapPatternAlternativeItems(item.firstYarn),
+    secondYarn: mapPatternAlternativeItems(item.secondYarn),
+    subYarn: mapPatternAlternativeItems(item.subYarn),
   };
 }
 

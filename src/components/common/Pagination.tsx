@@ -2,6 +2,7 @@ type PaginationProps = {
   currentPage: number;
   nextPage: number;
   onPageChange: (page: number) => void;
+  className?: string;
 };
 
 function getPageNumbers(currentPage: number, nextPage: number) {
@@ -21,13 +22,18 @@ function getPageNumbers(currentPage: number, nextPage: number) {
   return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
 }
 
-export default function Pagination({ currentPage, nextPage, onPageChange }: PaginationProps) {
+export default function Pagination({
+  currentPage,
+  nextPage,
+  onPageChange,
+  className = "py-6",
+}: PaginationProps) {
   const pages = getPageNumbers(currentPage, nextPage);
 
   if (pages.length <= 1) return null;
 
   return (
-    <nav className="flex items-center justify-center gap-1 py-6" aria-label="페이지 탐색">
+    <nav className={`flex items-center justify-center gap-1 ${className}`} aria-label="페이지 탐색">
       {pages.map((page) => {
         const isCurrentPage = currentPage === page;
 

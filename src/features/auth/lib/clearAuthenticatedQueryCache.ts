@@ -6,6 +6,8 @@ import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
 import { homeQueryKeys } from "@/features/home/queries/homeQueries";
 import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import { patternAlternativesQueryRoot } from "@/features/patterns/queries/patternAlternativeQueries";
+import { alternativeReactionQueryRoot } from "@/features/patterns/queries/patternAlternativeReactionQueries";
+import { alternativeCommentsQueryRoot } from "@/features/patterns/queries/patternAlternativeCommentQueries";
 import { patternCatalogQueryKeys } from "@/features/patterns/queries/patternCatalogQueries";
 import { patternDetailQueryRoot } from "@/features/patterns/queries/patternDetailQueries";
 import { patternPurchaseQueryRoot } from "@/features/patterns/queries/patternPurchaseQueries";
@@ -20,6 +22,8 @@ const authenticatedQueryRoots = [
   myActivityQueryKeys.all,
   patternPurchaseQueryRoot,
   patternAlternativesQueryRoot,
+  alternativeReactionQueryRoot,
+  alternativeCommentsQueryRoot,
   patternScrapQueryKeys.all,
   homeQueryKeys.all,
   patternCatalogQueryKeys.all,
