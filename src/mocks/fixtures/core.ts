@@ -130,10 +130,10 @@ const mockYarnNames = [
   "소프트 캐시미어",
 ];
 
-function createMockAlternativeYarns(roleOffset: number) {
+function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: number) {
   return Array.from({ length: 15 }, (_, index) => {
     const ranking = index + 1;
-    const altId = roleOffset + ranking;
+    const altId = originalYarnSetId * 1000 + roleOffset + ranking;
 
     return {
       altId,
@@ -156,11 +156,25 @@ function createMockAlternativeYarns(roleOffset: number) {
 }
 
 export function createMockPatternAlternatives(originalYarnSetId: number) {
+  const originalYarnSet = mockPatternDetail.meta.originalYarn.find(
+    (yarnSet) => yarnSet.originalYarnSetId === originalYarnSetId,
+  );
+
+  if (!originalYarnSet) {
+    return [];
+  }
+
   return [{
     originalYarnSetId,
-    firstYarn: createMockAlternativeYarns(0),
-    secondYarn: createMockAlternativeYarns(100),
-    subYarn: createMockAlternativeYarns(200),
+    firstYarn: originalYarnSet.firstYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 0)
+      : [],
+    secondYarn: originalYarnSet.secondYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 100)
+      : [],
+    subYarn: originalYarnSet.subYarn
+      ? createMockAlternativeYarns(originalYarnSetId, 200)
+      : [],
   }];
 }
 
