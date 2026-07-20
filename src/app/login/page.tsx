@@ -10,11 +10,13 @@ import TopBar from "@/components/navigation/TopBar";
 import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { buildApiUrl } from "@/lib/api/client";
+import { markOAuthFlowStarted } from "@/features/auth/lib/oauthFlowSession";
 
 type Provider = "google" | "kakao" | "naver";
 
 const errorMessages: Record<string, string> = {
   oauth_failed: "소셜 로그인에 실패했습니다. 다시 시도해 주세요.",
+  oauth_invalid_entry: "소셜 로그인을 먼저 진행해 주세요.",
   unauthorized: "사용자 인증에 실패했습니다. 다시 로그인해 주세요.",
   network: "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
 };
@@ -71,6 +73,7 @@ function LoginPageContent() {
   }, [meQuery.data, router]);
 
   const handleSocialLogin = (provider: Provider) => {
+    markOAuthFlowStarted();
     const redirectUri = `${window.location.origin}/auth/complete`;
     const oauthStartUrl = buildApiUrl(
       `/v1/auth/login/${provider}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,

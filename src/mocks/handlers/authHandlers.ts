@@ -15,9 +15,18 @@ export const authHandlers = [
   http.patch("/v1/users/me", async ({ request }) => {
     await applyMockDelay();
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    const body = await request.json() as Partial<{ nickname: string; profileImage: string }>;
-    mockState.user = { ...mockState.user, ...body };
+    const body = await request.json() as { userName?: string | null; profileImageKey?: string | null };
+    mockState.user = {
+      ...mockState.user,
+      ...(body.userName ? { nickname: body.userName } : {}),
+      ...(body.profileImageKey ? { profileImage: "/mock/pattern-card.svg" } : {}),
+    };
     return apiSuccess(mockState.user);
+  }),
+  http.get("/v1/users/nicknames/:username/check", async ({ params }) => {
+    await applyMockDelay();
+    const username = String(params.username ?? "");
+    return apiSuccess({ exists: username === mockState.user.nickname });
   }),
   http.post("/v1/auth/logout", async () => {
     mockState.authenticated = false;
