@@ -1,7 +1,7 @@
 import { http } from "msw";
 import {
   createMockPatternAlternatives,
-  mockPatternDetail,
+  mockPatternDetails,
   mockPatterns,
 } from "@/mocks/fixtures/core";
 import { mockState } from "@/mocks/state/mockState";
@@ -44,12 +44,10 @@ export const patternHandlers = [
   http.get("/v1/patterns/:patternId", async ({ params }) => {
     await applyMockDelay();
     const patternId = Number(params.patternId);
-    const pattern = mockPatterns.find((item) => item.id === patternId);
-    if (!pattern) return apiError(404, "Pattern not found");
+    const patternDetail = mockPatternDetails[patternId];
+    if (!patternDetail) return apiError(404, "Pattern not found");
     return apiSuccess({
-      ...mockPatternDetail,
-      ...pattern,
-      images: [pattern.thumbnailUrl],
+      ...patternDetail,
       my: { scrapped: mockState.scrappedPatternIds.has(patternId) },
     });
   }),

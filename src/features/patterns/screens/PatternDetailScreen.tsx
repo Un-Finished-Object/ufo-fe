@@ -730,11 +730,19 @@ function getOriginalYarnCardData(yarn: OriginalYarn): YarnInfoCardData {
 
 function getOriginalYarnEntries(yarnSet: OriginalYarnSet) {
   return [
-    { label: "메인실", yarn: yarnSet.firstYarn },
-    yarnSet.secondYarn ? { label: "배색실", yarn: yarnSet.secondYarn } : null,
-    yarnSet.subYarn ? { label: "합사실", yarn: yarnSet.subYarn } : null,
+    { role: "first" as const, label: "메인실", yarn: yarnSet.firstYarn },
+    yarnSet.secondYarn
+      ? { role: "second" as const, label: "배색실", yarn: yarnSet.secondYarn }
+      : null,
+    yarnSet.subYarn
+      ? { role: "sub" as const, label: "합사실", yarn: yarnSet.subYarn }
+      : null,
   ].filter(
-    (entry): entry is { label: string; yarn: OriginalYarn } => entry !== null,
+    (entry): entry is {
+      role: OriginalYarnRole;
+      label: string;
+      yarn: OriginalYarn;
+    } => entry !== null,
   );
 }
 
@@ -833,105 +841,6 @@ function findOriginalYarnSetIndex(
   return nextIndex === -1 ? null : nextIndex;
 }
 
-function OriginalYarnSelectButton({
-  label,
-  value,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-ufo-border-light bg-white px-3 py-2 text-left"
-    >
-      <span>
-        <span className="block text-[11px] font-semibold text-ufo-text-muted">
-          {label}
-        </span>
-        <span className="mt-0.5 block break-words text-sm font-bold text-ufo-text">
-          {value}
-        </span>
-      </span>
-      <span aria-hidden="true" className="shrink-0 text-sm font-bold text-ufo-brand">
-        선택
-      </span>
-    </button>
-  );
-}
-
-function OriginalYarnSelector({
-  activeYarnSet,
-  originalYarnSets,
-  onOpen,
-}: {
-  activeYarnSet: OriginalYarnSet;
-  originalYarnSets: OriginalYarnSet[];
-  onOpen: (role: OriginalYarnRole) => void;
-}) {
-  const firstOptions = getOriginalYarnRoleOptions(
-    originalYarnSets,
-    activeYarnSet,
-    "first",
-  );
-  const secondOptions = getOriginalYarnRoleOptions(
-    originalYarnSets,
-    activeYarnSet,
-    "second",
-  );
-  const subOptions = getOriginalYarnRoleOptions(originalYarnSets, activeYarnSet, "sub");
-  const selectButtons = [
-    firstOptions.length > 0
-      ? {
-          role: "first" as const,
-          label: "메인실",
-          value: getYarnName(activeYarnSet.firstYarn),
-        }
-      : null,
-    secondOptions.length > 0
-      ? {
-          role: "second" as const,
-          label: "배색실",
-          value: activeYarnSet.secondYarn
-            ? getYarnName(activeYarnSet.secondYarn)
-            : "배색실 없음",
-        }
-      : null,
-    subOptions.length > 0
-      ? {
-          role: "sub" as const,
-          label: "합사실",
-          value: activeYarnSet.subYarn
-            ? getYarnName(activeYarnSet.subYarn)
-            : "합사실 없음",
-        }
-      : null,
-  ].filter(
-    (button): button is { role: OriginalYarnRole; label: string; value: string } =>
-      button !== null,
-  );
-
-  if (selectButtons.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mb-3 grid gap-2">
-      {selectButtons.map((button) => (
-        <OriginalYarnSelectButton
-          key={button.role}
-          label={button.label}
-          value={button.value}
-          onClick={() => onOpen(button.role)}
-        />
-      ))}
-    </div>
-  );
-}
-
 function OriginalYarnSelectSheet({
   role,
   options,
@@ -1000,19 +909,38 @@ function OriginalYarnSelectSheet({
 
 function OriginalYarnSetCards({
   yarnSet,
+  originalYarnSets,
+  onOpen,
 }: {
   yarnSet: OriginalYarnSet;
+  originalYarnSets: OriginalYarnSet[];
+  onOpen: (role: OriginalYarnRole) => void;
 }) {
   return (
     <div className="space-y-3">
-      {getOriginalYarnEntries(yarnSet).map((entry) => (
-        <div key={`${entry.label}-${entry.yarn.yarnId}`}>
-          <p className="mb-1 px-1 text-sm font-bold text-ufo-text-secondary">
-            {entry.label}
-          </p>
-          <YarnInfoCard card={getOriginalYarnCardData(entry.yarn)} />
-        </div>
-      ))}
+      {getOriginalYarnEntries(yarnSet).map((entry) => {
+        const canSelect =
+          getOriginalYarnRoleOptions(originalYarnSets, yarnSet, entry.role).length > 1;
+
+        return (
+          <div key={`${entry.label}-${entry.yarn.yarnId}`}>
+            <div className="mb-1 flex min-h-8 items-center justify-between gap-2 px-1">
+              <p className="text-sm font-bold text-ufo-text-secondary">{entry.label}</p>
+              {canSelect ? (
+                <button
+                  type="button"
+                  onClick={() => onOpen(entry.role)}
+                  className="min-h-8 rounded-full px-2 text-xs font-bold text-ufo-brand"
+                  aria-label={`${entry.label} 선택`}
+                >
+                  선택
+                </button>
+              ) : null}
+            </div>
+            <YarnInfoCard card={getOriginalYarnCardData(entry.yarn)} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1494,14 +1422,11 @@ export default function PatternDetailScreen({
               <div className="space-y-4">
                 <AlternativeYarnSection title="원작실">
                   {activeOriginalYarnSet ? (
-                    <>
-                      <OriginalYarnSelector
-                        activeYarnSet={activeOriginalYarnSet}
-                        originalYarnSets={originalYarnSets}
-                        onOpen={setSelectedOriginalYarnRole}
-                      />
-                      <OriginalYarnSetCards yarnSet={activeOriginalYarnSet} />
-                    </>
+                    <OriginalYarnSetCards
+                      yarnSet={activeOriginalYarnSet}
+                      originalYarnSets={originalYarnSets}
+                      onOpen={setSelectedOriginalYarnRole}
+                    />
                   ) : (
                     <AlternativeSectionMessage>
                       등록된 원작실 정보가 없어요.
