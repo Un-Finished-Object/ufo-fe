@@ -195,6 +195,7 @@ export default function MainForYouSection({
                     <PatternCard
                       imageSrc={item.image}
                       imageRatio="5:4"
+                      imageSizes="156px"
                       title={item.title}
                       author={item.author}
                       patternId={item.id}

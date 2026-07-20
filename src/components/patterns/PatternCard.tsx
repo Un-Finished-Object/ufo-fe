@@ -21,6 +21,7 @@ type PatternCardProps = {
   author: string;
   patternId?: number;
   alt?: string;
+  imageSizes?: string;
   isScrapped?: boolean;
   heartVariant?: HeartIconVariant;
   heartClassName?: string;
@@ -42,6 +43,7 @@ export default function PatternCard({
   author,
   patternId,
   alt,
+  imageSizes = "(max-width: 430px) calc((100vw - 48px) / 2), 191px",
   isScrapped = false,
   heartVariant,
   heartClassName,
@@ -129,10 +131,22 @@ export default function PatternCard({
         >
         {patternHref ? (
           <Link href={patternHref} className="block h-full w-full">
-            <Image src={imageSrc} alt={alt ?? `${title} image`} fill className="object-cover" />
+            <Image
+              src={imageSrc}
+              alt={alt ?? `${title} image`}
+              fill
+              sizes={imageSizes}
+              className="object-cover"
+            />
           </Link>
         ) : (
-          <Image src={imageSrc} alt={alt ?? `${title} image`} fill className="object-cover" />
+          <Image
+            src={imageSrc}
+            alt={alt ?? `${title} image`}
+            fill
+            sizes={imageSizes}
+            className="object-cover"
+          />
         )}
         {showHeart ? (
           <div className="absolute bottom-2 right-2 z-10">

@@ -104,6 +104,7 @@ export default function HomeLandingScreen() {
                     <PatternCard
                       imageSrc={item.image}
                       imageRatio="1:1"
+                      imageSizes="140px"
                       title={item.title}
                       author={item.author}
                       patternId={item.id}
