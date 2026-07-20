@@ -45,7 +45,7 @@ export default function AuthCompletePage() {
           ...walletQueryOptions(),
           staleTime: 0,
         });
-        router.replace("/");
+        router.replace("/auth/signup");
       } catch {
         router.replace("/login?error=oauth_failed");
       }
