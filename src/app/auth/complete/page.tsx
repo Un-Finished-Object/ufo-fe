@@ -10,6 +10,7 @@ import {
   walletQueryOptions,
 } from "@/features/auth/queries/userQueries";
 import MobileShell from "@/components/layout/MobileShell";
+import { clearOAuthFlow } from "@/features/auth/lib/oauthFlowSession";
 
 export default function AuthCompletePage() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function AuthCompletePage() {
     let isMounted = true;
 
     const finalizeLogin = async () => {
+      clearOAuthFlow();
+
       try {
         const refreshResponse = await refreshAccessToken({ mode: "required" });
 
@@ -45,7 +48,7 @@ export default function AuthCompletePage() {
           ...walletQueryOptions(),
           staleTime: 0,
         });
-        router.replace("/auth/signup");
+        router.replace("/");
       } catch {
         router.replace("/login?error=oauth_failed");
       }
