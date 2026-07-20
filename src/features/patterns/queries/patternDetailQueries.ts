@@ -46,6 +46,7 @@ type OriginalYarnSetResponse = {
 type OriginalYarnResponse = {
   yarnId?: number | null;
   yarnName?: string | null;
+  ply?: number | null;
   weight?: number | null;
   cost?: number | null;
   component?: string | null;
@@ -56,6 +57,7 @@ type OriginalYarnResponse = {
 export type OriginalYarn = {
   yarnId: number;
   yarnName: string;
+  ply: number | null;
   weight: number | null;
   cost: number | null;
   component: string;
@@ -113,6 +115,7 @@ function normalizeOriginalYarn(
   return {
     yarnId: yarn.yarnId,
     yarnName: getOptionalText(yarn.yarnName),
+    ply: typeof yarn.ply === "number" ? yarn.ply : null,
     weight: typeof yarn.weight === "number" ? yarn.weight : null,
     cost: typeof yarn.cost === "number" ? yarn.cost : null,
     component: getOptionalText(yarn.component),

@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mock": "NEXT_PUBLIC_API_MODE=mock NEXT_PUBLIC_STOMP_MODE=disabled next dev",
+    "dev:local": "NEXT_PUBLIC_API_MODE=local NEXT_PUBLIC_STOMP_MODE=local next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -25,7 +27,13 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.3",
     "eslint-config-next": "16.1.6",
+    "msw": "^2.15.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

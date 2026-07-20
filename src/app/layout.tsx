@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Providers from "@/app/providers";
+import MockProvider from "@/components/providers/MockProvider";
 import { siteConfig } from "@/lib/metadata";
 import "./globals.css";
 
@@ -61,7 +62,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable}>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <MockProvider>
+          <Providers>{children}</Providers>
+        </MockProvider>
       </body>
     </html>
   );
