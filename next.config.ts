@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "shop-phinf.pstatic.net",
+        hostname: "cdn.knit-ufo.co.kr",
       },
       {
         protocol: "https",

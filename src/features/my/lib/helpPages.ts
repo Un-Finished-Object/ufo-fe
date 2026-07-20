@@ -1,3 +1,5 @@
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legalLinks";
+
 export type MyHelpPageSlug =
   | "faq"
   | "notices"
@@ -83,9 +85,13 @@ export const myHelpMenuItems = [
   myHelpPages[3],
   {
     title: "개인정보 처리방침",
-    href: "https://www.notion.so/39d743c92c6d802c9387ebd14dc96c8e?source=copy_link",
+    href: PRIVACY_POLICY_URL,
     external: true,
   },
-  myHelpPages[4],
+  {
+    title: "서비스 이용약관",
+    href: TERMS_OF_SERVICE_URL,
+    external: true,
+  },
   myHelpPages[5],
 ] satisfies MyHelpMenuItemConfig[];
