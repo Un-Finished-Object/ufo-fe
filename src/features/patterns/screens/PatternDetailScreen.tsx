@@ -33,6 +33,8 @@ import {
   alternativeCommentsQueryOptions,
   alternativeCommentsQueryRoot,
   createAlternativeComment,
+  deleteAlternativeComment,
+  updateAlternativeComment,
 } from "@/features/patterns/queries/patternAlternativeCommentQueries";
 import type {
   OriginalYarn,
@@ -359,6 +361,9 @@ function AlternativeComments({
   const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [content, setContent] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
   const commentsQuery = useQuery({
     ...alternativeCommentsQueryOptions(altSetId, currentPage),
     enabled: isOpen,
@@ -369,6 +374,26 @@ function AlternativeComments({
     onSuccess: async () => {
       setContent("");
       setCurrentPage(1);
+      await queryClient.invalidateQueries({
+        queryKey: [...alternativeCommentsQueryRoot, altSetId],
+      });
+    },
+  });
+  const updateCommentMutation = useMutation({
+    mutationFn: ({ commentId, nextContent }: { commentId: number; nextContent: string }) =>
+      updateAlternativeComment({ altSetId, commentId, content: nextContent }),
+    onSuccess: async () => {
+      setEditingCommentId(null);
+      setEditingContent("");
+      await queryClient.invalidateQueries({
+        queryKey: [...alternativeCommentsQueryRoot, altSetId],
+      });
+    },
+  });
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: number) => deleteAlternativeComment({ altSetId, commentId }),
+    onSuccess: async () => {
+      setDeletingCommentId(null);
       await queryClient.invalidateQueries({
         queryKey: [...alternativeCommentsQueryRoot, altSetId],
       });
@@ -387,6 +412,17 @@ function AlternativeComments({
     }
 
     createCommentMutation.mutate(trimmedContent);
+  };
+
+  const handleEditSubmit = (event: FormEvent<HTMLFormElement>, commentId: number) => {
+    event.preventDefault();
+    const trimmedContent = editingContent.trim();
+
+    if (!trimmedContent || updateCommentMutation.isPending) {
+      return;
+    }
+
+    updateCommentMutation.mutate({ commentId, nextContent: trimmedContent });
   };
 
   return (
@@ -435,20 +471,88 @@ function AlternativeComments({
             <p className="text-xs text-ufo-error">댓글을 불러오지 못했어요.</p>
           ) : comments.length > 0 ? (
             <div className="space-y-2">
-              {comments.map((comment, index) => (
+              {comments.map((comment) => (
                 <div
-                  key={`${comment.username}-${comment.createdAt}-${index}`}
+                  key={comment.commentId}
                   className="rounded-lg bg-ufo-brand-pale px-3 py-2"
                 >
-                  <p className="whitespace-pre-wrap break-words text-xs leading-5 text-ufo-text">
-                    {comment.content}
-                  </p>
-                  <time
-                    dateTime={comment.createdAt}
-                    className="mt-1 block text-right text-[10px] text-ufo-text-muted"
-                  >
-                    {commentDateFormatter.format(new Date(comment.createdAt))}
-                  </time>
+                  {editingCommentId === comment.commentId ? (
+                    <form
+                      onSubmit={(event) => handleEditSubmit(event, comment.commentId)}
+                      className="space-y-2"
+                    >
+                      <label htmlFor={`alternative-comment-edit-${comment.commentId}`} className="sr-only">
+                        댓글 수정
+                      </label>
+                      <input
+                        id={`alternative-comment-edit-${comment.commentId}`}
+                        value={editingContent}
+                        onChange={(event) => setEditingContent(event.target.value)}
+                        maxLength={500}
+                        className="w-full rounded-lg border border-ufo-border-light bg-white px-3 py-2 text-xs text-ufo-text outline-none focus:border-ufo-brand"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditingContent("");
+                          }}
+                          disabled={updateCommentMutation.isPending}
+                          className="min-h-7 px-2 text-xs font-semibold text-ufo-text-secondary disabled:opacity-50"
+                        >
+                          취소
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!editingContent.trim() || updateCommentMutation.isPending}
+                          className="min-h-7 rounded-md bg-ufo-brand px-3 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          {updateCommentMutation.isPending ? "수정 중" : "완료"}
+                        </button>
+                      </div>
+                      {updateCommentMutation.isError ? (
+                        <p className="text-xs text-ufo-error">댓글을 수정하지 못했어요.</p>
+                      ) : null}
+                    </form>
+                  ) : (
+                    <>
+                      <p className="whitespace-pre-wrap break-words text-xs leading-5 text-ufo-text">
+                        {comment.content}
+                      </p>
+                      <div className="mt-1 flex items-center justify-end gap-2">
+                        <time
+                          dateTime={comment.createdAt}
+                          className="text-[10px] text-ufo-text-muted"
+                        >
+                          {commentDateFormatter.format(new Date(comment.createdAt))}
+                        </time>
+                        {comment.isMine ? (
+                          <div className="flex items-center text-[10px] text-ufo-text-secondary">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCommentId(comment.commentId);
+                                setEditingContent(comment.content);
+                              }}
+                              className="min-h-7 px-1.5"
+                            >
+                              수정
+                            </button>
+                            <span aria-hidden="true">|</span>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingCommentId(comment.commentId)}
+                              className="min-h-7 px-1.5"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
               <Pagination
@@ -462,6 +566,18 @@ function AlternativeComments({
             <p className="text-xs text-ufo-text-muted">첫 댓글을 남겨보세요.</p>
           )}
         </div>
+      ) : null}
+      {deletingCommentId !== null ? (
+        <YesOrNo
+          mainText="댓글을 삭제할까요?"
+          subText="삭제한 댓글은 복구할 수 없어요."
+          yesLabel={deleteCommentMutation.isPending ? "삭제 중" : "삭제"}
+          noLabel="취소"
+          yesDisabled={deleteCommentMutation.isPending}
+          noDisabled={deleteCommentMutation.isPending}
+          onYes={() => deleteCommentMutation.mutate(deletingCommentId)}
+          onNo={() => setDeletingCommentId(null)}
+        />
       ) : null}
     </div>
   );

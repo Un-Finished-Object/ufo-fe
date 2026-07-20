@@ -7,7 +7,13 @@ type MockState = {
   scrappedPatternIds: Set<number>;
   purchases: Map<number, { chat: boolean; alternative: boolean; chatRoomId: number | null }>;
   alternativeReactions: Map<number, { type: 1 | 2; likesCount: number; updatedAt: string }>;
-  alternativeComments: Map<number, { content: string; username: string; createdAt: string }[]>;
+  alternativeComments: Map<number, {
+    commentId: number;
+    content: string;
+    username: string;
+    createdAt: string;
+    isMine: boolean;
+  }[]>;
   user: typeof mockUser;
   chats: typeof mockChats;
   attendanceDates: Set<string>;

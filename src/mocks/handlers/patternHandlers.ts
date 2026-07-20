@@ -16,9 +16,11 @@ function patternItems(items = mockPatterns) {
 
 function createInitialAlternativeComments(altSetId: number) {
   return Array.from({ length: 7 }, (_, index) => ({
+    commentId: altSetId * 100 + index + 1,
     content: `${altSetId}번 추천 대체실 댓글 ${index + 1}`,
-    username: `사용자${(index % 3) + 1}`,
+    username: index === 0 ? mockState.user.nickname : `사용자${(index % 3) + 1}`,
     createdAt: `2026-02-${String(6 + index).padStart(2, "0")}T13:20:10Z`,
+    isMine: index === 0,
   }));
 }
 
@@ -155,13 +157,59 @@ export const patternHandlers = [
     if (!content) return apiError(400, "Comment content is required");
 
     const comment = {
+      commentId: Date.now(),
       content,
       username: mockState.user.nickname,
       createdAt: new Date().toISOString(),
+      isMine: true,
     };
     const currentComments =
       mockState.alternativeComments.get(altSetId) ?? createInitialAlternativeComments(altSetId);
     mockState.alternativeComments.set(altSetId, [comment, ...currentComments]);
     return apiSuccess({ altSetId, ...comment });
+  }),
+  http.patch("/v1/alternatives/:altId/comments/:commentId", async ({ params, request }) => {
+    if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
+    const altSetId = Number(params.altId);
+    const commentId = Number(params.commentId);
+    const body = await request.json() as { content?: string };
+    const content = body.content?.trim();
+    if (!content) return apiError(400, "Comment content is required");
+
+    const comments =
+      mockState.alternativeComments.get(altSetId) ?? createInitialAlternativeComments(altSetId);
+    const commentIndex = comments.findIndex((comment) => comment.commentId === commentId);
+    if (commentIndex < 0) return apiError(404, "Comment not found");
+    if (!comments[commentIndex].isMine) return apiError(403, "Forbidden");
+
+    const updatedAt = new Date().toISOString();
+    const updatedComment = { ...comments[commentIndex], content, createdAt: updatedAt };
+    const nextComments = [...comments];
+    nextComments[commentIndex] = updatedComment;
+    mockState.alternativeComments.set(altSetId, nextComments);
+
+    return apiSuccess({
+      altSetId,
+      commentId,
+      content,
+      username: updatedComment.username,
+      updatedAt,
+    });
+  }),
+  http.delete("/v1/alternatives/:altId/comments/:commentId", ({ params, request }) => {
+    if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
+    const altSetId = Number(params.altId);
+    const commentId = Number(params.commentId);
+    const comments =
+      mockState.alternativeComments.get(altSetId) ?? createInitialAlternativeComments(altSetId);
+    const comment = comments.find((item) => item.commentId === commentId);
+    if (!comment) return apiError(404, "Comment not found");
+    if (!comment.isMine) return apiError(403, "Forbidden");
+
+    mockState.alternativeComments.set(
+      altSetId,
+      comments.filter((item) => item.commentId !== commentId),
+    );
+    return apiSuccess({ altSetId, commentId, deletedAt: new Date().toISOString() });
   }),
 ];
