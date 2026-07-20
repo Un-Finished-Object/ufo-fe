@@ -17,6 +17,7 @@ import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import HeartIcon from "@/components/icons/HeartIcon";
+import InfoIcon from "@/components/icons/InfoIcon";
 import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
@@ -1159,19 +1160,102 @@ function RankedAlternativeYarnGroups({ sets }: { sets: PatternAlternativeSet[] }
   );
 }
 
+function AlternativeRecommendationInfo() {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !containerRef.current?.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((previous) => !previous)}
+        className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-text-secondary"
+        aria-label="대체실 추천 시스템 안내"
+        aria-expanded={isOpen}
+        aria-controls="alternative-recommendation-info"
+      >
+        <InfoIcon className="h-4.5 w-4.5" />
+      </button>
+
+      {isOpen ? (
+        <div
+          id="alternative-recommendation-info"
+          role="region"
+          aria-label="대체실 추천 시스템 설명"
+          className="absolute left-0 top-full z-30 mt-1 w-[min(320px,calc(100vw-40px))] rounded-xl border border-ufo-border-light bg-ufo-surface p-4 text-left shadow-lg"
+        >
+          <p className="text-sm font-bold text-ufo-text">UFO 대체실 추천 시스템</p>
+          <p className="mt-2 text-xs leading-5 text-ufo-text-secondary">
+            원작실과 후보 실의 정보를 비교해 역할별 추천 순위를 제공해요.
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+            {[
+              ["성분", "섬유 구성의 유사도"],
+              ["길이", "중량 대비 실 길이"],
+              ["게이지", "편물 밀도의 유사도"],
+              ["바늘", "권장 바늘 크기"],
+            ].map(([label, description]) => (
+              <div key={label}>
+                <dt className="font-bold text-ufo-brand">{label}</dt>
+                <dd className="mt-0.5 leading-4 text-ufo-text-secondary">{description}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 border-t border-ufo-border-light pt-3 text-[11px] leading-4 text-ufo-text-muted">
+            추천 결과는 실 선택을 돕기 위한 참고 정보이며, 색상과 촉감은 실제 제품을 함께 확인해주세요.
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function AlternativeYarnSection({
   title,
+  titleAction,
   action,
   children,
 }: {
   title: string;
+  titleAction?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="border-t border-ufo-border-light pt-4 first:border-t-0 first:pt-0">
       <div className="mb-2 flex items-center justify-between gap-3 px-1">
-        <h3 className="text-base font-bold text-ufo-text">{title}</h3>
+        <div className="relative flex min-w-0 items-center gap-1">
+          <h3 className="text-base font-bold text-ufo-text">{title}</h3>
+          {titleAction}
+        </div>
         {action}
       </div>
       {children}
@@ -1600,7 +1684,10 @@ export default function PatternDetailScreen({
                   )}
                 </AlternativeYarnSection>
 
-                <AlternativeYarnSection title="UFO 추천 대체실 순위">
+                <AlternativeYarnSection
+                  title="UFO 추천 대체실 순위"
+                  titleAction={<AlternativeRecommendationInfo />}
+                >
                   {isResolvingAlternativePurchase ? (
                     <AlternativeSectionMessage>
                       구매 정보를 확인하고 있어요.
