@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ChatRealtimeToast from "@/features/chat/components/ChatRealtimeToast";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
 const TOAST_DURATION_MS = 3000;
 
 export default function ChatRealtimeToastHost() {
+  const router = useRouter();
   const toast = useChatRealtimeStore((state) => state.toast);
   const clearToast = useChatRealtimeStore((state) => state.clearToast);
 
@@ -33,6 +35,10 @@ export default function ChatRealtimeToastHost() {
       roomName={toast.roomName}
       senderName={toast.senderName}
       text={toast.text}
+      onClick={() => {
+        clearToast();
+        router.push(`/chats/${toast.roomId}`);
+      }}
     />
   );
 }

@@ -82,23 +82,31 @@ function renderRightIcon(type: ChatTopBarActionType, active = false) {
 export default function ChatTopBar({
   title,
   subtitle = null,
+  leftHref,
   onLeftClick,
   right = [],
 }: ChatTopBarProps) {
   const router = useRouter();
   const leftAriaLabel = "뒤로가기";
   const rightActions = right.slice(0, 3);
-  const handleBackClick = onLeftClick ?? (() => router.back());
+  const handleBackClick = onLeftClick ?? (() => {
+    if (leftHref) {
+      router.push(leftHref);
+      return;
+    }
+
+    router.back();
+  });
 
   return (
-    <header className="sticky top-0 z-50 w-full">
+    <header className="sticky top-0 z-50 w-full bg-ufo-surface pt-[env(safe-area-inset-top)]">
       <div className="mx-auto w-full max-w-[430px] border-b border-ufo-border-light bg-ufo-surface">
         <div className="flex h-14 items-center gap-2 px-4">
           <div className="flex items-center">
             <button
               type="button"
               onClick={handleBackClick}
-              className="flex h-8 w-8 items-center justify-start rounded-full text-ufo-brand"
+              className="flex h-11 w-11 items-center justify-start rounded-full text-ufo-brand"
               aria-label={leftAriaLabel}
             >
               <BackIcon className="h-6 w-6" />
@@ -118,7 +126,7 @@ export default function ChatTopBar({
                 key={`${action.type}-${action.ariaLabel ?? action.type}`}
                 type="button"
                 onClick={action.onClick}
-                className="flex h-8 w-8 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-11 w-11 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label={action.ariaLabel ?? action.type}
                 aria-pressed={typeof action.active === "boolean" ? action.active : undefined}
                 disabled={action.disabled}

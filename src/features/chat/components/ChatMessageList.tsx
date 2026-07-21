@@ -1,18 +1,22 @@
 "use client";
 
-import { type RefCallback, useEffect, useRef } from "react";
+import { Fragment, type RefCallback, useEffect, useRef, useState } from "react";
 import StateBlock from "@/components/common/StateBlock";
+import ChatDateSeparator from "@/features/chat/components/ChatDateSeparator";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
 const LONG_PRESS_DURATION_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
+const SWIPE_REPLY_THRESHOLD_PX = 56;
+const MAX_SWIPE_OFFSET_PX = 72;
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
   currentUserName: string | null;
   isLoading: boolean;
   errorMessage: string | null;
+  onRetry?: () => void;
   lastConfirmedMessageId?: string | null;
   onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
@@ -49,6 +53,20 @@ function formatMessageTime(createdAt: string | null) {
   }).format(createdDate);
 }
 
+function getCalendarDateKey(createdAt: string | null) {
+  if (!createdAt) {
+    return null;
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
 function ChatMessageItem({
   currentUserName,
   isLastConfirmedMessage,
@@ -61,6 +79,9 @@ function ChatMessageItem({
 }: ChatMessageItemProps) {
   const longPressTimeoutRef = useRef<number | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeOffsetRef = useRef(0);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isPressing, setIsPressing] = useState(false);
 
   const isMine =
     currentUserName !== null && message.senderName?.trim() === currentUserName.trim();
@@ -87,6 +108,13 @@ function ChatMessageItem({
     pointerStartRef.current = null;
   };
 
+  const resetTouchInteraction = () => {
+    clearLongPress();
+    swipeOffsetRef.current = 0;
+    setSwipeOffset(0);
+    setIsPressing(false);
+  };
+
   useEffect(() => {
     return () => {
       if (longPressTimeoutRef.current !== null) {
@@ -110,9 +138,12 @@ function ChatMessageItem({
 
     clearLongPress();
     pointerStartRef.current = { x: clientX, y: clientY };
+    swipeOffsetRef.current = 0;
+    setSwipeOffset(0);
+    setIsPressing(true);
     longPressTimeoutRef.current = window.setTimeout(() => {
       handleReplySelect();
-      clearLongPress();
+      resetTouchInteraction();
     }, LONG_PRESS_DURATION_MS);
   };
 
@@ -123,12 +154,33 @@ function ChatMessageItem({
       return;
     }
 
-    const distanceX = Math.abs(clientX - pointerStart.x);
+    const deltaX = clientX - pointerStart.x;
+    const distanceX = Math.abs(deltaX);
     const distanceY = Math.abs(clientY - pointerStart.y);
 
-    if (distanceX > LONG_PRESS_MOVE_TOLERANCE_PX || distanceY > LONG_PRESS_MOVE_TOLERANCE_PX) {
-      clearLongPress();
+    if (distanceY > LONG_PRESS_MOVE_TOLERANCE_PX && distanceY > distanceX) {
+      resetTouchInteraction();
+      return;
     }
+
+    if (distanceX > LONG_PRESS_MOVE_TOLERANCE_PX) {
+      if (longPressTimeoutRef.current !== null) {
+        window.clearTimeout(longPressTimeoutRef.current);
+        longPressTimeoutRef.current = null;
+      }
+
+      const nextOffset = Math.min(Math.max(deltaX, 0), MAX_SWIPE_OFFSET_PX);
+      swipeOffsetRef.current = nextOffset;
+      setSwipeOffset(nextOffset);
+    }
+  };
+
+  const handleTouchPointerUp = () => {
+    if (swipeOffsetRef.current >= SWIPE_REPLY_THRESHOLD_PX) {
+      handleReplySelect();
+    }
+
+    resetTouchInteraction();
   };
 
   const metaSlot = messageMetaText || canReply ? (
@@ -159,23 +211,42 @@ function ChatMessageItem({
   return (
     <div
       key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-      className={shouldTreatAsMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
+      className={shouldTreatAsMine ? "relative flex flex-col items-end gap-1" : "relative flex flex-col gap-1"}
       ref={isLastConfirmedMessage ? onLastConfirmedMessageRefChange : undefined}
     >
+      {swipeOffset > 0 ? (
+        <span
+          className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-xs font-semibold text-ufo-brand"
+          aria-hidden="true"
+        >
+          답장
+        </span>
+      ) : null}
       <article
-        className={`group/message flex gap-2 ${shouldTreatAsMine ? "justify-end" : "justify-start"}`}
+        className={`group/message flex touch-pan-y gap-2 transition-[transform,opacity] duration-150 ${
+          shouldTreatAsMine ? "justify-end" : "justify-start"
+        } ${isPressing ? "opacity-80" : "opacity-100"}`}
+        style={{ transform: `translateX(${swipeOffset}px)` }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+        }}
         onPointerCancel={() => {
-          clearLongPress();
+          resetTouchInteraction();
         }}
         onPointerDown={(event) => {
           if (event.pointerType !== "touch") {
             return;
           }
 
+          event.currentTarget.setPointerCapture(event.pointerId);
           handleTouchPointerDown(event.clientX, event.clientY);
         }}
-        onPointerLeave={() => {
-          clearLongPress();
+        onPointerLeave={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            return;
+          }
+
+          resetTouchInteraction();
         }}
         onPointerMove={(event) => {
           if (event.pointerType !== "touch") {
@@ -184,8 +255,9 @@ function ChatMessageItem({
 
           handleTouchPointerMove(event.clientX, event.clientY);
         }}
-        onPointerUp={() => {
-          clearLongPress();
+        onPointerUp={(event) => {
+          handleTouchPointerUp();
+          event.currentTarget.releasePointerCapture(event.pointerId);
         }}
       >
         {!shouldTreatAsMine ? (
@@ -202,7 +274,7 @@ function ChatMessageItem({
                   ) : null}
                 </div>
               ) : null}
-              <p className="leading-6">{message.text}</p>
+              <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
           </div>
         ) : null}
@@ -223,7 +295,7 @@ function ChatMessageItem({
                   ) : null}
                 </div>
               ) : null}
-              <p className="leading-6">{message.text}</p>
+              <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
           </div>
         ) : null}
@@ -257,6 +329,7 @@ export default function ChatMessageList({
   currentUserName,
   isLoading,
   errorMessage,
+  onRetry,
   lastConfirmedMessageId = null,
   onLastConfirmedMessageRefChange,
   onDeleteFailedMessage,
@@ -268,7 +341,15 @@ export default function ChatMessageList({
   }
 
   if (errorMessage) {
-    return <StateBlock type="error" title={errorMessage} variant="plain" />;
+    return (
+      <StateBlock
+        type="error"
+        title={errorMessage}
+        actionLabel="다시 시도"
+        onAction={onRetry}
+        variant={onRetry ? "card" : "plain"}
+      />
+    );
   }
 
   if (messages.length === 0) {
@@ -283,23 +364,37 @@ export default function ChatMessageList({
 
   return (
     <>
-      {messages.map((message) => (
-        <ChatMessageItem
-          key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-          currentUserName={currentUserName}
-          isLastConfirmedMessage={
-            message.status === "confirmed" &&
-            message.messageId !== null &&
-            message.messageId === lastConfirmedMessageId
-          }
-          message={message}
-          messageById={messageById}
-          onDeleteFailedMessage={onDeleteFailedMessage}
-          onLastConfirmedMessageRefChange={onLastConfirmedMessageRefChange}
-          onReplyMessageSelect={onReplyMessageSelect}
-          onResendFailedMessage={onResendFailedMessage}
-        />
-      ))}
+      {messages.map((message, index) => {
+        const messageKey = message.clientMessageId ?? message.messageId ?? message.createdAt;
+        const currentDateKey = getCalendarDateKey(message.createdAt);
+        const previousDateKey = getCalendarDateKey(messages[index - 1]?.createdAt ?? null);
+        const shouldShowDateSeparator =
+          message.createdAt !== null && currentDateKey !== previousDateKey;
+
+        return (
+          <Fragment key={messageKey}>
+            {shouldShowDateSeparator ? (
+              <ChatDateSeparator
+                createdAt={message.createdAt as string}
+              />
+            ) : null}
+            <ChatMessageItem
+              currentUserName={currentUserName}
+              isLastConfirmedMessage={
+                message.status === "confirmed" &&
+                message.messageId !== null &&
+                message.messageId === lastConfirmedMessageId
+              }
+              message={message}
+              messageById={messageById}
+              onDeleteFailedMessage={onDeleteFailedMessage}
+              onLastConfirmedMessageRefChange={onLastConfirmedMessageRefChange}
+              onReplyMessageSelect={onReplyMessageSelect}
+              onResendFailedMessage={onResendFailedMessage}
+            />
+          </Fragment>
+        );
+      })}
     </>
   );
 }

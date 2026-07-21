@@ -4,6 +4,7 @@ type ChatRealtimeToastProps = {
   roomName: string;
   senderName: string;
   text: string;
+  onClick: () => void;
 };
 
 const MAX_MESSAGE_LENGTH = 15;
@@ -22,16 +23,19 @@ export default function ChatRealtimeToast({
   roomName,
   senderName,
   text,
+  onClick,
 }: ChatRealtimeToastProps) {
   return (
-    <div
-      className="fixed top-6 left-1/2 z-[80] w-[calc(100%-20px)] max-w-[410px] -translate-x-1/2 rounded-2xl bg-ufo-brand px-4 py-3 text-white shadow-lg ring-1 ring-white/10"
-      role="status"
+    <button
+      type="button"
+      onClick={onClick}
+      className="fixed top-[max(1.5rem,env(safe-area-inset-top))] left-1/2 z-[80] w-[calc(100%-20px)] max-w-[410px] -translate-x-1/2 rounded-2xl bg-ufo-brand px-4 py-3 text-left text-white shadow-lg ring-1 ring-white/10"
+      aria-label={`${roomName} 채팅방으로 이동`}
       aria-live="polite"
     >
       <p className="truncate text-sm leading-5 font-semibold">{roomName}</p>
       <p className="mt-0.5 truncate text-[13px] leading-5 text-white/75">{senderName}</p>
       <p className="mt-1 text-sm leading-5">{truncateMessage(text)}</p>
-    </div>
+    </button>
   );
 }

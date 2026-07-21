@@ -15,7 +15,7 @@ type ChatRoomListProps = {
   onFilterChange?: (filter: ChatRoomFilter) => void;
   showSettingsButton?: boolean;
   isSettingsMode?: boolean;
-  updatingRoomId?: string | null;
+  updatingRoomIds?: ReadonlySet<string>;
   onSettingsClick?: () => void;
   onFavoriteChange?: (room: ChatRoom) => void;
   onHiddenChange?: (room: ChatRoom) => void;
@@ -67,13 +67,16 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
           {room.favorite ? <FavoriteIcon /> : null}
         </div>
         <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
+          내 이름: {room.nickname}
+        </p>
+        <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
           {room.lastMessage}
         </p>
       </div>
 
       {room.unreadCount > 0 ? (
         <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-ufo-chat-unread px-2 py-1 text-base font-semibold leading-none text-white">
-          {room.unreadCount}
+          {room.unreadCount > 99 ? "99+" : room.unreadCount}
         </span>
       ) : null}
     </>
@@ -84,11 +87,13 @@ function StatusToggleButton({
   active,
   disabled,
   label,
+  ariaLabel,
   onClick,
 }: {
   active: boolean;
   disabled: boolean;
   label: string;
+  ariaLabel: string;
   onClick: () => void;
 }) {
   return (
@@ -97,7 +102,8 @@ function StatusToggleButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`h-8 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
+      aria-label={ariaLabel}
+      className={`min-h-11 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
         active
           ? "border-ufo-brand text-ufo-brand"
           : "border-ufo-border-light text-ufo-text-neutral"
@@ -131,12 +137,14 @@ function ChatRoomItem({
               active={room.favorite}
               disabled={isUpdating}
               label="즐겨찾기"
+              ariaLabel={`${room.name} 채팅방 즐겨찾기`}
               onClick={() => onFavoriteChange?.(room)}
             />
             <StatusToggleButton
               active={room.isHidden}
               disabled={isUpdating}
               label="FO"
+              ariaLabel={`${room.name} 채팅방 FO`}
               onClick={() => onHiddenChange?.(room)}
             />
           </div>
@@ -150,7 +158,7 @@ function ChatRoomItem({
       <Link
         href={`/chats/${room.chatId}`}
         className="flex items-center gap-3 px-4 py-3"
-        aria-label={`${room.name} 채팅방 입장`}
+        aria-label={`${room.name} 채팅방, 내 이름 ${room.nickname}, 읽지 않은 메시지 ${room.unreadCount > 99 ? "99개 이상" : `${room.unreadCount}개`}, 마지막 메시지 ${room.lastMessage || "없음"}`}
       >
         <ChatRoomSummary room={room} />
       </Link>
@@ -167,7 +175,7 @@ export default function ChatRoomList({
   onFilterChange,
   showSettingsButton = false,
   isSettingsMode = false,
-  updatingRoomId = null,
+  updatingRoomIds = new Set<string>(),
   onSettingsClick,
   onFavoriteChange,
   onHiddenChange,
@@ -181,7 +189,7 @@ export default function ChatRoomList({
             type="button"
             onClick={onSettingsClick}
             aria-pressed={isSettingsMode}
-            className={`rounded-full p-1 ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full ${
               isSettingsMode ? "text-ufo-brand" : "text-ufo-brand"
             }`}
             aria-label={isSettingsMode ? "채팅방 설정 완료" : "채팅방 설정"}
@@ -202,7 +210,7 @@ export default function ChatRoomList({
                 type="button"
                 onClick={() => onFilterChange?.(chip)}
                 aria-pressed={activeFilter === chip}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                className={`min-h-11 rounded-full px-3 py-1 text-xs font-semibold ${
                   (activeFilter ?? filters[0]) === chip
                     ? "bg-ufo-brand-pale text-ufo-brand"
                     : "bg-ufo-brand-pale text-ufo-text-neutral"
@@ -223,7 +231,7 @@ export default function ChatRoomList({
               key={room.chatId}
               room={room}
               isSettingsMode={isSettingsMode}
-              isUpdating={updatingRoomId !== null}
+              isUpdating={updatingRoomIds.has(room.chatId)}
               onFavoriteChange={onFavoriteChange}
               onHiddenChange={onHiddenChange}
             />
