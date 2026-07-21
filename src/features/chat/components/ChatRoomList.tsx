@@ -103,7 +103,7 @@ function StatusToggleButton({
       disabled={disabled}
       aria-pressed={active}
       aria-label={ariaLabel}
-      className={`min-h-11 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
+      className={`h-8 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
         active
           ? "border-ufo-brand text-ufo-brand"
           : "border-ufo-border-light text-ufo-text-neutral"
@@ -189,7 +189,7 @@ export default function ChatRoomList({
             type="button"
             onClick={onSettingsClick}
             aria-pressed={isSettingsMode}
-            className={`flex h-11 w-11 items-center justify-center rounded-full ${
+            className={`rounded-full p-1 ${
               isSettingsMode ? "text-ufo-brand" : "text-ufo-brand"
             }`}
             aria-label={isSettingsMode ? "채팅방 설정 완료" : "채팅방 설정"}
@@ -210,7 +210,7 @@ export default function ChatRoomList({
                 type="button"
                 onClick={() => onFilterChange?.(chip)}
                 aria-pressed={activeFilter === chip}
-                className={`min-h-11 rounded-full px-3 py-1 text-xs font-semibold ${
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   (activeFilter ?? filters[0]) === chip
                     ? "bg-ufo-brand-pale text-ufo-brand"
                     : "bg-ufo-brand-pale text-ufo-text-neutral"
