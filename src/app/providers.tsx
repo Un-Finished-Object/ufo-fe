@@ -9,7 +9,11 @@ import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthentic
 import ChatRealtimeManager from "@/features/chat/components/ChatRealtimeManager";
 import ChatRealtimeToastHost from "@/features/chat/components/ChatRealtimeToastHost";
 import { createQueryClient } from "@/lib/query/client";
-import { activateStompClient, deactivateStompClient } from "@/features/chat/lib/stompClient";
+import {
+  activateStompClient,
+  deactivateStompClient,
+  restartStompClient,
+} from "@/features/chat/lib/stompClient";
 import { isMockMode } from "@/mocks/config";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
@@ -37,8 +41,13 @@ function WebSocketConnectionManager() {
   const accessToken = useAccessToken();
   const { authStatus, isAuthenticated } = useAuthState();
   const isConnectedRef = useRef(false);
+  const previousAccessTokenRef = useRef<string | null>(null);
+  const connectionOperationRef = useRef(0);
+  const connectionRestartTaskRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
+    const operationId = ++connectionOperationRef.current;
+
     if (isMockMode()) {
       useChatRealtimeStore.getState().setConnectionStatus("connected");
       return;
@@ -49,25 +58,52 @@ function WebSocketConnectionManager() {
     }
 
     if (isAuthenticated && accessToken) {
-      useChatRealtimeStore.getState().setConnectionStatus("connecting");
-      activateStompClient({
-        onBeforeConnect: () => {
-          useChatRealtimeStore.getState().setConnectionStatus("connecting");
-        },
-        onConnect: () => {
-          useChatRealtimeStore.getState().setConnectionStatus("connected");
-        },
-        onStompError: () => {
-          useChatRealtimeStore.getState().setConnectionStatus("disconnected");
-        },
-        onWebSocketClose: () => {
-          useChatRealtimeStore.getState().setConnectionStatus("disconnected");
-          useChatRealtimeStore.getState().setSubscribedRoomIds([]);
-        },
-      });
-      isConnectedRef.current = true;
+      const previousAccessToken = previousAccessTokenRef.current;
+      previousAccessTokenRef.current = accessToken;
+
+      if (!isConnectedRef.current) {
+        useChatRealtimeStore.getState().setConnectionStatus("connecting");
+        activateStompClient({
+          onBeforeConnect: () => {
+            useChatRealtimeStore.getState().setConnectionStatus("connecting");
+          },
+          onConnect: () => {
+            useChatRealtimeStore.getState().setConnectionStatus("connected");
+          },
+          onStompError: () => {
+            useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+          },
+          onWebSocketClose: () => {
+            useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+            useChatRealtimeStore.getState().setSubscribedRoomIds([]);
+          },
+        });
+        isConnectedRef.current = true;
+        return;
+      }
+
+      if (previousAccessToken && previousAccessToken !== accessToken) {
+        connectionRestartTaskRef.current = connectionRestartTaskRef.current
+          .catch(() => undefined)
+          .then(async () => {
+            if (
+              connectionOperationRef.current !== operationId ||
+              !isConnectedRef.current
+            ) {
+              return;
+            }
+
+            await restartStompClient(
+              () =>
+                connectionOperationRef.current === operationId && isConnectedRef.current,
+            );
+          });
+      }
+
       return;
     }
+
+    previousAccessTokenRef.current = null;
 
     if (!isConnectedRef.current) {
       return;
@@ -86,6 +122,8 @@ function WebSocketConnectionManager() {
       }
 
       void deactivateStompClient();
+      connectionOperationRef.current += 1;
+      previousAccessTokenRef.current = null;
       useChatRealtimeStore.getState().setConnectionStatus("disconnected");
       useChatRealtimeStore.getState().setSubscribedRoomIds([]);
       isConnectedRef.current = false;

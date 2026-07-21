@@ -191,6 +191,27 @@ export function activateStompClient(options?: CreateStompClientOptions) {
   return client;
 }
 
+export async function restartStompClient(
+  shouldReactivate: () => boolean = () => true,
+) {
+  if (!stompClient) {
+    return null;
+  }
+
+  const client = stompClient;
+
+  if (client.active) {
+    await client.deactivate();
+  }
+
+  if (stompClient !== client || !shouldReactivate()) {
+    return client;
+  }
+
+  client.activate();
+  return client;
+}
+
 export async function deactivateStompClient() {
   if (!stompClient) {
     return;

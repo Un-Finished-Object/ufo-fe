@@ -44,7 +44,10 @@ export default function ChatRealtimeManager() {
     const subscribedRoomIds = roomIdsSignature ? roomIdsSignature.split("|") : [];
     const nextRoomIds = new Set(subscribedRoomIds);
 
-    const subscribeToRooms = (forceResubscribe: boolean) => {
+    const subscribeToRooms = (
+      connectedClient: ReturnType<typeof getStompClient>,
+      forceResubscribe: boolean,
+    ) => {
       subscriptions.forEach((subscription, roomId) => {
         if (nextRoomIds.has(roomId)) {
           return;
@@ -54,7 +57,7 @@ export default function ChatRealtimeManager() {
         subscriptions.delete(roomId);
       });
 
-      if (!client.connected) {
+      if (!connectedClient.connected) {
         useChatRealtimeStore.getState().setSubscribedRoomIds([]);
         return;
       }
@@ -68,7 +71,7 @@ export default function ChatRealtimeManager() {
 
         currentSubscription?.unsubscribe();
 
-        const nextSubscription = client.subscribe(`/sub/chat/rooms/${roomId}`, (message) => {
+        const nextSubscription = connectedClient.subscribe(`/sub/chat/rooms/${roomId}`, (message) => {
           const event = parseIncomingChatMessageEvent(message);
 
           if (!event || event.roomId !== roomId) {
@@ -112,10 +115,10 @@ export default function ChatRealtimeManager() {
       useChatRealtimeStore.getState().setSubscribedRoomIds(Array.from(subscriptions.keys()));
     };
 
-    subscribeToRooms(false);
+    subscribeToRooms(client, false);
 
-    const removeConnectListener = addStompConnectListener(() => {
-      subscribeToRooms(true);
+    const removeConnectListener = addStompConnectListener((_frame, connectedClient) => {
+      subscribeToRooms(connectedClient, true);
       flushPendingChatReads(queryClient);
     });
 

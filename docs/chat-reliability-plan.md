@@ -25,6 +25,9 @@
   subscription. Clear reported subscriptions while disconnected.
 - Track `connecting`, `connected`, and `disconnected` WebSocket states. Disable
   the composer and show a connection warning unless connected.
+- Restart the existing STOMP client when the access token changes so reconnect
+  headers use the latest token. Serialize restarts and cancel stale work after a
+  newer token change or logout.
 - Reconcile optimistic, HTTP, and WebSocket messages by `clientMessageId`,
   `messageId`, and creation time.
 - Require `senderName` and a valid `createdAt` for HTTP and WebSocket confirmed
