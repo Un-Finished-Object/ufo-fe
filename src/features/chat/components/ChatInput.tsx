@@ -54,7 +54,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="rounded-xl border border-ufo-border bg-white">
+    <div className="overflow-hidden rounded-xl border border-ufo-border bg-white">
       {replyPreview ? (
         <div className="flex items-start justify-between gap-3 border-b border-ufo-border-light bg-ufo-brand-pale px-4 py-3">
           <div className="min-w-0">

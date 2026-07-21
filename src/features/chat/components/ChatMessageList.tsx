@@ -35,6 +35,22 @@ type ChatMessageItemProps = {
   onResendFailedMessage?: (message: ChatMessage) => void;
 };
 
+type ReplyPreviewProps = {
+  senderName: string;
+  text: string | null;
+};
+
+function ReplyPreview({ senderName, text }: ReplyPreviewProps) {
+  const previewText = text || "이전 메시지";
+
+  return (
+    <div className="mb-2 border-b border-ufo-border-light pb-2">
+      <p className="text-xs font-semibold text-ufo-brand">{senderName}에게 답장</p>
+      <p className="mt-0.5 truncate text-xs leading-5 text-ufo-text-subtle">{previewText}</p>
+    </div>
+  );
+}
+
 function formatMessageTime(createdAt: string | null) {
   if (!createdAt) {
     return "??:??";
@@ -263,16 +279,12 @@ function ChatMessageItem({
         {!shouldTreatAsMine ? (
           <div className="max-w-[78%]">
             <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
-            <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
+            <div className="rounded-xl bg-ufo-bg px-4 py-2.5 text-sm text-ufo-text">
               {hasReply ? (
-                <div className="mb-2 rounded-lg border border-ufo-border-light bg-white/70 px-3 py-2">
-                  <p className="text-xs font-semibold text-ufo-text-subtle">{replySenderName}에게 답장</p>
-                  {replyPreviewText ? (
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ufo-text-dim">
-                      {replyPreviewText}
-                    </p>
-                  ) : null}
-                </div>
+                <ReplyPreview
+                  senderName={replySenderName as string}
+                  text={replyPreviewText ?? null}
+                />
               ) : null}
               <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
@@ -284,16 +296,12 @@ function ChatMessageItem({
         {shouldTreatAsMine ? (
           <div className="flex max-w-[78%] items-end gap-2">
             {isPending ? <ChatMessageSendingIndicator /> : null}
-            <div className="max-w-full rounded-xl bg-ufo-brand-pale px-4 py-3 text-sm text-ufo-text">
+            <div className="max-w-full rounded-xl bg-ufo-brand-pale px-4 py-2.5 text-sm text-ufo-text">
               {hasReply ? (
-                <div className="mb-2 rounded-lg bg-white/70 px-3 py-2 text-ufo-text-secondary">
-                  <p className="text-xs font-semibold text-ufo-text-subtle">{replySenderName}에게 답장</p>
-                  {replyPreviewText ? (
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ufo-text-dim">
-                      {replyPreviewText}
-                    </p>
-                  ) : null}
-                </div>
+                <ReplyPreview
+                  senderName={replySenderName as string}
+                  text={replyPreviewText ?? null}
+                />
               ) : null}
               <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
