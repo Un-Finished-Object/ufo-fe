@@ -42,6 +42,19 @@ type ValidMyChatItem = MyChatItem & {
   createdAt: string;
 };
 
+function isValidMyChatItem(chat: MyChatItem): chat is ValidMyChatItem {
+  return (
+    typeof chat.patternId === "number" &&
+    typeof chat.chatId === "number" &&
+    typeof chat.chatName === "string" &&
+    typeof chat.nickname === "string" &&
+    typeof chat.favorite === "boolean" &&
+    typeof chat.isHidden === "boolean" &&
+    typeof chat.unRead === "number" &&
+    typeof chat.createdAt === "string"
+  );
+}
+
 export const myChatRoomsQueryKey = ["myChatRooms"] as const;
 export const allMyChatRoomsQueryKey = [...myChatRoomsQueryKey, "all"] as const;
 
@@ -111,19 +124,17 @@ export async function fetchMyChatRooms({
     throw createInvalidApiResponseError("Failed to load chat rooms.");
   }
 
+  if (
+    payload.data.chats.some(
+      (chat) => typeof chat.chatId !== "undefined" && !isValidMyChatItem(chat),
+    )
+  ) {
+    throw createInvalidApiResponseError("Failed to load chat rooms.");
+  }
+
   return {
     rooms: payload.data.chats
-      .filter(
-        (chat): chat is ValidMyChatItem =>
-          typeof chat.patternId === "number" &&
-          typeof chat.chatId === "number" &&
-          typeof chat.chatName === "string" &&
-          typeof chat.nickname === "string" &&
-          typeof chat.favorite === "boolean" &&
-          typeof chat.isHidden === "boolean" &&
-          typeof chat.unRead === "number" &&
-          typeof chat.createdAt === "string",
-      )
+      .filter(isValidMyChatItem)
       .map((chat) => ({
         chatId: String(chat.chatId),
         patternId: String(chat.patternId),

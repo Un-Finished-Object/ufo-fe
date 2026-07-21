@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type RefCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import StateBlock from "@/components/common/StateBlock";
 import ChatDateSeparator from "@/features/chat/components/ChatDateSeparator";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
@@ -17,8 +17,6 @@ type ChatMessageListProps = {
   isLoading: boolean;
   errorMessage: string | null;
   onRetry?: () => void;
-  lastConfirmedMessageId?: string | null;
-  onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
   onReplyMessageSelect?: (message: ChatMessage) => void;
   onResendFailedMessage?: (message: ChatMessage) => void;
@@ -26,11 +24,9 @@ type ChatMessageListProps = {
 
 type ChatMessageItemProps = {
   currentUserName: string | null;
-  isLastConfirmedMessage: boolean;
   message: ChatMessage;
   messageById: Map<string, ChatMessage>;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
-  onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
   onReplyMessageSelect?: (message: ChatMessage) => void;
   onResendFailedMessage?: (message: ChatMessage) => void;
 };
@@ -85,11 +81,9 @@ function getCalendarDateKey(createdAt: string | null) {
 
 function ChatMessageItem({
   currentUserName,
-  isLastConfirmedMessage,
   message,
   messageById,
   onDeleteFailedMessage,
-  onLastConfirmedMessageRefChange,
   onReplyMessageSelect,
   onResendFailedMessage,
 }: ChatMessageItemProps) {
@@ -228,7 +222,6 @@ function ChatMessageItem({
     <div
       key={message.clientMessageId ?? message.messageId ?? message.createdAt}
       className={shouldTreatAsMine ? "relative flex flex-col items-end gap-1" : "relative flex flex-col gap-1"}
-      ref={isLastConfirmedMessage ? onLastConfirmedMessageRefChange : undefined}
     >
       {swipeOffset > 0 ? (
         <span
@@ -338,8 +331,6 @@ export default function ChatMessageList({
   isLoading,
   errorMessage,
   onRetry,
-  lastConfirmedMessageId = null,
-  onLastConfirmedMessageRefChange,
   onDeleteFailedMessage,
   onReplyMessageSelect,
   onResendFailedMessage,
@@ -388,15 +379,9 @@ export default function ChatMessageList({
             ) : null}
             <ChatMessageItem
               currentUserName={currentUserName}
-              isLastConfirmedMessage={
-                message.status === "confirmed" &&
-                message.messageId !== null &&
-                message.messageId === lastConfirmedMessageId
-              }
               message={message}
               messageById={messageById}
               onDeleteFailedMessage={onDeleteFailedMessage}
-              onLastConfirmedMessageRefChange={onLastConfirmedMessageRefChange}
               onReplyMessageSelect={onReplyMessageSelect}
               onResendFailedMessage={onResendFailedMessage}
             />

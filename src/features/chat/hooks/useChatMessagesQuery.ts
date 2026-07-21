@@ -265,7 +265,20 @@ export function useChatMessagesQuery(roomId: string | null) {
         signal,
       });
     },
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
+    getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
+      if (!lastPage.hasNext) {
+        return undefined;
+      }
+
+      if (
+        !lastPage.nextCursor ||
+        allPageParams.some((pageParam) => pageParam === lastPage.nextCursor)
+      ) {
+        throw new Error("Chat message pagination returned a missing or repeated cursor.");
+      }
+
+      return lastPage.nextCursor;
+    },
     structuralSharing: (currentData, incomingData) =>
       mergeChatMessagesInfiniteData(
         currentData as ChatMessagesInfiniteData | undefined,

@@ -69,7 +69,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   } = messagesQuery;
   const currentUserName = chatRoom?.nickname ?? null;
   const [topSentinelElement, setTopSentinelElement] = useState<HTMLDivElement | null>(null);
-  const [messageListElement, setMessageListElement] = useState<HTMLElement | null>(null);
+  const [readMarkerElement, setReadMarkerElement] = useState<HTMLDivElement | null>(null);
   const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
   const scrollContainerElementRef = useRef<HTMLElement | null>(null);
   const didScrollToInitialBottomRef = useRef(false);
@@ -83,6 +83,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const [hasUnseenMessage, setHasUnseenMessage] = useState(false);
   const setCurrentRoomId = useChatRealtimeStore((state) => state.setCurrentRoomId);
   const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
+  const connectionStatus = useChatRealtimeStore((state) => state.connectionStatus);
   const sendChatMessage = useSendChatMessage({
     roomId,
     senderName: currentUserName ?? undefined,
@@ -98,6 +99,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
     if (
       meQuery.data &&
       !chatRoom &&
+      !allChatRoomsQuery.isError &&
       !allChatRoomsQuery.isPending &&
       !allChatRoomsQuery.isFetchingNextPage &&
       !allChatRoomsQuery.hasNextPage
@@ -107,6 +109,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   }, [
     allChatRoomsQuery.hasNextPage,
     allChatRoomsQuery.isFetchingNextPage,
+    allChatRoomsQuery.isError,
     allChatRoomsQuery.isPending,
     chatRoom,
     meQuery.data,
@@ -133,12 +136,16 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   }, [roomId]);
 
   useEffect(() => {
+    if (!chatRoom) {
+      return;
+    }
+
     setCurrentRoomId(roomId);
 
     return () => {
       clearCurrentRoomId(roomId);
     };
-  }, [clearCurrentRoomId, roomId, setCurrentRoomId]);
+  }, [chatRoom, clearCurrentRoomId, roomId, setCurrentRoomId]);
 
   useEffect(() => {
     const nextChatStatus = mapChatRoomToStatus(roomId, chatRoom);
@@ -195,7 +202,11 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       queryClient.setQueryData(chatStatusQueryKey(roomId), context?.previousStatus ?? null);
 
       if (context?.previousRoom) {
-        updateChatRoomCaches(queryClient, roomId, () => context.previousRoom as ChatRoom);
+        updateChatRoomCaches(queryClient, roomId, (currentRoom) => ({
+          ...currentRoom,
+          favorite: (context.previousRoom as ChatRoom).favorite,
+          isHidden: (context.previousRoom as ChatRoom).isHidden,
+        }));
       }
 
       if (isApiError(error, 401)) {
@@ -488,7 +499,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   useChatReadReceipt({
     roomId,
     lastConfirmedMessageId,
-    targetElement: messageListElement,
+    targetElement: readMarkerElement,
     scrollContainer: scrollContainerElement,
   });
 
@@ -513,6 +524,20 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       (allChatRoomsQuery.isPending ||
         allChatRoomsQuery.isFetchingNextPage ||
         allChatRoomsQuery.hasNextPage));
+
+  if (meQuery.data && !chatRoom && allChatRoomsQuery.isError) {
+    return (
+      <MobileShell fullHeight dynamicViewport>
+        <StateBlock
+          type="error"
+          title="채팅방 목록을 불러오지 못했어요."
+          actionLabel="다시 시도"
+          onAction={() => void allChatRoomsQuery.refetch()}
+          variant="card"
+        />
+      </MobileShell>
+    );
+  }
 
   if (
     isChatScreenLoading ||
@@ -587,12 +612,11 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
               isLoading={isMessagesPending}
               errorMessage={errorMessage}
               onRetry={isInitialMessagesError ? () => void messagesQuery.refetch() : undefined}
-              lastConfirmedMessageId={lastConfirmedMessageId}
-              onLastConfirmedMessageRefChange={setMessageListElement}
               onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
               onReplyMessageSelect={handleReplyMessageSelect}
               onResendFailedMessage={sendChatMessage.resendFailedMessage}
             />
+            <div ref={setReadMarkerElement} className="h-px" aria-hidden="true" />
           </div>
         </section>
 
@@ -607,11 +631,16 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
               {hasUnseenMessage ? "새 메시지" : "아래로 이동"}
             </button>
           ) : null}
+          {connectionStatus !== "connected" ? (
+            <p className="mb-3 text-center text-xs text-ufo-text-subtle" role="status">
+              채팅 연결 상태가 원활하지 않습니다. 연결 후 메시지를 보낼 수 있습니다.
+            </p>
+          ) : null}
           <ChatInput
             value={messageText}
-            isSending={false}
+            isSending={sendChatMessage.isPending}
             placeholder={`${chatInputPlaceholderName}(으)로 대화해보세요.`}
-            isSubmitDisabled={false}
+            isSubmitDisabled={connectionStatus !== "connected"}
             replyPreview={replyTarget ? { senderName: replyTarget.senderName, text: replyTarget.text } : null}
             onChange={setMessageText}
             onCancelReply={handleReplyCancel}

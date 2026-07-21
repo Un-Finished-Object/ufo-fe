@@ -93,14 +93,31 @@ export async function fetchChatMessages(
     throw createInvalidApiResponseError("Failed to load chat messages.");
   }
 
+  const hasInvalidMessage = payload.data.messages.some(
+    (message) =>
+      typeof message.messageId !== "number" ||
+      typeof message.senderName !== "string" ||
+      message.senderName.trim().length === 0 ||
+      typeof message.text !== "string" ||
+      typeof message.createdAt !== "string" ||
+      Number.isNaN(Date.parse(message.createdAt)),
+  );
+
+  if (hasInvalidMessage) {
+    throw createInvalidApiResponseError("Failed to load chat messages.");
+  }
+
   const messages = payload.data.messages
     .filter(
       (message): message is ChatMessageItem & {
         messageId: number;
+        senderName: string;
         text: string;
         createdAt: string;
       } =>
         typeof message.messageId === "number" &&
+        typeof message.senderName === "string" &&
+        message.senderName.trim().length > 0 &&
         typeof message.text === "string" &&
         typeof message.createdAt === "string" &&
         !Number.isNaN(Date.parse(message.createdAt)),
@@ -131,10 +148,18 @@ export async function fetchChatMessages(
   const oldestMessageId = messages[0]?.messageId ?? null;
   const fallbackNextCursor =
     typeof payload.data.nextMessageId === "number" ? String(payload.data.nextMessageId) : null;
+  const nextCursor = fallbackNextCursor ?? oldestMessageId;
+
+  if (
+    payload.data.hasNext === true &&
+    (!nextCursor || nextCursor === cursorMessageId)
+  ) {
+    throw createInvalidApiResponseError("Failed to load older chat messages.");
+  }
 
   return {
     messages,
     hasNext: payload.data.hasNext === true,
-    nextCursor: fallbackNextCursor ?? oldestMessageId,
+    nextCursor,
   } satisfies ChatMessagesPage;
 }

@@ -11,6 +11,7 @@ import ChatRealtimeToastHost from "@/features/chat/components/ChatRealtimeToastH
 import { createQueryClient } from "@/lib/query/client";
 import { activateStompClient, deactivateStompClient } from "@/features/chat/lib/stompClient";
 import { isMockMode } from "@/mocks/config";
+import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -39,6 +40,7 @@ function WebSocketConnectionManager() {
 
   useEffect(() => {
     if (isMockMode()) {
+      useChatRealtimeStore.getState().setConnectionStatus("connected");
       return;
     }
 
@@ -47,7 +49,22 @@ function WebSocketConnectionManager() {
     }
 
     if (isAuthenticated && accessToken) {
-      activateStompClient();
+      useChatRealtimeStore.getState().setConnectionStatus("connecting");
+      activateStompClient({
+        onBeforeConnect: () => {
+          useChatRealtimeStore.getState().setConnectionStatus("connecting");
+        },
+        onConnect: () => {
+          useChatRealtimeStore.getState().setConnectionStatus("connected");
+        },
+        onStompError: () => {
+          useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+        },
+        onWebSocketClose: () => {
+          useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+          useChatRealtimeStore.getState().setSubscribedRoomIds([]);
+        },
+      });
       isConnectedRef.current = true;
       return;
     }
@@ -57,6 +74,8 @@ function WebSocketConnectionManager() {
     }
 
     void deactivateStompClient();
+    useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+    useChatRealtimeStore.getState().setSubscribedRoomIds([]);
     isConnectedRef.current = false;
   }, [accessToken, authStatus, isAuthenticated]);
 
@@ -67,6 +86,8 @@ function WebSocketConnectionManager() {
       }
 
       void deactivateStompClient();
+      useChatRealtimeStore.getState().setConnectionStatus("disconnected");
+      useChatRealtimeStore.getState().setSubscribedRoomIds([]);
       isConnectedRef.current = false;
     };
   }, []);

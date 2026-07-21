@@ -93,7 +93,11 @@ export default function ChatRoomDirectoryScreen() {
       );
 
       if (context?.previousRoom) {
-        updateChatRoomCaches(queryClient, room.chatId, () => context.previousRoom);
+        updateChatRoomCaches(queryClient, room.chatId, (currentRoom) => ({
+          ...currentRoom,
+          favorite: context.previousRoom.favorite,
+          isHidden: context.previousRoom.isHidden,
+        }));
       }
 
       showToast("채팅방 상태를 변경하지 못했습니다. 다시 시도해 주세요.");
@@ -307,7 +311,11 @@ export default function ChatRoomDirectoryScreen() {
               onSettingsClick={handleSettingsClick}
               onFavoriteChange={handleFavoriteChange}
               onHiddenChange={handleHiddenChange}
-              emptyText="검색 결과가 없습니다."
+              emptyText={
+                normalizedQuery.length === 0 && activeFilter === "UFO"
+                  ? "참여 중인 채팅방이 없습니다."
+                  : "검색 결과가 없습니다."
+              }
             />
             <Pagination
               currentPage={chatRoomsPage}

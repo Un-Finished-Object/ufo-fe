@@ -7,8 +7,10 @@ const DEFAULT_HEARTBEAT_INCOMING = 4000;
 const DEFAULT_HEARTBEAT_OUTGOING = 4000;
 
 type StompLifecycleHandlers = {
+  onBeforeConnect?: (client: Client) => void;
   onConnect?: (frame: IFrame, client: Client) => void;
   onStompError?: (frame: IFrame, client: Client) => void;
+  onWebSocketClose?: (event: CloseEvent, client: Client) => void;
 };
 
 type StompConnectListener = (frame: IFrame, client: Client) => void;
@@ -118,6 +120,10 @@ function attachLifecycleHandlers(client: Client, options: CreateStompClientOptio
     console.error("Additional details:", frame.body);
     options.onStompError?.(frame, client);
   };
+
+  client.onWebSocketClose = (event) => {
+    options.onWebSocketClose?.(event, client);
+  };
 }
 
 export function createStompClient(options: CreateStompClientOptions = {}) {
@@ -129,6 +135,7 @@ export function createStompClient(options: CreateStompClientOptions = {}) {
     heartbeatIncoming: options.heartbeatIncoming ?? DEFAULT_HEARTBEAT_INCOMING,
     heartbeatOutgoing: options.heartbeatOutgoing ?? DEFAULT_HEARTBEAT_OUTGOING,
     beforeConnect: async () => {
+      options.onBeforeConnect?.(client);
       client.connectHeaders = await resolveConnectHeaders(options);
     },
   });
@@ -155,6 +162,7 @@ export function configureStompClient(options: CreateStompClientOptions = {}) {
     heartbeatOutgoing: options.heartbeatOutgoing ?? DEFAULT_HEARTBEAT_OUTGOING,
     beforeConnect: async () => {
       if (stompClient) {
+        options.onBeforeConnect?.(stompClient);
         stompClient.connectHeaders = await resolveConnectHeaders(options);
       }
     },

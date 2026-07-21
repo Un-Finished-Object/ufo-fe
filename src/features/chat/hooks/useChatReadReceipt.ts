@@ -2,8 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { resetChatRoomUnread } from "@/features/chat/lib/chatRoomCache";
-import { sendChatRead } from "@/features/chat/services/sendChatRead";
+import { publishOrQueueChatRead } from "@/features/chat/lib/chatReadReceiptQueue";
 
 type UseChatReadReceiptParams = {
   roomId: string;
@@ -47,13 +46,14 @@ export function useChatReadReceipt({
           return;
         }
 
-        sendChatRead({
-          roomId: numericRoomId,
-          lastReadMessageId,
+        const didPublish = publishOrQueueChatRead(queryClient, {
+          roomId: String(numericRoomId),
+          lastReadMessageId: String(lastReadMessageId),
         });
 
-        resetChatRoomUnread(queryClient, roomId);
-        lastSentMessageIdRef.current = readKey;
+        if (didPublish) {
+          lastSentMessageIdRef.current = readKey;
+        }
       },
       {
         root: scrollContainer,

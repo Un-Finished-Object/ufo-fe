@@ -12,6 +12,7 @@ import {
 } from "@/features/chat/lib/chatMessageEvents";
 import { addStompConnectListener, getStompClient } from "@/features/chat/lib/stompClient";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
+import { flushPendingChatReads } from "@/features/chat/lib/chatReadReceiptQueue";
 
 export default function ChatRealtimeManager() {
   const queryClient = useQueryClient();
@@ -19,10 +20,13 @@ export default function ChatRealtimeManager() {
   const roomsQuery = useAllMyChatRoomsQuery({ enabled: isAuthenticated });
   const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
   const rooms = roomsQuery.rooms;
-  const roomsSignature = useMemo(
-    () => rooms.map((room) => `${room.chatId}:${room.name}`).join("|"),
-    [rooms],
-  );
+  const roomMetadataRef = useRef(new Map(rooms.map((room) => [room.chatId, room])));
+  const roomIds = useMemo(() => rooms.map((room) => room.chatId), [rooms]);
+  const roomIdsSignature = roomIds.join("|");
+
+  useEffect(() => {
+    roomMetadataRef.current = new Map(rooms.map((room) => [room.chatId, room]));
+  }, [rooms]);
 
   useEffect(() => {
     const subscriptions = subscriptionsRef.current;
@@ -37,11 +41,12 @@ export default function ChatRealtimeManager() {
     }
 
     const client = getStompClient();
-    const roomMap = new Map(rooms.map((room) => [room.chatId, room]));
+    const subscribedRoomIds = roomIdsSignature ? roomIdsSignature.split("|") : [];
+    const nextRoomIds = new Set(subscribedRoomIds);
 
     const subscribeToRooms = (forceResubscribe: boolean) => {
       subscriptions.forEach((subscription, roomId) => {
-        if (roomMap.has(roomId)) {
+        if (nextRoomIds.has(roomId)) {
           return;
         }
 
@@ -50,11 +55,11 @@ export default function ChatRealtimeManager() {
       });
 
       if (!client.connected) {
-        useChatRealtimeStore.getState().setSubscribedRoomIds(Array.from(roomMap.keys()));
+        useChatRealtimeStore.getState().setSubscribedRoomIds([]);
         return;
       }
 
-      roomMap.forEach((room, roomId) => {
+      subscribedRoomIds.forEach((roomId) => {
         const currentSubscription = subscriptions.get(roomId);
 
         if (currentSubscription && !forceResubscribe) {
@@ -71,8 +76,13 @@ export default function ChatRealtimeManager() {
           }
 
           const { currentRoomId, showToast } = useChatRealtimeStore.getState();
-          const isMine =
-            event.message.senderName?.trim() === room.nickname.trim();
+          const roomMetadata = roomMetadataRef.current.get(roomId);
+
+          if (!roomMetadata) {
+            return;
+          }
+
+          const isMine = event.message.senderName?.trim() === roomMetadata.nickname.trim();
 
           if (currentRoomId === roomId) {
             applyIncomingChatMessage(queryClient, roomId, event.message);
@@ -90,7 +100,7 @@ export default function ChatRealtimeManager() {
           });
           showToast({
             roomId,
-            roomName: room.name,
+            roomName: roomMetadata.name,
             senderName: event.message.senderName?.trim() || "알 수 없는 사용자",
             text: event.message.text,
           });
@@ -99,13 +109,14 @@ export default function ChatRealtimeManager() {
         subscriptions.set(roomId, nextSubscription);
       });
 
-      useChatRealtimeStore.getState().setSubscribedRoomIds(Array.from(roomMap.keys()));
+      useChatRealtimeStore.getState().setSubscribedRoomIds(Array.from(subscriptions.keys()));
     };
 
     subscribeToRooms(false);
 
     const removeConnectListener = addStompConnectListener(() => {
       subscribeToRooms(true);
+      flushPendingChatReads(queryClient);
     });
 
     return () => {
@@ -116,7 +127,7 @@ export default function ChatRealtimeManager() {
       subscriptions.clear();
       useChatRealtimeStore.getState().setSubscribedRoomIds([]);
     };
-  }, [isAuthenticated, queryClient, roomsSignature, rooms]);
+  }, [isAuthenticated, queryClient, roomIdsSignature]);
 
   return null;
 }

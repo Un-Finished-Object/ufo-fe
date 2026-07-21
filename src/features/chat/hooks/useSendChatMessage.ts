@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   appendChatMessageToData,
   chatMessagesQueryKey,
@@ -27,6 +27,9 @@ type SendMessageParams = {
 type PendingMessageContext = {
   clientMessageId: string;
 };
+
+const MESSAGE_CONFIRMATION_TIMEOUT_MS = 10_000;
+const MESSAGE_RECOVERY_DEBOUNCE_MS = 300;
 
 function createClientMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -81,6 +84,95 @@ export function useSendChatMessage({
   senderName,
 }: UseSendChatMessageParams) {
   const queryClient = useQueryClient();
+  const confirmationTimeoutsRef = useRef(new Map<string, number>());
+  const recoveryClientMessageIdsRef = useRef(new Set<string>());
+  const recoveryTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const confirmationTimeouts = confirmationTimeoutsRef.current;
+    const recoveryClientMessageIds = recoveryClientMessageIdsRef.current;
+
+    return () => {
+      confirmationTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      confirmationTimeouts.clear();
+
+      if (recoveryTimeoutRef.current !== null) {
+        window.clearTimeout(recoveryTimeoutRef.current);
+      }
+
+      recoveryClientMessageIds.clear();
+    };
+  }, []);
+
+  const isClientMessageConfirmed = useCallback((clientMessageId: string) => {
+    const messagesData = queryClient.getQueryData<ChatMessagesInfiniteData>(
+      chatMessagesQueryKey(roomId),
+    );
+
+    return messagesData?.pages.some((page) =>
+      page.messages.some(
+        (message) =>
+          message.clientMessageId === clientMessageId && message.status === "confirmed",
+      ),
+    ) === true;
+  }, [queryClient, roomId]);
+
+  const recoverUnconfirmedMessages = useCallback(async () => {
+    recoveryTimeoutRef.current = null;
+    const clientMessageIds = Array.from(recoveryClientMessageIdsRef.current);
+    recoveryClientMessageIdsRef.current.clear();
+
+    const unconfirmedClientMessageIds = clientMessageIds.filter(
+      (clientMessageId) => !isClientMessageConfirmed(clientMessageId),
+    );
+
+    if (unconfirmedClientMessageIds.length === 0) {
+      return;
+    }
+
+    try {
+      await queryClient.refetchQueries({
+        queryKey: chatMessagesQueryKey(roomId),
+        type: "active",
+      });
+    } catch {
+      // A failed recovery request still results in an explicit failed message state.
+    }
+
+    unconfirmedClientMessageIds.forEach((clientMessageId) => {
+      if (isClientMessageConfirmed(clientMessageId)) {
+        return;
+      }
+
+      queryClient.setQueryData<ChatMessagesInfiniteData>(
+        chatMessagesQueryKey(roomId),
+        (previousData) => markChatMessageFailedInData(previousData, clientMessageId),
+      );
+    });
+  }, [isClientMessageConfirmed, queryClient, roomId]);
+
+  const scheduleConfirmationRecovery = useCallback((clientMessageId: string) => {
+    const currentTimeout = confirmationTimeoutsRef.current.get(clientMessageId);
+
+    if (typeof currentTimeout === "number") {
+      window.clearTimeout(currentTimeout);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      confirmationTimeoutsRef.current.delete(clientMessageId);
+      recoveryClientMessageIdsRef.current.add(clientMessageId);
+
+      if (recoveryTimeoutRef.current !== null) {
+        window.clearTimeout(recoveryTimeoutRef.current);
+      }
+
+      recoveryTimeoutRef.current = window.setTimeout(() => {
+        void recoverUnconfirmedMessages();
+      }, MESSAGE_RECOVERY_DEBOUNCE_MS);
+    }, MESSAGE_CONFIRMATION_TIMEOUT_MS);
+
+    confirmationTimeoutsRef.current.set(clientMessageId, timeoutId);
+  }, [recoverUnconfirmedMessages]);
 
   const removeMessageByClientMessageId = useCallback((clientMessageId: string) => {
     queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
@@ -126,8 +218,8 @@ export function useSendChatMessage({
         markChatMessageFailedInData(previousData, context.clientMessageId),
       );
     },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: chatMessagesQueryKey(roomId) });
+    onSuccess: (_data, variables) => {
+      scheduleConfirmationRecovery(variables.clientMessageId);
     },
   });
 
