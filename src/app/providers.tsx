@@ -16,6 +16,7 @@ import {
 } from "@/features/chat/lib/stompClient";
 import { isMockMode } from "@/mocks/config";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
+import { clearPendingChatReads } from "@/features/chat/lib/chatReadReceiptQueue";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -104,6 +105,7 @@ function WebSocketConnectionManager() {
     }
 
     previousAccessTokenRef.current = null;
+    clearPendingChatReads();
 
     if (!isConnectedRef.current) {
       return;

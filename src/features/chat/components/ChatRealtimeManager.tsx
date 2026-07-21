@@ -16,7 +16,8 @@ import { flushPendingChatReads } from "@/features/chat/lib/chatReadReceiptQueue"
 
 export default function ChatRealtimeManager() {
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthState();
+  const { data: currentUser, isAuthenticated } = useAuthState();
+  const currentUserId = currentUser?.userId ?? null;
   const roomsQuery = useAllMyChatRoomsQuery({ enabled: isAuthenticated });
   const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
   const rooms = roomsQuery.rooms;
@@ -119,7 +120,10 @@ export default function ChatRealtimeManager() {
 
     const removeConnectListener = addStompConnectListener((_frame, connectedClient) => {
       subscribeToRooms(connectedClient, true);
-      flushPendingChatReads(queryClient);
+
+      if (currentUserId) {
+        flushPendingChatReads(queryClient, currentUserId);
+      }
     });
 
     return () => {
@@ -130,7 +134,7 @@ export default function ChatRealtimeManager() {
       subscriptions.clear();
       useChatRealtimeStore.getState().setSubscribedRoomIds([]);
     };
-  }, [isAuthenticated, queryClient, roomIdsSignature]);
+  }, [currentUserId, isAuthenticated, queryClient, roomIdsSignature]);
 
   return null;
 }

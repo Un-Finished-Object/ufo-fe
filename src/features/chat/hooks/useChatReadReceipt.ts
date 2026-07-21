@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { publishOrQueueChatRead } from "@/features/chat/lib/chatReadReceiptQueue";
 
 type UseChatReadReceiptParams = {
+  ownerUserId: string | null;
   roomId: string;
   lastConfirmedMessageId: string | null;
   targetElement: HTMLElement | null;
@@ -12,6 +13,7 @@ type UseChatReadReceiptParams = {
 };
 
 export function useChatReadReceipt({
+  ownerUserId,
   roomId,
   lastConfirmedMessageId,
   targetElement,
@@ -21,7 +23,13 @@ export function useChatReadReceipt({
   const lastSentMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!roomId || !lastConfirmedMessageId || !targetElement || !scrollContainer) {
+    if (
+      !ownerUserId ||
+      !roomId ||
+      !lastConfirmedMessageId ||
+      !targetElement ||
+      !scrollContainer
+    ) {
       return;
     }
 
@@ -47,6 +55,7 @@ export function useChatReadReceipt({
         }
 
         const didPublish = publishOrQueueChatRead(queryClient, {
+          ownerUserId,
           roomId: String(numericRoomId),
           lastReadMessageId: String(lastReadMessageId),
         });
@@ -66,5 +75,5 @@ export function useChatReadReceipt({
     return () => {
       observer.disconnect();
     };
-  }, [lastConfirmedMessageId, queryClient, roomId, scrollContainer, targetElement]);
+  }, [lastConfirmedMessageId, ownerUserId, queryClient, roomId, scrollContainer, targetElement]);
 }

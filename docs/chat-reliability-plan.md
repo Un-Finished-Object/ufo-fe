@@ -45,6 +45,9 @@
   owner.
 - Keep only the latest failed read position per room and flush those positions on
   STOMP reconnect. Clear unread state only after publish succeeds.
+- Scope pending read positions by the authenticated user ID, discard mismatched
+  entries before reconnect flush, and clear the queue at logout and authenticated
+  cache boundaries.
 - Use WebSocket `clientMessageId` echoes as primary optimistic confirmation. If
   no echo arrives within 10 seconds, debounce pending messages into one recovery
   history refetch and mark still-unconfirmed messages as failed.

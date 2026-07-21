@@ -497,6 +497,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   ]);
 
   useChatReadReceipt({
+    ownerUserId: meQuery.data?.userId ?? null,
     roomId,
     lastConfirmedMessageId,
     targetElement: readMarkerElement,
