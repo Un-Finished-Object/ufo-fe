@@ -1,24 +1,24 @@
 "use client";
 
 import { type StompSubscription } from "@stomp/stompjs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useAuthState } from "@/features/auth/hooks/useAuthState";
+import { useAllMyChatRoomsQuery } from "@/features/chat/hooks/useAllMyChatRoomsQuery";
 import {
   applyIncomingChatMessage,
   parseIncomingChatMessageEvent,
   updateChatRoomLastMessage,
 } from "@/features/chat/lib/chatMessageEvents";
-import { myChatRoomsQueryOptions } from "@/features/chat/queries/chatQueries";
 import { addStompConnectListener, getStompClient } from "@/features/chat/lib/stompClient";
 import { useChatRealtimeStore } from "@/features/chat/stores/useChatRealtimeStore";
 
 export default function ChatRealtimeManager() {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthState();
-  const roomsQuery = useQuery(myChatRoomsQueryOptions({ enabled: isAuthenticated }));
+  const roomsQuery = useAllMyChatRoomsQuery({ enabled: isAuthenticated });
   const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
-  const rooms = useMemo(() => roomsQuery.data?.rooms ?? [], [roomsQuery.data]);
+  const rooms = roomsQuery.rooms;
   const roomsSignature = useMemo(
     () => rooms.map((room) => `${room.chatId}:${room.name}`).join("|"),
     [rooms],
@@ -71,9 +71,16 @@ export default function ChatRealtimeManager() {
           }
 
           const { currentRoomId, showToast } = useChatRealtimeStore.getState();
+          const isMine =
+            event.message.senderName?.trim() === room.nickname.trim();
 
           if (currentRoomId === roomId) {
             applyIncomingChatMessage(queryClient, roomId, event.message);
+            updateChatRoomLastMessage(queryClient, roomId, event.message.text);
+            return;
+          }
+
+          if (isMine) {
             updateChatRoomLastMessage(queryClient, roomId, event.message.text);
             return;
           }
@@ -82,6 +89,7 @@ export default function ChatRealtimeManager() {
             incrementUnread: true,
           });
           showToast({
+            roomId,
             roomName: room.name,
             senderName: event.message.senderName?.trim() || "알 수 없는 사용자",
             text: event.message.text,

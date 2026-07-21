@@ -95,9 +95,15 @@ export async function fetchChatMessages(
 
   const messages = payload.data.messages
     .filter(
-      (message): message is ChatMessageItem & { messageId: number; text: string } =>
+      (message): message is ChatMessageItem & {
+        messageId: number;
+        text: string;
+        createdAt: string;
+      } =>
         typeof message.messageId === "number" &&
-        typeof message.text === "string",
+        typeof message.text === "string" &&
+        typeof message.createdAt === "string" &&
+        !Number.isNaN(Date.parse(message.createdAt)),
     )
     .map((message) => {
       const senderName = getSenderName(message);
@@ -116,7 +122,7 @@ export async function fetchChatMessages(
               ? replyMessageId
               : null,
         text: message.text,
-        createdAt: typeof message.createdAt === "string" ? message.createdAt : null,
+        createdAt: message.createdAt,
         status: "confirmed",
       } satisfies ChatMessage;
     })

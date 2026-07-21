@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 type ChatRealtimeToast = {
   id: number;
+  roomId: string;
   roomName: string;
   senderName: string;
   text: string;

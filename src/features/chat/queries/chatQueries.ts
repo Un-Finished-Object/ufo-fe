@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions, type InfiniteData } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
 import {
@@ -43,6 +43,11 @@ type ValidMyChatItem = MyChatItem & {
 };
 
 export const myChatRoomsQueryKey = ["myChatRooms"] as const;
+export const allMyChatRoomsQueryKey = [...myChatRoomsQueryKey, "all"] as const;
+
+export function myChatRoomsPageQueryKey(page: number) {
+  return [...myChatRoomsQueryKey, "page", page] as const;
+}
 
 type MyChatRoomsQueryOptionsParams = {
   enabled?: boolean;
@@ -54,6 +59,8 @@ export type MyChatRoomsResult = {
   page: number;
   nextPage: number;
 };
+
+export type AllMyChatRoomsInfiniteData = InfiniteData<MyChatRoomsResult, number>;
 
 function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
   if (!chatImageUrl) {
@@ -138,9 +145,41 @@ export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = 
   const page = params.page ?? 1;
 
   return queryOptions({
-    queryKey: [...myChatRoomsQueryKey, page] as const,
+    queryKey: myChatRoomsPageQueryKey(page),
     enabled: params.enabled ?? true,
     queryFn: ({ signal }) => fetchMyChatRooms({ page, signal }),
     staleTime: QUERY_STALE_TIME.critical,
   });
+}
+
+export function allMyChatRoomsInfiniteQueryOptions({ enabled = true }: { enabled?: boolean } = {}) {
+  return infiniteQueryOptions({
+    queryKey: allMyChatRoomsQueryKey,
+    enabled,
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => fetchMyChatRooms({ page: pageParam, signal }),
+    getNextPageParam: (lastPage, allPages) => {
+      const nextPage = lastPage.nextPage;
+      const fetchedPages = new Set(allPages.map((page) => page.page));
+
+      if (nextPage <= lastPage.page || fetchedPages.has(nextPage)) {
+        return undefined;
+      }
+
+      return nextPage;
+    },
+    staleTime: QUERY_STALE_TIME.critical,
+  });
+}
+
+export function flattenMyChatRooms(data?: AllMyChatRoomsInfiniteData) {
+  const roomById = new Map<string, ChatRoom>();
+
+  data?.pages.forEach((page) => {
+    page.rooms.forEach((room) => {
+      roomById.set(room.chatId, room);
+    });
+  });
+
+  return Array.from(roomById.values());
 }

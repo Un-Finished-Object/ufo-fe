@@ -100,6 +100,8 @@ export function useSendChatMessage({
       );
     },
     onMutate: async ({ text, clientMessageId, replyMessageId, replySenderName }) => {
+      await queryClient.cancelQueries({ queryKey: chatMessagesQueryKey(roomId) });
+
       queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
         appendChatMessageToData(
           previousData,
@@ -123,6 +125,9 @@ export function useSendChatMessage({
       queryClient.setQueryData<ChatMessagesInfiniteData>(chatMessagesQueryKey(roomId), (previousData) =>
         markChatMessageFailedInData(previousData, context.clientMessageId),
       );
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: chatMessagesQueryKey(roomId) });
     },
   });
 

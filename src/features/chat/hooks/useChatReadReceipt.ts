@@ -1,6 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { resetChatRoomUnread } from "@/features/chat/lib/chatRoomCache";
 import { sendChatRead } from "@/features/chat/services/sendChatRead";
 
 type UseChatReadReceiptParams = {
@@ -16,6 +18,7 @@ export function useChatReadReceipt({
   targetElement,
   scrollContainer,
 }: UseChatReadReceiptParams) {
+  const queryClient = useQueryClient();
   const lastSentMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -38,7 +41,9 @@ export function useChatReadReceipt({
           return;
         }
 
-        if (lastSentMessageIdRef.current === lastConfirmedMessageId) {
+        const readKey = `${roomId}:${lastConfirmedMessageId}`;
+
+        if (lastSentMessageIdRef.current === readKey) {
           return;
         }
 
@@ -47,7 +52,8 @@ export function useChatReadReceipt({
           lastReadMessageId,
         });
 
-        lastSentMessageIdRef.current = lastConfirmedMessageId;
+        resetChatRoomUnread(queryClient, roomId);
+        lastSentMessageIdRef.current = readKey;
       },
       {
         root: scrollContainer,
@@ -60,5 +66,5 @@ export function useChatReadReceipt({
     return () => {
       observer.disconnect();
     };
-  }, [lastConfirmedMessageId, roomId, scrollContainer, targetElement]);
+  }, [lastConfirmedMessageId, queryClient, roomId, scrollContainer, targetElement]);
 }
