@@ -14,7 +14,6 @@ import type { ChatMessage } from "@/features/chat/types";
 
 type UseSendChatMessageParams = {
   roomId: string;
-  senderId?: string | null;
   senderName?: string;
 };
 
@@ -39,14 +38,12 @@ function createClientMessageId() {
 
 function buildPendingMessage({
   clientMessageId,
-  senderId,
   senderName,
   replyMessageId,
   replySenderName,
   text,
 }: {
   clientMessageId: string;
-  senderId?: string | null;
   senderName?: string;
   replyMessageId?: string | null;
   replySenderName?: string | null;
@@ -55,7 +52,6 @@ function buildPendingMessage({
   return {
     messageId: null,
     clientMessageId,
-    senderId: senderId ?? null,
     senderName,
     replyMessageId: replyMessageId ?? null,
     replySenderName: replySenderName ?? null,
@@ -82,7 +78,6 @@ function normalizeReplyMessageId(replyMessageId?: string | null) {
 
 export function useSendChatMessage({
   roomId,
-  senderId = null,
   senderName,
 }: UseSendChatMessageParams) {
   const queryClient = useQueryClient();
@@ -110,7 +105,6 @@ export function useSendChatMessage({
           previousData,
           buildPendingMessage({
             clientMessageId,
-            senderId,
             senderName,
             replyMessageId,
             replySenderName,

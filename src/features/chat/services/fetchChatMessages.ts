@@ -13,15 +13,9 @@ const CHAT_MESSAGES_CURSOR_PARAM = "messageId";
 type ChatMessageItem = {
   messageId?: number;
   clientMessageId?: string;
-  senderId?: number | string;
   senderName?: string;
-  sender_name?: string;
-  userName?: string;
-  user_name?: string;
   replySenderName?: string | null;
-  reply_sender_name?: string | null;
   replyMessageId?: number | string | null;
-  reply_message_id?: number | string | null;
   text?: string;
   createdAt?: string | null;
 };
@@ -30,7 +24,7 @@ type ChatMessagesResponse = {
   data?: {
     lastMessageId?: number;
     hasNext?: boolean;
-    nextMessageId?: number;
+    nextMessageId?: number | null;
     messages?: ChatMessageItem[];
   };
   error?: unknown;
@@ -43,21 +37,15 @@ export type ChatMessagesPage = {
 };
 
 function getSenderName(message: ChatMessageItem) {
-  return (
-    message.senderName ??
-    message.sender_name ??
-    message.userName ??
-    message.user_name ??
-    undefined
-  );
+  return message.senderName;
 }
 
 function getReplySenderName(message: ChatMessageItem) {
-  return message.replySenderName ?? message.reply_sender_name ?? null;
+  return message.replySenderName ?? null;
 }
 
 function getReplyMessageId(message: ChatMessageItem) {
-  return message.replyMessageId ?? message.reply_message_id ?? null;
+  return message.replyMessageId ?? null;
 }
 
 export async function fetchChatMessages(
@@ -119,12 +107,6 @@ export async function fetchChatMessages(
       return {
         messageId: String(message.messageId),
         clientMessageId: typeof message.clientMessageId === "string" ? message.clientMessageId : undefined,
-        senderId:
-          typeof message.senderId === "number"
-            ? String(message.senderId)
-            : typeof message.senderId === "string"
-              ? message.senderId
-              : null,
         senderName: typeof senderName === "string" ? senderName : undefined,
         replySenderName: typeof replySenderName === "string" ? replySenderName : null,
         replyMessageId:
@@ -147,6 +129,6 @@ export async function fetchChatMessages(
   return {
     messages,
     hasNext: payload.data.hasNext === true,
-    nextCursor: oldestMessageId ?? fallbackNextCursor,
+    nextCursor: fallbackNextCursor ?? oldestMessageId,
   } satisfies ChatMessagesPage;
 }

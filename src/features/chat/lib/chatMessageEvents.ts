@@ -11,7 +11,6 @@ import type { ChatMessage } from "@/features/chat/types";
 type MessageCreatedPayload = {
   messageId?: number | null;
   clientMessageId?: string | null;
-  senderId?: number | null;
   senderProfile?: string | null;
   senderName?: string | null;
   text?: string | null;
@@ -35,7 +34,6 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
   if (
     typeof payload.messageId !== "number" ||
     typeof payload.clientMessageId !== "string" ||
-    typeof payload.senderId !== "number" ||
     typeof payload.senderName !== "string" ||
     typeof payload.text !== "string" ||
     typeof payload.createdAt !== "string"
@@ -46,7 +44,6 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
   return {
     messageId: String(payload.messageId),
     clientMessageId: payload.clientMessageId,
-    senderId: String(payload.senderId),
     senderName: payload.senderName,
     replySenderName: typeof payload.replySenderName === "string" ? payload.replySenderName : null,
     replyMessageId: typeof payload.replyMessageId === "number" ? String(payload.replyMessageId) : null,

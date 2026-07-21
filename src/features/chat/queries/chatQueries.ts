@@ -14,6 +14,7 @@ type MyChatItem = {
   chatId?: number;
   chatName?: string;
   chatImageUrl?: string | null;
+  nickname?: string;
   favorite?: boolean;
   isHidden?: boolean;
   unRead?: number;
@@ -34,6 +35,7 @@ type ValidMyChatItem = MyChatItem & {
   patternId: number;
   chatId: number;
   chatName: string;
+  nickname: string;
   favorite: boolean;
   isHidden: boolean;
   unRead: number;
@@ -109,6 +111,7 @@ export async function fetchMyChatRooms({
           typeof chat.patternId === "number" &&
           typeof chat.chatId === "number" &&
           typeof chat.chatName === "string" &&
+          typeof chat.nickname === "string" &&
           typeof chat.favorite === "boolean" &&
           typeof chat.isHidden === "boolean" &&
           typeof chat.unRead === "number" &&
@@ -118,6 +121,7 @@ export async function fetchMyChatRooms({
         chatId: String(chat.chatId),
         patternId: String(chat.patternId),
         name: chat.chatName,
+        nickname: chat.nickname,
         imageUrl: normalizeChatImageUrl(chat.chatImageUrl),
         lastMessage: typeof chat.lastMessage === "string" ? chat.lastMessage : "",
         favorite: chat.favorite,

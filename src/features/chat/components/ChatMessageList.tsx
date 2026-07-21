@@ -10,7 +10,7 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
-  currentUserId: string | null;
+  currentUserName: string | null;
   isLoading: boolean;
   errorMessage: string | null;
   lastConfirmedMessageId?: string | null;
@@ -21,7 +21,7 @@ type ChatMessageListProps = {
 };
 
 type ChatMessageItemProps = {
-  currentUserId: string | null;
+  currentUserName: string | null;
   isLastConfirmedMessage: boolean;
   message: ChatMessage;
   messageById: Map<string, ChatMessage>;
@@ -50,7 +50,7 @@ function formatMessageTime(createdAt: string | null) {
 }
 
 function ChatMessageItem({
-  currentUserId,
+  currentUserName,
   isLastConfirmedMessage,
   message,
   messageById,
@@ -62,7 +62,8 @@ function ChatMessageItem({
   const longPressTimeoutRef = useRef<number | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const isMine = currentUserId !== null && message.senderId === currentUserId;
+  const isMine =
+    currentUserName !== null && message.senderName?.trim() === currentUserName.trim();
   const shouldTreatAsMine = isMine || message.status === "pending" || message.status === "failed";
   const isPending = message.status === "pending";
   const isFailed = message.status === "failed";
@@ -253,7 +254,7 @@ function ChatMessageItem({
 
 export default function ChatMessageList({
   messages,
-  currentUserId,
+  currentUserName,
   isLoading,
   errorMessage,
   lastConfirmedMessageId = null,
@@ -285,7 +286,7 @@ export default function ChatMessageList({
       {messages.map((message) => (
         <ChatMessageItem
           key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-          currentUserId={currentUserId}
+          currentUserName={currentUserName}
           isLastConfirmedMessage={
             message.status === "confirmed" &&
             message.messageId !== null &&

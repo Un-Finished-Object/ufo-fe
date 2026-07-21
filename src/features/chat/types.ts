@@ -1,7 +1,6 @@
 export type ChatMessage = {
   messageId: string | null;
   clientMessageId?: string;
-  senderId?: string | null;
   senderName?: string;
   replySenderName?: string | null;
   replyMessageId?: string | null;
@@ -14,6 +13,7 @@ export type ChatRoom = {
   chatId: string;
   patternId: string;
   name: string;
+  nickname: string;
   imageUrl: string | null;
   lastMessage: string;
   favorite: boolean;

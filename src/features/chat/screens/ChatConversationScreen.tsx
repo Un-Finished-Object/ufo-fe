@@ -78,7 +78,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
     isFetchingNextPage,
     isPending: isMessagesPending,
   } = messagesQuery;
-  const currentUserId = meQuery.data?.userId ?? meQuery.data?.email ?? null;
+  const currentUserName = chatRoom?.nickname ?? null;
   const [topSentinelElement, setTopSentinelElement] = useState<HTMLDivElement | null>(null);
   const [messageListElement, setMessageListElement] = useState<HTMLElement | null>(null);
   const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
@@ -93,8 +93,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
   const sendChatMessage = useSendChatMessage({
     roomId,
-    senderId: currentUserId,
-    senderName: meQuery.data?.nickname,
+    senderName: currentUserName ?? undefined,
   });
 
   useEffect(() => {
@@ -402,7 +401,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   });
 
   const isFoActive = chatStatus?.isHidden ?? false;
-  const chatInputPlaceholderName = meQuery.data?.nickname.trim() || "회원";
+  const chatInputPlaceholderName = currentUserName?.trim() || "회원";
   const foConfirmMainText = isFoActive
     ? "이 채팅방의 매듭을 푸시겠습니까?"
     : "이 채팅방을 매듭짓겠습니까?";
@@ -450,7 +449,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
           <div className="space-y-5">
             <ChatMessageList
               messages={messages}
-              currentUserId={currentUserId}
+              currentUserName={currentUserName}
               isLoading={isMessagesPending}
               errorMessage={errorMessage}
               lastConfirmedMessageId={lastConfirmedMessageId}

@@ -183,6 +183,7 @@ export const mockChats = [{
   chatId: 101,
   chatName: "포근한 라글란 함께 떠요",
   chatImageUrl: "/mock/pattern-card.svg",
+  nickname: "뜨개구름",
   favorite: true,
   isHidden: false,
   unRead: 2,

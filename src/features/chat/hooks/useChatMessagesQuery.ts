@@ -137,7 +137,6 @@ export function upsertIncomingChatMessageInData(
       return {
         ...messageItem,
         messageId: nextMessage.messageId,
-        senderId: nextMessage.senderId,
         senderName: nextMessage.senderName,
         replySenderName: nextMessage.replySenderName ?? null,
         replyMessageId: nextMessage.replyMessageId ?? null,
