@@ -16,7 +16,6 @@ type ChatTopBarAction = {
 type ChatTopBarProps = {
   title: string;
   subtitle?: string | null;
-  leftHref?: string;
   onLeftClick?: () => void;
   right?: ChatTopBarAction[];
 };
@@ -82,21 +81,13 @@ function renderRightIcon(type: ChatTopBarActionType, active = false) {
 export default function ChatTopBar({
   title,
   subtitle = null,
-  leftHref,
   onLeftClick,
   right = [],
 }: ChatTopBarProps) {
   const router = useRouter();
   const leftAriaLabel = "뒤로가기";
   const rightActions = right.slice(0, 3);
-  const handleBackClick = onLeftClick ?? (() => {
-    if (leftHref) {
-      router.push(leftHref);
-      return;
-    }
-
-    router.back();
-  });
+  const handleBackClick = onLeftClick ?? (() => router.back());
 
   return (
     <header className="sticky top-0 z-50 w-full bg-ufo-surface pt-[env(safe-area-inset-top)]">

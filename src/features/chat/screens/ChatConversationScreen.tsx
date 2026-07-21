@@ -560,7 +560,6 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
     <>
       <MobileShell fullHeight dynamicViewport>
         <ChatRoomTopBar
-          leftHref="/chats"
           title={roomMeta?.title ?? "채팅방"}
           subtitle={roomMeta?.participants ?? null}
           right={[
