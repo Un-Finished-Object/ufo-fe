@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "shop-phinf.pstatic.net",
+      },
+      {
+        protocol: "https",
         hostname: "phinf.pstatic.net",
       },
       {
