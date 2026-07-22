@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Footer from "@/components/common/Footer";
 import Pagination from "@/components/common/Pagination";
@@ -19,9 +20,14 @@ import {
 import type { PatternScrapResult } from "@/features/scraps/services/fetchPatternScraps";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
-export default function ScrapCollectionScreen() {
+type ScrapCollectionScreenProps = {
+  initialPage: number;
+};
+
+export default function ScrapCollectionScreen({ initialPage }: ScrapCollectionScreenProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const { authStatus, isAuthenticated } = useAuthState();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const queryClient = useQueryClient();
@@ -39,6 +45,10 @@ export default function ScrapCollectionScreen() {
     }
   }, [authStatus, isAuthenticated, showAuthRequiredToast]);
 
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
+
   const filteredPatternScraps = useMemo(
     () =>
       (patternScrapItems ?? []).filter(
@@ -52,6 +62,15 @@ export default function ScrapCollectionScreen() {
   const handleQueryChange = (nextQuery: string) => {
     setQuery(nextQuery);
     setCurrentPage(1);
+
+    if (currentPage !== 1) {
+      router.replace("/scraps");
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    router.push(page === 1 ? "/scraps" : `/scraps?page=${page}`);
   };
 
   return (
@@ -115,7 +134,7 @@ export default function ScrapCollectionScreen() {
           <Pagination
             currentPage={currentPage}
             nextPage={nextPage}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         ) : null}
         <Footer />
