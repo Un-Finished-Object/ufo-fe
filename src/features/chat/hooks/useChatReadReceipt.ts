@@ -1,9 +1,11 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { sendChatRead } from "@/features/chat/services/sendChatRead";
+import { publishOrQueueChatRead } from "@/features/chat/lib/chatReadReceiptQueue";
 
 type UseChatReadReceiptParams = {
+  ownerUserId: string | null;
   roomId: string;
   lastConfirmedMessageId: string | null;
   targetElement: HTMLElement | null;
@@ -11,15 +13,23 @@ type UseChatReadReceiptParams = {
 };
 
 export function useChatReadReceipt({
+  ownerUserId,
   roomId,
   lastConfirmedMessageId,
   targetElement,
   scrollContainer,
 }: UseChatReadReceiptParams) {
+  const queryClient = useQueryClient();
   const lastSentMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!roomId || !lastConfirmedMessageId || !targetElement || !scrollContainer) {
+    if (
+      !ownerUserId ||
+      !roomId ||
+      !lastConfirmedMessageId ||
+      !targetElement ||
+      !scrollContainer
+    ) {
       return;
     }
 
@@ -38,16 +48,21 @@ export function useChatReadReceipt({
           return;
         }
 
-        if (lastSentMessageIdRef.current === lastConfirmedMessageId) {
+        const readKey = `${roomId}:${lastConfirmedMessageId}`;
+
+        if (lastSentMessageIdRef.current === readKey) {
           return;
         }
 
-        sendChatRead({
-          roomId: numericRoomId,
-          lastReadMessageId,
+        const didPublish = publishOrQueueChatRead(queryClient, {
+          ownerUserId,
+          roomId: String(numericRoomId),
+          lastReadMessageId: String(lastReadMessageId),
         });
 
-        lastSentMessageIdRef.current = lastConfirmedMessageId;
+        if (didPublish) {
+          lastSentMessageIdRef.current = readKey;
+        }
       },
       {
         root: scrollContainer,
@@ -60,5 +75,5 @@ export function useChatReadReceipt({
     return () => {
       observer.disconnect();
     };
-  }, [lastConfirmedMessageId, roomId, scrollContainer, targetElement]);
+  }, [lastConfirmedMessageId, ownerUserId, queryClient, roomId, scrollContainer, targetElement]);
 }

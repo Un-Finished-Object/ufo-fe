@@ -5,13 +5,12 @@ import {
   type ChatMessagesInfiniteData,
   upsertIncomingChatMessageInData,
 } from "@/features/chat/hooks/useChatMessagesQuery";
-import { myChatRoomsQueryKey, type MyChatRoomsResult } from "@/features/chat/queries/chatQueries";
+import { updateChatRoomCaches } from "@/features/chat/lib/chatRoomCache";
 import type { ChatMessage } from "@/features/chat/types";
 
 type MessageCreatedPayload = {
   messageId?: number | null;
   clientMessageId?: string | null;
-  senderId?: number | null;
   senderProfile?: string | null;
   senderName?: string | null;
   text?: string | null;
@@ -35,10 +34,10 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
   if (
     typeof payload.messageId !== "number" ||
     typeof payload.clientMessageId !== "string" ||
-    typeof payload.senderId !== "number" ||
     typeof payload.senderName !== "string" ||
     typeof payload.text !== "string" ||
-    typeof payload.createdAt !== "string"
+    typeof payload.createdAt !== "string" ||
+    Number.isNaN(Date.parse(payload.createdAt))
   ) {
     return null;
   }
@@ -46,7 +45,6 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
   return {
     messageId: String(payload.messageId),
     clientMessageId: payload.clientMessageId,
-    senderId: String(payload.senderId),
     senderName: payload.senderName,
     replySenderName: typeof payload.replySenderName === "string" ? payload.replySenderName : null,
     replyMessageId: typeof payload.replyMessageId === "number" ? String(payload.replyMessageId) : null,
@@ -94,22 +92,9 @@ export function updateChatRoomLastMessage(
   lastMessage: string,
   options: { incrementUnread?: boolean } = {},
 ) {
-  queryClient.setQueriesData<MyChatRoomsResult>(
-    { queryKey: myChatRoomsQueryKey },
-    (previousResult) =>
-      previousResult
-        ? {
-            ...previousResult,
-            rooms: previousResult.rooms.map((room) =>
-              room.chatId === roomId
-                ? {
-                    ...room,
-                    lastMessage,
-                    unreadCount: options.incrementUnread ? room.unreadCount + 1 : room.unreadCount,
-                  }
-                : room,
-            ),
-          }
-        : previousResult,
-  );
+  updateChatRoomCaches(queryClient, roomId, (room) => ({
+    ...room,
+    lastMessage,
+    unreadCount: options.incrementUnread ? room.unreadCount + 1 : room.unreadCount,
+  }));
 }

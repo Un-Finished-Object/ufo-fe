@@ -1,35 +1,51 @@
 "use client";
 
-import { type RefCallback, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import StateBlock from "@/components/common/StateBlock";
+import ChatDateSeparator from "@/features/chat/components/ChatDateSeparator";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
 const LONG_PRESS_DURATION_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
+const SWIPE_REPLY_THRESHOLD_PX = 56;
+const MAX_SWIPE_OFFSET_PX = 72;
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
-  currentUserId: string | null;
+  currentUserName: string | null;
   isLoading: boolean;
   errorMessage: string | null;
-  lastConfirmedMessageId?: string | null;
-  onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
+  onRetry?: () => void;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
   onReplyMessageSelect?: (message: ChatMessage) => void;
   onResendFailedMessage?: (message: ChatMessage) => void;
 };
 
 type ChatMessageItemProps = {
-  currentUserId: string | null;
-  isLastConfirmedMessage: boolean;
+  currentUserName: string | null;
   message: ChatMessage;
   messageById: Map<string, ChatMessage>;
   onDeleteFailedMessage?: (message: ChatMessage) => void;
-  onLastConfirmedMessageRefChange?: RefCallback<HTMLElement>;
   onReplyMessageSelect?: (message: ChatMessage) => void;
   onResendFailedMessage?: (message: ChatMessage) => void;
 };
+
+type ReplyPreviewProps = {
+  senderName: string;
+  text: string | null;
+};
+
+function ReplyPreview({ senderName, text }: ReplyPreviewProps) {
+  const previewText = text || "이전 메시지";
+
+  return (
+    <div className="mb-2 border-b border-ufo-border-light pb-2">
+      <p className="text-xs font-semibold text-ufo-brand">{senderName}에게 답장</p>
+      <p className="mt-0.5 truncate text-xs leading-5 text-ufo-text-subtle">{previewText}</p>
+    </div>
+  );
+}
 
 function formatMessageTime(createdAt: string | null) {
   if (!createdAt) {
@@ -49,20 +65,36 @@ function formatMessageTime(createdAt: string | null) {
   }).format(createdDate);
 }
 
+function getCalendarDateKey(createdAt: string | null) {
+  if (!createdAt) {
+    return null;
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
 function ChatMessageItem({
-  currentUserId,
-  isLastConfirmedMessage,
+  currentUserName,
   message,
   messageById,
   onDeleteFailedMessage,
-  onLastConfirmedMessageRefChange,
   onReplyMessageSelect,
   onResendFailedMessage,
 }: ChatMessageItemProps) {
   const longPressTimeoutRef = useRef<number | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeOffsetRef = useRef(0);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isPressing, setIsPressing] = useState(false);
 
-  const isMine = currentUserId !== null && message.senderId === currentUserId;
+  const isMine =
+    currentUserName !== null && message.senderName?.trim() === currentUserName.trim();
   const shouldTreatAsMine = isMine || message.status === "pending" || message.status === "failed";
   const isPending = message.status === "pending";
   const isFailed = message.status === "failed";
@@ -84,6 +116,13 @@ function ChatMessageItem({
     }
 
     pointerStartRef.current = null;
+  };
+
+  const resetTouchInteraction = () => {
+    clearLongPress();
+    swipeOffsetRef.current = 0;
+    setSwipeOffset(0);
+    setIsPressing(false);
   };
 
   useEffect(() => {
@@ -109,9 +148,12 @@ function ChatMessageItem({
 
     clearLongPress();
     pointerStartRef.current = { x: clientX, y: clientY };
+    swipeOffsetRef.current = 0;
+    setSwipeOffset(0);
+    setIsPressing(true);
     longPressTimeoutRef.current = window.setTimeout(() => {
       handleReplySelect();
-      clearLongPress();
+      resetTouchInteraction();
     }, LONG_PRESS_DURATION_MS);
   };
 
@@ -122,12 +164,33 @@ function ChatMessageItem({
       return;
     }
 
-    const distanceX = Math.abs(clientX - pointerStart.x);
+    const deltaX = clientX - pointerStart.x;
+    const distanceX = Math.abs(deltaX);
     const distanceY = Math.abs(clientY - pointerStart.y);
 
-    if (distanceX > LONG_PRESS_MOVE_TOLERANCE_PX || distanceY > LONG_PRESS_MOVE_TOLERANCE_PX) {
-      clearLongPress();
+    if (distanceY > LONG_PRESS_MOVE_TOLERANCE_PX && distanceY > distanceX) {
+      resetTouchInteraction();
+      return;
     }
+
+    if (distanceX > LONG_PRESS_MOVE_TOLERANCE_PX) {
+      if (longPressTimeoutRef.current !== null) {
+        window.clearTimeout(longPressTimeoutRef.current);
+        longPressTimeoutRef.current = null;
+      }
+
+      const nextOffset = Math.min(Math.max(deltaX, 0), MAX_SWIPE_OFFSET_PX);
+      swipeOffsetRef.current = nextOffset;
+      setSwipeOffset(nextOffset);
+    }
+  };
+
+  const handleTouchPointerUp = () => {
+    if (swipeOffsetRef.current >= SWIPE_REPLY_THRESHOLD_PX) {
+      handleReplySelect();
+    }
+
+    resetTouchInteraction();
   };
 
   const metaSlot = messageMetaText || canReply ? (
@@ -158,23 +221,41 @@ function ChatMessageItem({
   return (
     <div
       key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-      className={shouldTreatAsMine ? "flex flex-col items-end gap-1" : "flex flex-col gap-1"}
-      ref={isLastConfirmedMessage ? onLastConfirmedMessageRefChange : undefined}
+      className={shouldTreatAsMine ? "relative flex flex-col items-end gap-1" : "relative flex flex-col gap-1"}
     >
+      {swipeOffset > 0 ? (
+        <span
+          className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-xs font-semibold text-ufo-brand"
+          aria-hidden="true"
+        >
+          답장
+        </span>
+      ) : null}
       <article
-        className={`group/message flex gap-2 ${shouldTreatAsMine ? "justify-end" : "justify-start"}`}
+        className={`group/message flex touch-pan-y gap-2 transition-[transform,opacity] duration-150 ${
+          shouldTreatAsMine ? "justify-end" : "justify-start"
+        } ${isPressing ? "opacity-80" : "opacity-100"}`}
+        style={{ transform: `translateX(${swipeOffset}px)` }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+        }}
         onPointerCancel={() => {
-          clearLongPress();
+          resetTouchInteraction();
         }}
         onPointerDown={(event) => {
           if (event.pointerType !== "touch") {
             return;
           }
 
+          event.currentTarget.setPointerCapture(event.pointerId);
           handleTouchPointerDown(event.clientX, event.clientY);
         }}
-        onPointerLeave={() => {
-          clearLongPress();
+        onPointerLeave={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            return;
+          }
+
+          resetTouchInteraction();
         }}
         onPointerMove={(event) => {
           if (event.pointerType !== "touch") {
@@ -183,25 +264,22 @@ function ChatMessageItem({
 
           handleTouchPointerMove(event.clientX, event.clientY);
         }}
-        onPointerUp={() => {
-          clearLongPress();
+        onPointerUp={(event) => {
+          handleTouchPointerUp();
+          event.currentTarget.releasePointerCapture(event.pointerId);
         }}
       >
         {!shouldTreatAsMine ? (
           <div className="max-w-[78%]">
             <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
-            <div className="rounded-xl bg-ufo-bg px-4 py-3 text-sm text-ufo-text-secondary">
+            <div className="rounded-xl bg-ufo-bg px-4 py-2.5 text-sm text-ufo-text">
               {hasReply ? (
-                <div className="mb-2 rounded-lg border border-ufo-border-light bg-white/70 px-3 py-2">
-                  <p className="text-xs font-semibold text-ufo-text-subtle">{replySenderName}에게 답장</p>
-                  {replyPreviewText ? (
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ufo-text-dim">
-                      {replyPreviewText}
-                    </p>
-                  ) : null}
-                </div>
+                <ReplyPreview
+                  senderName={replySenderName as string}
+                  text={replyPreviewText ?? null}
+                />
               ) : null}
-              <p className="leading-6">{message.text}</p>
+              <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
           </div>
         ) : null}
@@ -211,18 +289,14 @@ function ChatMessageItem({
         {shouldTreatAsMine ? (
           <div className="flex max-w-[78%] items-end gap-2">
             {isPending ? <ChatMessageSendingIndicator /> : null}
-            <div className="max-w-full rounded-xl bg-ufo-brand-pale px-4 py-3 text-sm text-ufo-text">
+            <div className="max-w-full rounded-xl bg-ufo-brand-pale px-4 py-2.5 text-sm text-ufo-text">
               {hasReply ? (
-                <div className="mb-2 rounded-lg bg-white/70 px-3 py-2 text-ufo-text-secondary">
-                  <p className="text-xs font-semibold text-ufo-text-subtle">{replySenderName}에게 답장</p>
-                  {replyPreviewText ? (
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ufo-text-dim">
-                      {replyPreviewText}
-                    </p>
-                  ) : null}
-                </div>
+                <ReplyPreview
+                  senderName={replySenderName as string}
+                  text={replyPreviewText ?? null}
+                />
               ) : null}
-              <p className="leading-6">{message.text}</p>
+              <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
             </div>
           </div>
         ) : null}
@@ -253,11 +327,10 @@ function ChatMessageItem({
 
 export default function ChatMessageList({
   messages,
-  currentUserId,
+  currentUserName,
   isLoading,
   errorMessage,
-  lastConfirmedMessageId = null,
-  onLastConfirmedMessageRefChange,
+  onRetry,
   onDeleteFailedMessage,
   onReplyMessageSelect,
   onResendFailedMessage,
@@ -267,7 +340,15 @@ export default function ChatMessageList({
   }
 
   if (errorMessage) {
-    return <StateBlock type="error" title={errorMessage} variant="plain" />;
+    return (
+      <StateBlock
+        type="error"
+        title={errorMessage}
+        actionLabel="다시 시도"
+        onAction={onRetry}
+        variant={onRetry ? "card" : "plain"}
+      />
+    );
   }
 
   if (messages.length === 0) {
@@ -282,23 +363,31 @@ export default function ChatMessageList({
 
   return (
     <>
-      {messages.map((message) => (
-        <ChatMessageItem
-          key={message.clientMessageId ?? message.messageId ?? message.createdAt}
-          currentUserId={currentUserId}
-          isLastConfirmedMessage={
-            message.status === "confirmed" &&
-            message.messageId !== null &&
-            message.messageId === lastConfirmedMessageId
-          }
-          message={message}
-          messageById={messageById}
-          onDeleteFailedMessage={onDeleteFailedMessage}
-          onLastConfirmedMessageRefChange={onLastConfirmedMessageRefChange}
-          onReplyMessageSelect={onReplyMessageSelect}
-          onResendFailedMessage={onResendFailedMessage}
-        />
-      ))}
+      {messages.map((message, index) => {
+        const messageKey = message.clientMessageId ?? message.messageId ?? message.createdAt;
+        const currentDateKey = getCalendarDateKey(message.createdAt);
+        const previousDateKey = getCalendarDateKey(messages[index - 1]?.createdAt ?? null);
+        const shouldShowDateSeparator =
+          message.createdAt !== null && currentDateKey !== previousDateKey;
+
+        return (
+          <Fragment key={messageKey}>
+            {shouldShowDateSeparator ? (
+              <ChatDateSeparator
+                createdAt={message.createdAt as string}
+              />
+            ) : null}
+            <ChatMessageItem
+              currentUserName={currentUserName}
+              message={message}
+              messageById={messageById}
+              onDeleteFailedMessage={onDeleteFailedMessage}
+              onReplyMessageSelect={onReplyMessageSelect}
+              onResendFailedMessage={onResendFailedMessage}
+            />
+          </Fragment>
+        );
+      })}
     </>
   );
 }

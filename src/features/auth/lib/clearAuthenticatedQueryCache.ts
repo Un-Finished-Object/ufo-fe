@@ -3,6 +3,7 @@ import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { chatMessagesQueryRoot } from "@/features/chat/hooks/useChatMessagesQuery";
 import { chatStatusQueryRoot } from "@/features/chat/hooks/useChatStatusQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
+import { clearPendingChatReads } from "@/features/chat/lib/chatReadReceiptQueue";
 import { homeQueryKeys } from "@/features/home/queries/homeQueries";
 import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import { patternAlternativesQueryRoot } from "@/features/patterns/queries/patternAlternativeQueries";
@@ -32,6 +33,8 @@ const authenticatedQueryRoots = [
 ] as const;
 
 export function clearAuthenticatedQueryCache(queryClient: QueryClient) {
+  clearPendingChatReads();
+
   authenticatedQueryRoots.forEach((queryKey) => {
     queryClient.removeQueries({ queryKey });
   });

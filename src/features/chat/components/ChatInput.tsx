@@ -1,6 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+
+const MAX_MESSAGE_LENGTH = 100;
+const MAX_TEXTAREA_HEIGHT_PX = 96;
 
 type ChatInputReplyPreview = {
   senderName: string;
@@ -29,6 +32,18 @@ export default function ChatInput({
   onSendMessage,
 }: ChatInputProps) {
   const isComposingRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT_PX)}px`;
+  }, [value]);
 
   const handleSend = () => {
     if (isSubmitDisabled || isSending || value.trim().length === 0) {
@@ -39,7 +54,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="rounded-xl border border-ufo-border bg-white">
+    <div className="overflow-hidden rounded-xl border border-ufo-border bg-white">
       {replyPreview ? (
         <div className="flex items-start justify-between gap-3 border-b border-ufo-border-light bg-ufo-brand-pale px-4 py-3">
           <div className="min-w-0">
@@ -71,11 +86,13 @@ export default function ChatInput({
         <label htmlFor="chat-message" className="sr-only">
           메시지 입력
         </label>
-        <input
+        <textarea
+          ref={textareaRef}
           id="chat-message"
-          type="text"
+          rows={1}
+          maxLength={MAX_MESSAGE_LENGTH}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
           onCompositionStart={() => {
             isComposingRef.current = true;
           }}
@@ -83,7 +100,12 @@ export default function ChatInput({
             isComposingRef.current = false;
           }}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" || isComposingRef.current || event.nativeEvent.isComposing) {
+            if (
+              event.key !== "Enter" ||
+              event.shiftKey ||
+              isComposingRef.current ||
+              event.nativeEvent.isComposing
+            ) {
               return;
             }
 
@@ -92,7 +114,7 @@ export default function ChatInput({
           }}
           placeholder={placeholder}
           enterKeyHint="send"
-          className="w-full bg-transparent text-sm font-semibold text-ufo-text-secondary placeholder:text-ufo-text-muted focus:outline-none"
+          className="max-h-24 min-h-6 w-full resize-none overflow-y-auto bg-transparent text-sm leading-6 font-semibold text-ufo-text-secondary placeholder:text-ufo-text-muted focus:outline-none"
         />
         <button
           type="submit"

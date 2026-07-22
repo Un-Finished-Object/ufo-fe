@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions, type InfiniteData } from "@tanstack/react-query";
 import type { ChatRoom } from "@/features/chat/types";
 import { buildApiUrl } from "@/lib/api/client";
 import {
@@ -14,6 +14,7 @@ type MyChatItem = {
   chatId?: number;
   chatName?: string;
   chatImageUrl?: string | null;
+  nickname?: string;
   favorite?: boolean;
   isHidden?: boolean;
   unRead?: number;
@@ -34,13 +35,32 @@ type ValidMyChatItem = MyChatItem & {
   patternId: number;
   chatId: number;
   chatName: string;
+  nickname: string;
   favorite: boolean;
   isHidden: boolean;
   unRead: number;
   createdAt: string;
 };
 
+function isValidMyChatItem(chat: MyChatItem): chat is ValidMyChatItem {
+  return (
+    typeof chat.patternId === "number" &&
+    typeof chat.chatId === "number" &&
+    typeof chat.chatName === "string" &&
+    typeof chat.nickname === "string" &&
+    typeof chat.favorite === "boolean" &&
+    typeof chat.isHidden === "boolean" &&
+    typeof chat.unRead === "number" &&
+    typeof chat.createdAt === "string"
+  );
+}
+
 export const myChatRoomsQueryKey = ["myChatRooms"] as const;
+export const allMyChatRoomsQueryKey = [...myChatRoomsQueryKey, "all"] as const;
+
+export function myChatRoomsPageQueryKey(page: number) {
+  return [...myChatRoomsQueryKey, "page", page] as const;
+}
 
 type MyChatRoomsQueryOptionsParams = {
   enabled?: boolean;
@@ -52,6 +72,8 @@ export type MyChatRoomsResult = {
   page: number;
   nextPage: number;
 };
+
+export type AllMyChatRoomsInfiniteData = InfiniteData<MyChatRoomsResult, number>;
 
 function normalizeChatImageUrl(chatImageUrl: string | null | undefined) {
   if (!chatImageUrl) {
@@ -102,22 +124,22 @@ export async function fetchMyChatRooms({
     throw createInvalidApiResponseError("Failed to load chat rooms.");
   }
 
+  if (
+    payload.data.chats.some(
+      (chat) => typeof chat.chatId !== "undefined" && !isValidMyChatItem(chat),
+    )
+  ) {
+    throw createInvalidApiResponseError("Failed to load chat rooms.");
+  }
+
   return {
     rooms: payload.data.chats
-      .filter(
-        (chat): chat is ValidMyChatItem =>
-          typeof chat.patternId === "number" &&
-          typeof chat.chatId === "number" &&
-          typeof chat.chatName === "string" &&
-          typeof chat.favorite === "boolean" &&
-          typeof chat.isHidden === "boolean" &&
-          typeof chat.unRead === "number" &&
-          typeof chat.createdAt === "string",
-      )
+      .filter(isValidMyChatItem)
       .map((chat) => ({
         chatId: String(chat.chatId),
         patternId: String(chat.patternId),
         name: chat.chatName,
+        nickname: chat.nickname,
         imageUrl: normalizeChatImageUrl(chat.chatImageUrl),
         lastMessage: typeof chat.lastMessage === "string" ? chat.lastMessage : "",
         favorite: chat.favorite,
@@ -134,9 +156,41 @@ export function myChatRoomsQueryOptions(params: MyChatRoomsQueryOptionsParams = 
   const page = params.page ?? 1;
 
   return queryOptions({
-    queryKey: [...myChatRoomsQueryKey, page] as const,
+    queryKey: myChatRoomsPageQueryKey(page),
     enabled: params.enabled ?? true,
     queryFn: ({ signal }) => fetchMyChatRooms({ page, signal }),
     staleTime: QUERY_STALE_TIME.critical,
   });
+}
+
+export function allMyChatRoomsInfiniteQueryOptions({ enabled = true }: { enabled?: boolean } = {}) {
+  return infiniteQueryOptions({
+    queryKey: allMyChatRoomsQueryKey,
+    enabled,
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => fetchMyChatRooms({ page: pageParam, signal }),
+    getNextPageParam: (lastPage, allPages) => {
+      const nextPage = lastPage.nextPage;
+      const fetchedPages = new Set(allPages.map((page) => page.page));
+
+      if (nextPage <= lastPage.page || fetchedPages.has(nextPage)) {
+        return undefined;
+      }
+
+      return nextPage;
+    },
+    staleTime: QUERY_STALE_TIME.critical,
+  });
+}
+
+export function flattenMyChatRooms(data?: AllMyChatRoomsInfiniteData) {
+  const roomById = new Map<string, ChatRoom>();
+
+  data?.pages.forEach((page) => {
+    page.rooms.forEach((room) => {
+      roomById.set(room.chatId, room);
+    });
+  });
+
+  return Array.from(roomById.values());
 }

@@ -5,6 +5,7 @@ type MobileShellProps = {
   className?: string;
   surfaceClassName?: string;
   fullHeight?: boolean;
+  dynamicViewport?: boolean;
   overflowHidden?: boolean;
 };
 
@@ -17,14 +18,18 @@ export default function MobileShell({
   className,
   surfaceClassName,
   fullHeight = false,
+  dynamicViewport = false,
   overflowHidden = false,
 }: MobileShellProps) {
   return (
-    <div className={joinClasses("min-h-screen bg-ufo-bg", className)}>
+    <div className={joinClasses(dynamicViewport ? "min-h-dvh bg-ufo-bg" : "min-h-screen bg-ufo-bg", className)}>
       <main
         className={joinClasses(
           "mx-auto w-full max-w-[430px] bg-ufo-surface text-ufo-text",
-          fullHeight ? "flex h-screen min-h-screen flex-col" : "min-h-screen",
+          fullHeight && dynamicViewport && "flex h-dvh min-h-dvh flex-col",
+          fullHeight && !dynamicViewport && "flex h-screen min-h-screen flex-col",
+          !fullHeight && dynamicViewport && "min-h-dvh",
+          !fullHeight && !dynamicViewport && "min-h-screen",
           overflowHidden && "overflow-hidden",
           surfaceClassName,
         )}
