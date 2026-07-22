@@ -34,9 +34,7 @@ type PatternAlternativeSetResponse = {
 };
 
 type PatternAlternativesResponse = {
-  data?: {
-    items?: PatternAlternativeSetResponse[];
-  };
+  data?: PatternAlternativeSetResponse;
   error?: unknown;
 };
 
@@ -137,11 +135,11 @@ export async function fetchPatternAlternatives(
     throwApiPayloadError(payload.error, "Failed to load pattern alternatives.");
   }
 
-  if (!payload.data || !Array.isArray(payload.data.items)) {
+  if (!payload.data) {
     throw createInvalidApiResponseError("Failed to load pattern alternatives.");
   }
 
-  return payload.data.items.map(mapPatternAlternativeSet);
+  return [mapPatternAlternativeSet(payload.data)];
 }
 
 export function patternAlternativesQueryOptions(originalYarnSetId: number) {
