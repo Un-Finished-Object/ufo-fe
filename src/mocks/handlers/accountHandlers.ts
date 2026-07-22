@@ -51,9 +51,9 @@ export const accountHandlers = [
   http.get("/v1/chat/:chatId/messages", ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
     return apiSuccess({ lastMessageId: 3, hasNext: false, nextMessageId: null, messages: [
-      { messageId: 1, senderId: 2, senderName: "한코두코", text: "안녕하세요! 같이 즐겁게 떠요.", createdAt: "2026-07-17T09:00:00+09:00" },
-      { messageId: 2, senderId: 1, senderName: "뜨개구름", text: "저는 몸통부터 시작했어요.", createdAt: "2026-07-17T09:05:00+09:00" },
-      { messageId: 3, senderId: 2, senderName: "한코두코", text: "소매 분리까지 떴어요!", createdAt: "2026-07-17T09:10:00+09:00" },
+      { messageId: 1, senderName: "한코두코", text: "안녕하세요! 같이 즐겁게 떠요.", createdAt: "2026-07-17T09:00:00+09:00" },
+      { messageId: 2, senderName: "뜨개구름", text: "저는 몸통부터 시작했어요.", createdAt: "2026-07-17T09:05:00+09:00" },
+      { messageId: 3, senderName: "한코두코", text: "소매 분리까지 떴어요!", replySenderName: "뜨개구름", replyMessageId: 2, createdAt: "2026-07-17T09:10:00+09:00" },
     ] });
   }),
   http.patch("/v1/chat/:chatId/status", async ({ params, request }) => {

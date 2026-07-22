@@ -36,16 +36,76 @@ function getMessageCacheKey(message: ChatMessage) {
   return message.messageId ?? message.clientMessageId ?? null;
 }
 
-function hasMessage(data: ChatMessagesInfiniteData, message: ChatMessage) {
-  const nextMessageKey = getMessageCacheKey(message);
-
-  if (!nextMessageKey) {
-    return false;
+function getMessageTimestamp(message: ChatMessage) {
+  if (!message.createdAt) {
+    return Number.POSITIVE_INFINITY;
   }
 
-  return data.pages.some((page) =>
-    page.messages.some((messageItem) => getMessageCacheKey(messageItem) === nextMessageKey),
-  );
+  const timestamp = Date.parse(message.createdAt);
+
+  return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
+}
+
+function compareChatMessages(left: ChatMessage, right: ChatMessage) {
+  const leftTimestamp = getMessageTimestamp(left);
+  const rightTimestamp = getMessageTimestamp(right);
+
+  if (leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+
+  if (left.messageId !== null && right.messageId !== null) {
+    return Number(left.messageId) - Number(right.messageId);
+  }
+
+  return 0;
+}
+
+function findMatchingMessageIndex(messages: ChatMessage[], nextMessage: ChatMessage) {
+  if (nextMessage.clientMessageId) {
+    const clientMessageIndex = messages.findIndex(
+      (message) => message.clientMessageId === nextMessage.clientMessageId,
+    );
+
+    if (clientMessageIndex >= 0) {
+      return clientMessageIndex;
+    }
+  }
+
+  if (nextMessage.messageId) {
+    return messages.findIndex((message) => message.messageId === nextMessage.messageId);
+  }
+
+  return -1;
+}
+
+export function mergeAndSortChatMessages(
+  currentMessages: ChatMessage[],
+  incomingMessages: ChatMessage[],
+) {
+  const mergedMessages = [...currentMessages];
+
+  incomingMessages.forEach((nextMessage) => {
+    const matchingIndex = findMatchingMessageIndex(mergedMessages, nextMessage);
+
+    if (matchingIndex < 0) {
+      mergedMessages.push(nextMessage);
+      return;
+    }
+
+    const currentMessage = mergedMessages[matchingIndex];
+    const shouldKeepConfirmedMessage =
+      currentMessage?.status === "confirmed" && nextMessage.status !== "confirmed";
+
+    mergedMessages[matchingIndex] = shouldKeepConfirmedMessage
+      ? currentMessage
+      : {
+          ...currentMessage,
+          ...nextMessage,
+        };
+  });
+
+  return mergedMessages.sort(compareChatMessages);
 }
 
 function updateLatestMessagesPage(
@@ -74,11 +134,9 @@ export function appendChatMessageToData(
 ) {
   const data = previousData ?? createInitialChatMessagesData();
 
-  if (hasMessage(data, nextMessage)) {
-    return data;
-  }
-
-  return updateLatestMessagesPage(data, (messages) => [...messages, nextMessage]);
+  return updateLatestMessagesPage(data, (messages) =>
+    mergeAndSortChatMessages(messages, [nextMessage]),
+  );
 }
 
 export function markChatMessageFailedInData(
@@ -123,47 +181,22 @@ export function upsertIncomingChatMessageInData(
   nextMessage: ChatMessage,
 ) {
   const data = previousData ?? createInitialChatMessagesData();
-  let matchedPendingMessage = false;
+  const currentMessages = flattenChatMessagesData(data);
+  const nextMessages = mergeAndSortChatMessages(currentMessages, [nextMessage]);
 
-  const pages = data.pages.map((page) => ({
-    ...page,
-    messages: page.messages.map((messageItem) => {
-      if (!messageItem.clientMessageId || messageItem.clientMessageId !== nextMessage.clientMessageId) {
-        return messageItem;
-      }
-
-      matchedPendingMessage = true;
-
-      return {
-        ...messageItem,
-        messageId: nextMessage.messageId,
-        senderId: nextMessage.senderId,
-        senderName: nextMessage.senderName,
-        replySenderName: nextMessage.replySenderName ?? null,
-        replyMessageId: nextMessage.replyMessageId ?? null,
-        text: nextMessage.text,
-        createdAt: nextMessage.createdAt,
-        status: "confirmed",
-      } satisfies ChatMessage;
-    }),
-  }));
-
-  const nextData = {
+  return {
     ...data,
-    pages,
+    pages: data.pages.map((page, index) => ({
+      ...page,
+      messages: index === 0 ? nextMessages : [],
+    })),
   } satisfies ChatMessagesInfiniteData;
-
-  if (matchedPendingMessage || hasMessage(nextData, nextMessage)) {
-    return nextData;
-  }
-
-  return appendChatMessageToData(nextData, nextMessage);
 }
 
 export function flattenChatMessagesData(data?: ChatMessagesInfiniteData) {
   const messageKeys = new Set<string>();
 
-  return (data?.pages ?? [])
+  const messages = (data?.pages ?? [])
     .slice()
     .reverse()
     .flatMap((page) => page.messages)
@@ -181,6 +214,30 @@ export function flattenChatMessagesData(data?: ChatMessagesInfiniteData) {
       messageKeys.add(messageKey);
       return true;
     });
+
+  return messages.sort(compareChatMessages);
+}
+
+export function mergeChatMessagesInfiniteData(
+  currentData: ChatMessagesInfiniteData | undefined,
+  incomingData: ChatMessagesInfiniteData,
+) {
+  if (!currentData) {
+    return incomingData;
+  }
+
+  const mergedMessages = mergeAndSortChatMessages(
+    flattenChatMessagesData(incomingData),
+    flattenChatMessagesData(currentData),
+  );
+
+  return {
+    ...incomingData,
+    pages: incomingData.pages.map((page, index) => ({
+      ...page,
+      messages: index === 0 ? mergedMessages : [],
+    })),
+  } satisfies ChatMessagesInfiniteData;
 }
 
 export function useChatMessagesQuery(roomId: string | null) {
@@ -208,7 +265,25 @@ export function useChatMessagesQuery(roomId: string | null) {
         signal,
       });
     },
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
+    getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
+      if (!lastPage.hasNext) {
+        return undefined;
+      }
+
+      if (
+        !lastPage.nextCursor ||
+        allPageParams.some((pageParam) => pageParam === lastPage.nextCursor)
+      ) {
+        throw new Error("Chat message pagination returned a missing or repeated cursor.");
+      }
+
+      return lastPage.nextCursor;
+    },
+    structuralSharing: (currentData, incomingData) =>
+      mergeChatMessagesInfiniteData(
+        currentData as ChatMessagesInfiniteData | undefined,
+        incomingData as ChatMessagesInfiniteData,
+      ),
     staleTime: QUERY_STALE_TIME.realtime,
   });
   const messages = useMemo(() => flattenChatMessagesData(query.data), [query.data]);
