@@ -63,7 +63,7 @@ export default function MainForYouSection({
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftInterests, setDraftInterests] = useState<string[]>([]);
-  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
+  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast();
   const firstInterestButtonRef = useRef<HTMLButtonElement | null>(null);
   const isSettingDisabled = authStatus === "loading";
   const previousAuthCacheKeyRef = useRef(authCacheKey);

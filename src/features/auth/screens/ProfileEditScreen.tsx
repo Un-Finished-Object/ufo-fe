@@ -35,7 +35,7 @@ export default function ProfileEditScreen() {
   const [draftNickname, setDraftNickname] = useState<string | null>(null);
   const [draftProfileImage, setDraftProfileImage] = useState<UploadedImageFile | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast(2000);
+  const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast();
 
   useEffect(() => {
     return () => {

@@ -20,6 +20,7 @@ import {
   referralQueryOptions,
   validateReferralCode,
 } from "@/features/friends/queries/referralQueries";
+import { useToast } from "@/hooks/useToast";
 
 type FriendPageView = "invite" | "register";
 
@@ -146,17 +147,12 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
 export default function FriendInviteRegistrationScreen() {
   const [activeView, setActiveView] = useState<FriendPageView>("invite");
   const [friendCode, setFriendCode] = useState(createEmptyFriendCode);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { showToast, toastMessage } = useToast();
   const normalizedFriendCode = friendCode.join("");
   const meQuery = useMeQuery();
   const referralQuery = useQuery(referralQueryOptions());
   const canRegisterFriend = isWithinFriendRegistrationPeriod(meQuery.data?.joinDate);
   const visibleView = canRegisterFriend ? activeView : "invite";
-
-  const showToast = (message: string) => {
-    setToastMessage(null);
-    window.setTimeout(() => setToastMessage(message), 0);
-  };
 
   const validateReferralMutation = useMutation({
     mutationFn: validateReferralCode,
