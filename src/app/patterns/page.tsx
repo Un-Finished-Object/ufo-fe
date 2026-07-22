@@ -7,6 +7,21 @@ export const metadata = createPageMetadata({
   path: "/patterns",
 });
 
-export default function PatternsPage() {
-  return <PatternCatalogScreen />;
+type PatternsPageProps = {
+  searchParams?: Promise<{
+    page?: string | string[];
+  }>;
+};
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function PatternsPage({ searchParams }: PatternsPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const pageParam = getSingleSearchParam(resolvedSearchParams?.page);
+  const parsedPage = Number.parseInt(pageParam, 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+
+  return <PatternCatalogScreen initialPage={page} />;
 }

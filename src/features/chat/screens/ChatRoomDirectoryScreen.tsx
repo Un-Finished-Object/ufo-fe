@@ -23,13 +23,17 @@ import { patchChatStatus } from "@/features/chat/services/patchChatStatus";
 import type { ChatRoom } from "@/features/chat/types";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 
-export default function ChatRoomDirectoryScreen() {
+type ChatRoomDirectoryScreenProps = {
+  initialPage: number;
+};
+
+export default function ChatRoomDirectoryScreen({ initialPage }: ChatRoomDirectoryScreenProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ChatRoomFilter>("UFO");
   const [isSettingsMode, setIsSettingsMode] = useState(false);
   const [foConfirmRoom, setFoConfirmRoom] = useState<ChatRoom | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [updatingRoomIds, setUpdatingRoomIds] = useState<Set<string>>(() => new Set());
   const normalizedQuery = query.trim().toLowerCase();
   const { showToast, toastMessage } = useAuthRequiredToast();
@@ -117,6 +121,10 @@ export default function ChatRoomDirectoryScreen() {
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
 
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
+
   const isGlobalListMode = normalizedQuery.length > 0 || activeFilter !== "UFO";
   const allRoomsLoading =
     allChatRoomsQuery.isPending ||
@@ -180,11 +188,24 @@ export default function ChatRoomDirectoryScreen() {
   const handleFilterChange = (filter: ChatRoomFilter) => {
     setActiveFilter(filter);
     setCurrentPage(1);
+
+    if (currentPage !== 1) {
+      router.replace("/chats");
+    }
   };
 
   const handleSearchChange = (nextQuery: string) => {
     setQuery(nextQuery);
     setCurrentPage(1);
+
+    if (currentPage !== 1) {
+      router.replace("/chats");
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    router.push(page === 1 ? "/chats" : `/chats?page=${page}`);
   };
 
   const handleSettingsClick = () => {
@@ -320,7 +341,7 @@ export default function ChatRoomDirectoryScreen() {
             <Pagination
               currentPage={chatRoomsPage}
               nextPage={nextPage}
-              onPageChange={setCurrentPage}
+              onPageChange={handlePageChange}
             />
           </>
         ) : null}
