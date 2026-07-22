@@ -35,7 +35,11 @@ const sortApiMap: Record<string, string> = {
   "찜 순": "scraps",
 };
 
-export default function PatternCatalogScreen() {
+type PatternCatalogScreenProps = {
+  initialPage: number;
+};
+
+export default function PatternCatalogScreen({ initialPage }: PatternCatalogScreenProps) {
   const router = useRouter();
   const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const [query, setQuery] = useState("");
@@ -48,7 +52,7 @@ export default function PatternCatalogScreen() {
     useState<(typeof sortOptions)[number]>("인기순");
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
 
   const isSingleButtonMode =
     selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
@@ -85,10 +89,20 @@ export default function PatternCatalogScreen() {
     router.push(`/patterns/search?keyword=${encodeURIComponent(keyword)}&page=1`);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    router.push(page === 1 ? "/patterns" : `/patterns?page=${page}`);
+  };
+
+  const resetPage = () => {
+    setCurrentPage(1);
+    router.replace("/patterns");
+  };
+
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
     setSelectedMainCategory(category);
     setSelectedClothingSubCategory(null);
-    setCurrentPage(1);
+    resetPage();
   };
 
   const handleClothingSubCategoryClick = (
@@ -97,14 +111,18 @@ export default function PatternCatalogScreen() {
     setSelectedClothingSubCategory(
       selectedClothingSubCategory === subCategory ? null : subCategory,
     );
-    setCurrentPage(1);
+    resetPage();
   };
 
   const handleSortSelect = (sort: (typeof sortOptions)[number]) => {
     setSelectedSort(sort);
     setIsSortOpen(false);
-    setCurrentPage(1);
+    resetPage();
   };
+
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
 
   useEffect(() => {
     if (!isSortOpen) return;
@@ -156,7 +174,10 @@ export default function PatternCatalogScreen() {
               {isSingleButtonMode && selectedClothingSubCategory ? (
                 <button
                   type="button"
-                  onClick={() => setSelectedClothingSubCategory(null)}
+                  onClick={() => {
+                    setSelectedClothingSubCategory(null);
+                    resetPage();
+                  }}
                   className="h-7 whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 text-xs font-semibold text-ufo-text"
                 >
                   {selectedClothingSubCategory}
@@ -241,7 +262,7 @@ export default function PatternCatalogScreen() {
         <Pagination
           currentPage={currentPage}
           nextPage={nextPage}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
         />
         <Footer />
     </MobileShell>
