@@ -160,22 +160,18 @@ export function createMockPatternAlternatives(originalYarnSetId: number) {
     (yarnSet) => yarnSet.originalYarnSetId === originalYarnSetId,
   );
 
-  if (!originalYarnSet) {
-    return [];
-  }
-
-  return [{
+  return {
     originalYarnSetId,
-    firstYarn: originalYarnSet.firstYarn
+    firstYarn: originalYarnSet?.firstYarn
       ? createMockAlternativeYarns(originalYarnSetId, 0)
       : [],
-    secondYarn: originalYarnSet.secondYarn
+    secondYarn: originalYarnSet?.secondYarn
       ? createMockAlternativeYarns(originalYarnSetId, 100)
       : [],
-    subYarn: originalYarnSet.subYarn
+    subYarn: originalYarnSet?.subYarn
       ? createMockAlternativeYarns(originalYarnSetId, 200)
       : [],
-  }];
+  };
 }
 
 export const mockChats = [{
