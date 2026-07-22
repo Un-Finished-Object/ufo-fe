@@ -1685,7 +1685,7 @@ export default function PatternDetailScreen({
                 </AlternativeYarnSection>
 
                 <AlternativeYarnSection
-                  title="UFO 추천 대체실 순위"
+                  title="추천 대체실"
                   titleAction={<AlternativeRecommendationInfo />}
                 >
                   {isResolvingAlternativePurchase ? (
