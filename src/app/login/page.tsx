@@ -11,6 +11,7 @@ import ToastMessage from "@/components/common/ToastMessage";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { buildApiUrl } from "@/lib/api/client";
 import { markOAuthFlowStarted } from "@/features/auth/lib/oauthFlowSession";
+import { AUTH_REQUIRED_MESSAGE } from "@/hooks/useAuthRequiredToast";
 import { useToast } from "@/hooks/useToast";
 
 type Provider = "google" | "kakao" | "naver";
@@ -58,7 +59,7 @@ function LoginPageContent() {
   const { toastMessage } = useToast({
     initialMessage:
       searchParams.get("toast") === "auth_required"
-        ? "해당 서비스는 로그인 후 사용하실 수 있습니다."
+        ? AUTH_REQUIRED_MESSAGE
         : null,
   });
 

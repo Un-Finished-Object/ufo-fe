@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import {
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -145,6 +147,7 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
 }
 
 export default function FriendInviteRegistrationScreen() {
+  const router = useRouter();
   const [activeView, setActiveView] = useState<FriendPageView>("invite");
   const [friendCode, setFriendCode] = useState(createEmptyFriendCode);
   const { showToast, toastMessage } = useToast();
@@ -153,6 +156,12 @@ export default function FriendInviteRegistrationScreen() {
   const referralQuery = useQuery(referralQueryOptions(meQuery.data?.userId ?? null));
   const canRegisterFriend = isWithinFriendRegistrationPeriod(meQuery.data?.joinDate);
   const visibleView = canRegisterFriend ? activeView : "invite";
+
+  useEffect(() => {
+    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+      router.replace("/login?toast=auth_required");
+    }
+  }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
 
   const validateReferralMutation = useMutation({
     mutationFn: validateReferralCode,
@@ -194,6 +203,39 @@ export default function FriendInviteRegistrationScreen() {
 
     validateReferralMutation.mutate(normalizedFriendCode);
   };
+
+  if (meQuery.isPending) {
+    return (
+      <MobileShell>
+        <TopBar left="back" title="친구 초대/등록" showBottomBorder />
+        <StateBlock type="loading" title="사용자 정보를 불러오고 있어요." variant="plain" />
+      </MobileShell>
+    );
+  }
+
+  if (meQuery.isError) {
+    return (
+      <MobileShell>
+        <TopBar left="back" title="친구 초대/등록" showBottomBorder />
+        <StateBlock
+          type="error"
+          title="사용자 정보를 불러오지 못했어요."
+          actionLabel="다시 시도"
+          onAction={() => void meQuery.refetch()}
+          variant="plain"
+        />
+      </MobileShell>
+    );
+  }
+
+  if (!meQuery.data) {
+    return (
+      <MobileShell>
+        <TopBar left="back" title="친구 초대/등록" showBottomBorder />
+        <StateBlock type="loading" title="로그인 화면으로 이동하고 있어요." variant="plain" />
+      </MobileShell>
+    );
+  }
 
   return (
     <>
