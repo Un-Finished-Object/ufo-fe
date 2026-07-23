@@ -16,6 +16,7 @@ export type UserProfile = {
   nickname: string;
   profileImage: string;
   joinDate: number | null;
+  role: "USER" | "ADMIN" | null;
 };
 
 type MeResponse = {
@@ -26,6 +27,7 @@ type MeResponse = {
     profileImage?: string;
     profileImageUrl?: string;
     joinDate?: number | string;
+    role?: string;
   };
   error?: unknown;
 };
@@ -95,6 +97,10 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     nickname: payload.data.nickname ?? "",
     profileImage: payload.data.profileImage ?? payload.data.profileImageUrl ?? "",
     joinDate: Number.isFinite(joinDate) ? joinDate : null,
+    role:
+      payload.data.role === "ADMIN" || payload.data.role === "USER"
+        ? payload.data.role
+        : null,
   } satisfies UserProfile;
 }
 

@@ -4,6 +4,7 @@ export const mockUser = {
   nickname: "뜨개구름",
   profileImage: "/mock/plush-pink.svg",
   joinDate: 2,
+  role: "ADMIN" as const,
 };
 
 export const mockPatterns = [
