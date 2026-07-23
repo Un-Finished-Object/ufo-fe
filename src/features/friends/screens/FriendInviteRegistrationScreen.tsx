@@ -150,7 +150,7 @@ export default function FriendInviteRegistrationScreen() {
   const { showToast, toastMessage } = useToast();
   const normalizedFriendCode = friendCode.join("");
   const meQuery = useMeQuery();
-  const referralQuery = useQuery(referralQueryOptions());
+  const referralQuery = useQuery(referralQueryOptions(meQuery.data?.userId ?? null));
   const canRegisterFriend = isWithinFriendRegistrationPeriod(meQuery.data?.joinDate);
   const visibleView = canRegisterFriend ? activeView : "invite";
 
