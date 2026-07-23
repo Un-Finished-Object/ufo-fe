@@ -25,7 +25,7 @@ type ValidateReferralResponse = {
 
 export const referralQueryKeys = {
   all: ["referral"] as const,
-  detail: (userId: string | null) => ["referral", "detail", userId] as const,
+  detail: (userId?: string) => ["referral", "detail", userId ?? "unauthenticated"] as const,
 };
 
 export async function fetchReferral({ signal }: { signal?: AbortSignal } = {}) {
@@ -90,10 +90,10 @@ export async function validateReferralCode(referralCode: string) {
   return payload.data.valid;
 }
 
-export function referralQueryOptions(userId: string | null) {
+export function referralQueryOptions(userId?: string) {
   return queryOptions({
     queryKey: referralQueryKeys.detail(userId),
-    enabled: userId !== null,
+    enabled: typeof userId === "string",
     queryFn: ({ signal }) => fetchReferral({ signal }),
     staleTime: QUERY_STALE_TIME.userState,
   });

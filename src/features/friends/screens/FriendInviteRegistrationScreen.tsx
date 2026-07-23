@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -18,11 +18,14 @@ import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import StateBlock from "@/components/common/StateBlock";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
+import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import {
   referralQueryOptions,
   validateReferralCode,
 } from "@/features/friends/queries/referralQueries";
 import { useToast } from "@/hooks/useToast";
+import { clearAccessToken } from "@/lib/auth/accessToken";
+import { isApiError } from "@/lib/api/ApiError";
 
 type FriendPageView = "invite" | "register";
 
@@ -148,20 +151,32 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
 
 export default function FriendInviteRegistrationScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<FriendPageView>("invite");
   const [friendCode, setFriendCode] = useState(createEmptyFriendCode);
   const { showToast, toastMessage } = useToast();
   const normalizedFriendCode = friendCode.join("");
   const meQuery = useMeQuery();
-  const referralQuery = useQuery(referralQueryOptions(meQuery.data?.userId ?? null));
+  const referralQuery = useQuery(referralQueryOptions(meQuery.data?.userId));
   const canRegisterFriend = isWithinFriendRegistrationPeriod(meQuery.data?.joinDate);
   const visibleView = canRegisterFriend ? activeView : "invite";
+  const isReferralUnauthorized = isApiError(referralQuery.error, 401);
 
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
       router.replace("/login?toast=auth_required");
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
+
+  useEffect(() => {
+    if (!isReferralUnauthorized) {
+      return;
+    }
+
+    clearAccessToken();
+    clearAuthenticatedQueryCache(queryClient);
+    router.replace("/login?toast=auth_required");
+  }, [isReferralUnauthorized, queryClient, router]);
 
   const validateReferralMutation = useMutation({
     mutationFn: validateReferralCode,
@@ -228,7 +243,7 @@ export default function FriendInviteRegistrationScreen() {
     );
   }
 
-  if (!meQuery.data) {
+  if (!meQuery.data || isReferralUnauthorized) {
     return (
       <MobileShell>
         <TopBar left="back" title="친구 초대/등록" showBottomBorder />
