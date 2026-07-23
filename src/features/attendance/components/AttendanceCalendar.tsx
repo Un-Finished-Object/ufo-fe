@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import StarCircleIcon from "@/components/icons/StarCircleIcon";
 import StateBlock from "@/components/common/StateBlock";
@@ -9,6 +9,7 @@ import ToastMessage from "@/components/common/ToastMessage";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
 import { buildApiUrl } from "@/lib/api/client";
 import { AUTH_REQUIRED_MESSAGE } from "@/hooks/useAuthRequiredToast";
+import { useToast } from "@/hooks/useToast";
 import {
   createInvalidApiResponseError,
   isApiError,
@@ -64,14 +65,7 @@ export default function AttendanceCalendar() {
   const [isFetchingMonth, setIsFetchingMonth] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [todayChecked, setTodayChecked] = useState<boolean | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showToast = useCallback((msg: string) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(msg);
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 2500);
-  }, []);
+  const { showToast, toastMessage } = useToast();
 
   const attendedSet = new Set(monthDates);
   const isViewingCurrentMonth = viewYear === currentYear && viewMonth === currentMonth;

@@ -17,6 +17,7 @@ import ToastMessage from "@/components/common/ToastMessage";
 import Checkbox from "@/components/common/Checkbox";
 import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
+import { useToast } from "@/hooks/useToast";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import {
   createRandomNickname,
@@ -54,7 +55,7 @@ export default function SignupScreen() {
   });
   const [profileImage, setProfileImage] = useState<UploadedImageFile | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { showToast, toastMessage } = useToast();
 
   useEffect(() => {
     const timer = window.setTimeout(() => setNickname(createRandomNickname()), 0);
@@ -65,12 +66,6 @@ export default function SignupScreen() {
     const timer = window.setTimeout(() => setDebouncedNickname(nickname.trim()), 400);
     return () => window.clearTimeout(timer);
   }, [nickname]);
-
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timer = window.setTimeout(() => setToastMessage(null), 2500);
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
 
   useEffect(() => {
     return () => {
@@ -110,7 +105,7 @@ export default function SignupScreen() {
       queryClient.setQueryData(["nickname-availability", availableNickname], true);
     },
     onError: () => {
-      setToastMessage("닉네임을 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
+      showToast("닉네임을 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
     },
   });
 
@@ -124,7 +119,7 @@ export default function SignupScreen() {
     onError: (error) => {
       setPreviewImageUrl(null);
       setProfileImage(null);
-      setToastMessage(error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했어요.");
+      showToast(error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했어요.");
     },
   });
 
@@ -154,7 +149,7 @@ export default function SignupScreen() {
       router.replace("/onboarding");
     },
     onError: (error) => {
-      setToastMessage(
+      showToast(
         isApiError(error, 401)
           ? "인증이 만료되었어요. 다시 로그인해 주세요."
           : "회원가입 정보를 저장하지 못했어요. 다시 시도해 주세요.",

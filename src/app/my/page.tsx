@@ -103,10 +103,6 @@ export default function MyPage() {
     }
   }, [meQuery, walletQuery]);
 
-  const handleAttendanceClick = useCallback(() => {
-    router.push("/events/attendance");
-  }, [router]);
-
   const handleEditProfileClick = useCallback(() => {
     router.push("/my/edit");
   }, [router]);
@@ -122,20 +118,18 @@ export default function MyPage() {
     href: item.href,
     external: "external" in item ? item.external : undefined,
   }));
-  const [
-    faqMenuItem,
-    noticesMenuItem,
-    creditGuideMenuItem,
-    inquiryMenuItem,
-    privacyPolicyMenuItem,
-    termsMenuItem,
-    withdrawalMenuItem,
-  ] = helpPageMenuItems;
+  const creditGuideMenuItem = helpPageMenuItems[2];
+  const inquiryMenuItem = helpPageMenuItems[3];
+  const privacyPolicyMenuItem = helpPageMenuItems[4];
+  const termsMenuItem = helpPageMenuItems[5];
+  const withdrawalMenuItem = helpPageMenuItems[6];
+  const eventMenuItems: MenuItem[] = [
+    { label: "출석체크", href: "/events/attendance" },
+    { label: "친구 초대/등록", href: "/my/friends" },
+  ];
   const helpMenuItems: MenuItem[] = [
-    faqMenuItem,
-    noticesMenuItem,
+    { label: "UFO 가이드", href: "/onboarding" },
     creditGuideMenuItem,
-    { label: "출석체크", onClick: handleAttendanceClick },
     inquiryMenuItem,
     privacyPolicyMenuItem,
     termsMenuItem,
@@ -277,7 +271,10 @@ export default function MyPage() {
           </article>
         </section>
 
-        <MenuSection title="도움말" items={helpMenuItems} />
+        <div className="space-y-2">
+          <MenuSection title="이벤트" items={eventMenuItems} />
+          <MenuSection title="도움말" items={helpMenuItems} />
+        </div>
       </MobileShell>
       <ToastMessage message={toastMessage} />
     </>

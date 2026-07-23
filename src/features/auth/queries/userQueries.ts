@@ -11,7 +11,7 @@ import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type UserProfile = {
-  userId: string | null;
+  userId: string;
   email: string;
   nickname: string;
   profileImage: string;
@@ -21,8 +21,6 @@ export type UserProfile = {
 type MeResponse = {
   data?: {
     userId?: number;
-    user_id?: number;
-    id?: number;
     email?: string;
     nickname?: string;
     profileImage?: string;
@@ -80,6 +78,10 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
     throw createInvalidApiResponseError("Failed to load user information.");
   }
 
+  if (typeof payload.data.userId !== "number") {
+    throw createInvalidApiResponseError("Failed to load user information.");
+  }
+
   const joinDate =
     typeof payload.data.joinDate === "number"
       ? payload.data.joinDate
@@ -88,14 +90,7 @@ export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
         : null;
 
   return {
-    userId:
-      typeof payload.data.userId === "number"
-        ? String(payload.data.userId)
-        : typeof payload.data.user_id === "number"
-          ? String(payload.data.user_id)
-          : typeof payload.data.id === "number"
-            ? String(payload.data.id)
-            : null,
+    userId: String(payload.data.userId),
     email: payload.data.email ?? "",
     nickname: payload.data.nickname ?? "",
     profileImage: payload.data.profileImage ?? payload.data.profileImageUrl ?? "",

@@ -7,6 +7,7 @@ import SegmentedSwitch from "@/components/common/SegmentedSwitch";
 import ToastMessage from "@/components/common/ToastMessage";
 import YesOrNo from "@/components/dialogs/YesOrNo";
 import CreditBadge from "@/components/credits/CreditBadge";
+import { useToast } from "@/hooks/useToast";
 import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import NavBar from "@/components/navigation/NavBar";
@@ -110,11 +111,10 @@ export default function DesignGalleryScreen() {
   const [settingsMode, setSettingsMode] = useState(false);
   const [message, setMessage] = useState("오늘 뜨개 진도 공유해요");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { showToast: showToastMessage, toastMessage } = useToast();
 
   const showToast = () => {
-    setToastMessage("토스트 메시지 예시입니다.");
-    window.setTimeout(() => setToastMessage(null), 1800);
+    showToastMessage("토스트 메시지 예시입니다.");
   };
 
   return (
