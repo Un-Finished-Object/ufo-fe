@@ -12,6 +12,7 @@ import {
   type FocusEvent,
   type FormEvent,
   type KeyboardEvent,
+  type PointerEvent,
 } from "react";
 import SegmentedSwitch from "@/components/common/SegmentedSwitch";
 import ToastMessage from "@/components/common/ToastMessage";
@@ -90,7 +91,12 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
     event.currentTarget.setSelectionRange(cursorPosition, cursorPosition);
   };
 
-  const handleInputRowClick = () => {
+  const handleInputRowPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
     const firstEmptyIndex = value.findIndex((character) => character.length === 0);
     focusInput(firstEmptyIndex === -1 ? FRIEND_CODE_LENGTH - 1 : firstEmptyIndex);
   };
@@ -145,7 +151,7 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
   return (
     <div
       className="grid grid-cols-[repeat(9,minmax(0,1fr))] gap-1.5"
-      onClick={handleInputRowClick}
+      onPointerDown={handleInputRowPointerDown}
       role="group"
       aria-label="친구 초대 코드 9자리 입력"
     >
