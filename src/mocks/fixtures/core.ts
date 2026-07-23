@@ -3,7 +3,7 @@ export const mockUser = {
   email: "knitter@ufo.test",
   nickname: "뜨개구름",
   profileImage: "/mock/plush-pink.svg",
-  joinDate: 1735689600000,
+  joinDate: 2,
 };
 
 export const mockPatterns = [

@@ -4,6 +4,7 @@ import { chatMessagesQueryRoot } from "@/features/chat/hooks/useChatMessagesQuer
 import { chatStatusQueryRoot } from "@/features/chat/hooks/useChatStatusQuery";
 import { myChatRoomsQueryKey } from "@/features/chat/queries/chatQueries";
 import { clearPendingChatReads } from "@/features/chat/lib/chatReadReceiptQueue";
+import { referralQueryKeys } from "@/features/friends/queries/referralQueries";
 import { homeQueryKeys } from "@/features/home/queries/homeQueries";
 import { myActivityQueryKeys } from "@/features/my/queries/myActivityQueries";
 import { patternAlternativesQueryRoot } from "@/features/patterns/queries/patternAlternativeQueries";
@@ -17,6 +18,7 @@ import { patternScrapQueryKeys } from "@/features/scraps/queries/patternScrapQue
 
 const authenticatedQueryRoots = [
   userQueryKeys.wallet,
+  referralQueryKeys.all,
   myChatRoomsQueryKey,
   chatMessagesQueryRoot,
   chatStatusQueryRoot,

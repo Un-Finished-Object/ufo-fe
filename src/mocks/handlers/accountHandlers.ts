@@ -4,15 +4,26 @@ import { mockState } from "@/mocks/state/mockState";
 import { apiError, apiSuccess, requireMockAuth } from "@/mocks/utils/response";
 
 export const accountHandlers = [
+  http.get("/v1/referral", ({ request }) =>
+    requireMockAuth(request)
+      ? apiSuccess({ username: mockState.user.nickname, referralCode: "AAAADDDDD" })
+      : apiError(401, "Unauthorized"),
+  ),
+  http.post("/v1/referral", async ({ request }) => {
+    if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
+    const body = await request.json() as { referralCode?: string };
+    return apiSuccess({ valid: body.referralCode === "AAAADDDDD" });
+  }),
   http.get("/v1/credits/rules", () => apiSuccess({
     dailyMaxEarnCredits: 30,
     earnRules: [
-      { key: "ATTENDANCE", amount: 5, description: "매일 출석", dailyLimitExempt: false },
-      { key: "STYLE_POST", amount: 10, description: "스타일 게시글 작성", dailyLimitExempt: false },
+      { key: "SIGN_UP", amount: 50, description: "회원 가입", dailyLimitExempt: true },
+      { key: "ATTENDANCE", amount: 5, description: "출석체크 (연속 출석 시 보상 증가)", dailyLimitExempt: false },
+      { key: "FRIEND_INVITATION", amount: 150, description: "친구 초대", dailyLimitExempt: true },
     ],
     spendRules: [
-      { key: "PATTERN_CHAT", amount: 20, description: "도안 채팅방 입장", dailyLimitExempt: true },
-      { key: "YARN_ALTERNATIVE", amount: 20, description: "대체 실 정보 확인", dailyLimitExempt: true },
+      { key: "YARN_ALTERNATIVE", amount: 10, description: "대체 실 추천", dailyLimitExempt: true },
+      { key: "PATTERN_CHAT", amount: 10, description: "채팅방", dailyLimitExempt: true },
     ],
   })),
   http.get("/v1/credits/transactions", ({ request }) => {

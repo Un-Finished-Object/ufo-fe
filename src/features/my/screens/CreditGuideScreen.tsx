@@ -9,21 +9,27 @@ import {
   type CreditRuleItem,
 } from "@/features/my/queries/creditRuleQueries";
 
-function formatCreditAmount(amount: number) {
-  const absoluteAmount = Math.abs(amount);
+function formatCreditAmount(rule: CreditRuleItem, type: "earn" | "spend") {
+  if (rule.key === "ATTENDANCE") {
+    return "5~30 크레딧";
+  }
 
-  return amount > 0 ? `+${absoluteAmount} 크레딧` : `-${absoluteAmount} 크레딧`;
+  const absoluteAmount = Math.abs(rule.amount);
+
+  return `${type === "earn" ? "+" : "-"}${absoluteAmount} 크레딧`;
 }
 
 function CreditRuleList({
   title,
   description,
   rules,
+  type,
   amountClassName,
 }: {
   title: string;
   description: string;
   rules: CreditRuleItem[];
+  type: "earn" | "spend";
   amountClassName: string;
 }) {
   return (
@@ -42,11 +48,13 @@ function CreditRuleList({
                   {rule.description}
                 </p>
                 <p className={`shrink-0 text-sm font-semibold ${amountClassName}`}>
-                  {formatCreditAmount(rule.amount)}
+                  {formatCreditAmount(rule, type)}
                 </p>
               </div>
-              {rule.dailyLimitExempt ? (
-                <p className="mt-2 text-xs text-ufo-text-dim">일일 획득 한도에 포함되지 않아요.</p>
+              {rule.key === "ATTENDANCE" ? (
+                <p className="mt-2 text-xs leading-5 text-ufo-text-dim">
+                  예시: 5 → 10 → 15 → 20 → 25 → 30 (이후 30 크레딧 고정)
+                </p>
               ) : null}
             </li>
           ))}
@@ -104,7 +112,7 @@ export default function CreditGuideScreen() {
               크레딧은 UFO에서 활동하거나 일부 기능을 이용할 때 획득하고 사용할 수 있어요.
             </p>
             <p className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-ufo-brand-pale px-4 py-2 text-sm font-semibold text-ufo-brand">
-              하루 최대 {creditRulesQuery.data.dailyMaxEarnCredits} 크레딧까지 획득
+              연속 출석 6일차부터 매일 {creditRulesQuery.data.dailyMaxEarnCredits} 크레딧
             </p>
           </div>
 
@@ -112,6 +120,7 @@ export default function CreditGuideScreen() {
             title="획득"
             description="서비스 활동을 통해 받을 수 있는 크레딧 정책입니다."
             rules={creditRulesQuery.data.earnRules}
+            type="earn"
             amountClassName="text-ufo-brand"
           />
 
@@ -119,6 +128,7 @@ export default function CreditGuideScreen() {
             title="소비"
             description="크레딧을 사용하는 기능과 차감 기준입니다."
             rules={creditRulesQuery.data.spendRules}
+            type="spend"
             amountClassName="text-ufo-text"
           />
         </section>
