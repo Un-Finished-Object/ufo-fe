@@ -9,6 +9,7 @@ import {
   useState,
   type ChangeEvent,
   type ClipboardEvent,
+  type FocusEvent,
   type FormEvent,
   type KeyboardEvent,
 } from "react";
@@ -74,7 +75,24 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const focusInput = (index: number) => {
-    inputRefs.current[index]?.focus();
+    const input = inputRefs.current[index];
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  };
+
+  const handleFocus = (event: FocusEvent<HTMLInputElement>) => {
+    const cursorPosition = event.currentTarget.value.length;
+    event.currentTarget.setSelectionRange(cursorPosition, cursorPosition);
+  };
+
+  const handleInputRowClick = () => {
+    const firstEmptyIndex = value.findIndex((character) => character.length === 0);
+    focusInput(firstEmptyIndex === -1 ? FRIEND_CODE_LENGTH - 1 : firstEmptyIndex);
   };
 
   const handleChange = (index: number, event: ChangeEvent<HTMLInputElement>) => {
@@ -121,11 +139,16 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
         (_, index) => pastedCharacters[index] ?? "",
       ),
     );
-    focusInput(Math.min(pastedCharacters.length, FRIEND_CODE_LENGTH) - 1);
+    focusInput(Math.min(pastedCharacters.length, FRIEND_CODE_LENGTH - 1));
   };
 
   return (
-    <div className="grid grid-cols-[repeat(9,minmax(0,1fr))] gap-1.5">
+    <div
+      className="grid grid-cols-[repeat(9,minmax(0,1fr))] gap-1.5"
+      onClick={handleInputRowClick}
+      role="group"
+      aria-label="친구 초대 코드 9자리 입력"
+    >
       {value.map((character, index) => (
         <input
           key={index}
@@ -136,13 +159,14 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
           inputMode="text"
           pattern="[A-Z0-9]"
           value={character}
-          maxLength={2}
+          maxLength={1}
           onChange={(event) => handleChange(index, event)}
           onKeyDown={(event) => handleKeyDown(index, event)}
           onPaste={handlePaste}
-          autoComplete={index === 0 ? "one-time-code" : "off"}
+          onFocus={handleFocus}
+          autoComplete="off"
           autoCapitalize="characters"
-          className="h-12 min-w-0 rounded-lg border border-ufo-border-light bg-ufo-surface text-center text-base font-semibold text-ufo-text outline-none focus:border-ufo-brand"
+          className="h-12 min-w-0 caret-transparent rounded-lg border border-ufo-border-light bg-ufo-surface text-center text-base font-semibold text-ufo-text outline-none focus:border-ufo-brand"
           aria-label={`친구 초대 코드 ${index + 1}번째 자리`}
         />
       ))}
