@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -162,6 +163,12 @@ export default function FriendInviteRegistrationScreen() {
   const visibleView = canRegisterFriend ? activeView : "invite";
   const isReferralUnauthorized = isApiError(referralQuery.error, 401);
 
+  const handleUnauthorized = useCallback(() => {
+    clearAccessToken();
+    clearAuthenticatedQueryCache(queryClient);
+    router.replace("/login?toast=auth_required");
+  }, [queryClient, router]);
+
   useEffect(() => {
     if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
       router.replace("/login?toast=auth_required");
@@ -173,10 +180,8 @@ export default function FriendInviteRegistrationScreen() {
       return;
     }
 
-    clearAccessToken();
-    clearAuthenticatedQueryCache(queryClient);
-    router.replace("/login?toast=auth_required");
-  }, [isReferralUnauthorized, queryClient, router]);
+    handleUnauthorized();
+  }, [handleUnauthorized, isReferralUnauthorized]);
 
   const validateReferralMutation = useMutation({
     mutationFn: validateReferralCode,
@@ -189,7 +194,12 @@ export default function FriendInviteRegistrationScreen() {
 
       showToast("유효하지 않은 친구 초대 코드예요.");
     },
-    onError: () => {
+    onError: (error) => {
+      if (isApiError(error, 401)) {
+        handleUnauthorized();
+        return;
+      }
+
       showToast("친구 초대 코드를 확인하지 못했어요.");
     },
   });
