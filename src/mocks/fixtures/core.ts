@@ -185,10 +185,10 @@ function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: numbe
       component: index % 2 === 0 ? "메리노울 100%" : "알파카 90%, 나일론 10%",
       store: index % 2 === 0 ? "UFO 실가게" : "솜솜뜨개",
       length: 120 + index * 5,
-      componentScore: Math.max(70, 100 - index),
-      lengthScore: Math.max(70, 98 - index),
-      gaugeScore: Math.max(70, 96 - index),
-      needleScore: Math.max(70, 94 - index),
+      componentScore: index === 0 ? null : Math.max(70, 100 - index),
+      lengthScore: index === 0 ? null : Math.max(70, 98 - index),
+      gaugeScore: index === 0 ? null : Math.max(70, 96 - index),
+      needleScore: index === 0 ? null : Math.max(70, 94 - index),
       username: "admin",
     };
   });

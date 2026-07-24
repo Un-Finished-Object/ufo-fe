@@ -96,6 +96,7 @@ const commentDateFormatter = new Intl.DateTimeFormat("ko-KR", {
 });
 const patternAccessCredits = 10;
 const alternativesPerPage = 5;
+const alternativesMaxItems = alternativesPerPage * 2;
 
 type DetailTabSwitchProps = {
   value: DetailTabValue;
@@ -750,7 +751,6 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
   const cost = formatAlternativeNumber(card.cost ?? null, "원");
   const detailItems = card.detailItems ?? [];
   const scoreItems = card.scoreItems ?? [];
-  const visibleScoreItems = scoreItems.filter((score) => score.value !== null);
   const hasHeaderContent = yarnName !== null || subComponent !== null || cost !== null;
 
   return (
@@ -797,31 +797,41 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
         </dl>
       ) : null}
 
-      {visibleScoreItems.length > 0 ? (
+      {scoreItems.length > 0 ? (
         <div
           className={`grid grid-cols-4 gap-1.5 ${
             hasHeaderContent || detailItems.length > 0 ? "mt-3" : ""
           }`}
         >
           {scoreItems.map((score) => {
-            const scoreValue = score.value ?? 0;
-            const percent = Math.max(0, Math.min(100, scoreValue));
-            const scoreText = score.value === null ? "-" : `${Math.round(scoreValue)}점`;
+            const scoreValue = score.value;
+            const isUnknown = scoreValue === null;
+            const percent = scoreValue === null
+              ? null
+              : Math.max(0, Math.min(100, scoreValue));
+            const scoreText = scoreValue === null ? "미상" : `${Math.round(scoreValue)}점`;
 
             return (
               <div key={score.label} className="min-w-0" aria-label={`${score.label} 점수 ${scoreText}`}>
                 <span className="block truncate text-[10px] font-bold text-ufo-text-subtle">
                   {score.label} {scoreText}
                 </span>
-                <span
-                  className="relative mt-1 block h-1.5 overflow-hidden rounded-full bg-ufo-border-light"
-                  aria-hidden="true"
-                >
+                {isUnknown ? (
                   <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-ufo-brand"
-                    style={{ width: `${percent}%` }}
+                    className="mt-1 block h-1.5 rounded-full border border-dashed border-ufo-brand bg-ufo-brand-pale"
+                    aria-hidden="true"
                   />
-                </span>
+                ) : (
+                  <span
+                    className="relative mt-1 block h-1.5 overflow-hidden rounded-full bg-ufo-border-light"
+                    aria-hidden="true"
+                  >
+                    <span
+                      className="absolute inset-y-0 left-0 rounded-full bg-ufo-brand"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </span>
+                )}
               </div>
             );
           })}
@@ -1114,7 +1124,9 @@ function RankedAlternativeYarnList({
   items: PatternAlternativeItem[];
 }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const visibleItems = items.filter(hasVisibleAlternativeInfo);
+  const visibleItems = items
+    .filter(hasVisibleAlternativeInfo)
+    .slice(0, alternativesMaxItems);
   const totalPages = Math.ceil(visibleItems.length / alternativesPerPage);
   const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
   const pageItems = visibleItems.slice(
