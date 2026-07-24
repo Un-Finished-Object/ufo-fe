@@ -17,6 +17,7 @@ type MessageCreatedPayload = {
   replySenderName?: string | null;
   replyMessageId?: number | null;
   createdAt?: string | null;
+  deletedAt?: string | null;
 };
 
 type ChatSubscriptionEvent = {
@@ -50,6 +51,10 @@ function normalizeCreatedMessage(payload: MessageCreatedPayload) {
     replyMessageId: typeof payload.replyMessageId === "number" ? String(payload.replyMessageId) : null,
     text: payload.text,
     createdAt: payload.createdAt,
+    deletedAt:
+      typeof payload.deletedAt === "string" && !Number.isNaN(Date.parse(payload.deletedAt))
+        ? payload.deletedAt
+        : null,
     status: "confirmed",
   } satisfies ChatMessage;
 }

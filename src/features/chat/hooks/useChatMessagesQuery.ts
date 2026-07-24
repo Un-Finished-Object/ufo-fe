@@ -1,7 +1,7 @@
 "use client";
 
 import { type InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   fetchChatMessages,
   type ChatMessagesPage,
@@ -26,6 +26,7 @@ function createInitialChatMessagesData(messages: ChatMessage[] = []) {
         messages,
         hasNext: false,
         nextCursor: null,
+        lastReadMessageId: null,
       },
     ],
     pageParams: [INITIAL_CHAT_MESSAGES_PAGE_PARAM],
@@ -241,6 +242,15 @@ export function mergeChatMessagesInfiniteData(
 }
 
 export function useChatMessagesQuery(roomId: string | null) {
+  const capturedLastReadRef = useRef<{
+    roomId: string | null;
+    value: string | null;
+    captured: boolean;
+  }>({ roomId: null, value: null, captured: false });
+  const [entryLastReadState, setEntryLastReadState] = useState<{
+    roomId: string;
+    value: string | null;
+  } | null>(null);
   const query = useInfiniteQuery<
     ChatMessagesPage,
     Error,
@@ -257,13 +267,29 @@ export function useChatMessagesQuery(roomId: string | null) {
           messages: [],
           hasNext: false,
           nextCursor: null,
+          lastReadMessageId: null,
         } satisfies ChatMessagesPage;
       }
 
-      return fetchChatMessages(roomId, {
+      const page = await fetchChatMessages(roomId, {
         cursorMessageId: pageParam,
         signal,
       });
+
+      if (
+        pageParam === INITIAL_CHAT_MESSAGES_PAGE_PARAM &&
+        (capturedLastReadRef.current.roomId !== roomId ||
+          !capturedLastReadRef.current.captured)
+      ) {
+        capturedLastReadRef.current = {
+          roomId,
+          value: page.lastReadMessageId,
+          captured: true,
+        };
+        setEntryLastReadState({ roomId, value: page.lastReadMessageId });
+      }
+
+      return page;
     },
     getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       if (!lastPage.hasNext) {
@@ -291,5 +317,7 @@ export function useChatMessagesQuery(roomId: string | null) {
   return {
     ...query,
     data: messages,
+    entryLastReadMessageId:
+      entryLastReadState?.roomId === roomId ? entryLastReadState.value : null,
   };
 }

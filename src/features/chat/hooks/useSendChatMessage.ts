@@ -60,6 +60,7 @@ function buildPendingMessage({
     replySenderName: replySenderName ?? null,
     text,
     createdAt: null,
+    deletedAt: null,
     status: "pending",
   } satisfies ChatMessage;
 }

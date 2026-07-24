@@ -18,6 +18,7 @@ type ChatMessageItem = {
   replyMessageId?: number | string | null;
   text?: string;
   createdAt?: string | null;
+  deletedAt?: string | null;
 };
 
 type ChatMessagesResponse = {
@@ -34,6 +35,7 @@ export type ChatMessagesPage = {
   messages: ChatMessage[];
   hasNext: boolean;
   nextCursor: string | null;
+  lastReadMessageId: string | null;
 };
 
 function getSenderName(message: ChatMessageItem) {
@@ -100,7 +102,11 @@ export async function fetchChatMessages(
       message.senderName.trim().length === 0 ||
       typeof message.text !== "string" ||
       typeof message.createdAt !== "string" ||
-      Number.isNaN(Date.parse(message.createdAt)),
+      Number.isNaN(Date.parse(message.createdAt)) ||
+      !(
+        message.deletedAt === null ||
+        (typeof message.deletedAt === "string" && !Number.isNaN(Date.parse(message.deletedAt)))
+      ),
   );
 
   if (hasInvalidMessage) {
@@ -140,6 +146,7 @@ export async function fetchChatMessages(
               : null,
         text: message.text,
         createdAt: message.createdAt,
+        deletedAt: message.deletedAt ?? null,
         status: "confirmed",
       } satisfies ChatMessage;
     })
@@ -149,6 +156,8 @@ export async function fetchChatMessages(
   const fallbackNextCursor =
     typeof payload.data.nextMessageId === "number" ? String(payload.data.nextMessageId) : null;
   const nextCursor = fallbackNextCursor ?? oldestMessageId;
+  const lastReadMessageId =
+    typeof payload.data.lastMessageId === "number" ? String(payload.data.lastMessageId) : null;
 
   if (
     payload.data.hasNext === true &&
@@ -161,5 +170,6 @@ export async function fetchChatMessages(
     messages,
     hasNext: payload.data.hasNext === true,
     nextCursor,
+    lastReadMessageId,
   } satisfies ChatMessagesPage;
 }
