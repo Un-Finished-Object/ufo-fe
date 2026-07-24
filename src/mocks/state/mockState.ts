@@ -1,4 +1,5 @@
 import { mockChats, mockUser } from "@/mocks/fixtures/core";
+import { mockAdminChatRooms } from "@/mocks/fixtures/adminChat";
 
 type MockState = {
   authenticated: boolean;
@@ -16,6 +17,10 @@ type MockState = {
   }[]>;
   user: typeof mockUser;
   chats: typeof mockChats;
+  adminChatRooms: typeof mockAdminChatRooms;
+  adminReadMessageIds: Set<string>;
+  adminLastReadMessageIds: Map<number, number>;
+  adminDeletedChatMessages: Map<number, string>;
   attendanceDates: Set<string>;
 };
 
@@ -30,6 +35,10 @@ function createMockState(): MockState {
     alternativeComments: new Map(),
     user: { ...mockUser },
     chats: mockChats.map((chat) => ({ ...chat })),
+    adminChatRooms: mockAdminChatRooms.map((chat) => ({ ...chat })),
+    adminReadMessageIds: new Set(),
+    adminLastReadMessageIds: new Map(),
+    adminDeletedChatMessages: new Map(),
     attendanceDates: new Set(["2026-07-01", "2026-07-08", "2026-07-15"]),
   };
 }

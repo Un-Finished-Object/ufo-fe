@@ -15,7 +15,10 @@ import { useChatReadReceipt } from "@/features/chat/hooks/useChatReadReceipt";
 import { useAllMyChatRoomsQuery } from "@/features/chat/hooks/useAllMyChatRoomsQuery";
 import { useSendChatMessage } from "@/features/chat/hooks/useSendChatMessage";
 import type { ChatMessage, ChatRoom } from "@/features/chat/types";
-import { useChatMessagesQuery } from "@/features/chat/hooks/useChatMessagesQuery";
+import {
+  flattenChatMessagesData,
+  useChatMessagesQuery,
+} from "@/features/chat/hooks/useChatMessagesQuery";
 import {
   chatStatusQueryKey,
   mapChatRoomToStatus,
@@ -55,6 +58,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const chatStatusQuery = useChatStatusQuery(roomId);
   const [messageText, setMessageText] = useState("");
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [isFoConfirmOpen, setIsFoConfirmOpen] = useState(false);
   const messagesQuery = useChatMessagesQuery(meQuery.data && chatRoom ? roomId : null);
   const messages = messagesQuery.data;
@@ -66,10 +70,12 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
     isFetchNextPageError,
     isFetchingNextPage,
     isPending: isMessagesPending,
+    entryLastReadMessageId,
   } = messagesQuery;
   const currentUserName = chatRoom?.nickname ?? null;
   const [topSentinelElement, setTopSentinelElement] = useState<HTMLDivElement | null>(null);
   const [readMarkerElement, setReadMarkerElement] = useState<HTMLDivElement | null>(null);
+  const [lastReadMarkerElement, setLastReadMarkerElement] = useState<HTMLDivElement | null>(null);
   const [scrollContainerElement, setScrollContainerElement] = useState<HTMLElement | null>(null);
   const scrollContainerElementRef = useRef<HTMLElement | null>(null);
   const didScrollToInitialBottomRef = useRef(false);
@@ -81,6 +87,9 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const isNearBottomRef = useRef(true);
   const [isFarFromBottom, setIsFarFromBottom] = useState(false);
   const [hasUnseenMessage, setHasUnseenMessage] = useState(false);
+  const [isLocatingLastReadMessage, setIsLocatingLastReadMessage] = useState(false);
+  const [shouldScrollToLastReadMessage, setShouldScrollToLastReadMessage] = useState(false);
+  const locateLastReadOperationRef = useRef(0);
   const setCurrentRoomId = useChatRealtimeStore((state) => state.setCurrentRoomId);
   const clearCurrentRoomId = useChatRealtimeStore((state) => state.clearCurrentRoomId);
   const connectionStatus = useChatRealtimeStore((state) => state.connectionStatus);
@@ -90,7 +99,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   });
 
   useEffect(() => {
-    if (!meQuery.isPending && !meQuery.isError && !meQuery.data) {
+    if (meQuery.isError || (!meQuery.isPending && !meQuery.data)) {
       router.replace("/");
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, router]);
@@ -117,6 +126,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   ]);
 
   useEffect(() => {
+    locateLastReadOperationRef.current += 1;
     didScrollToInitialBottomRef.current = false;
     previousScrollHeightRef.current = null;
     previousAutoScrollStateRef.current = {
@@ -124,6 +134,8 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       messageKey: null,
     };
     isNearBottomRef.current = true;
+    setIsLocatingLastReadMessage(false);
+    setShouldScrollToLastReadMessage(false);
 
     const animationFrameId = window.requestAnimationFrame(() => {
       setIsFarFromBottom(false);
@@ -288,6 +300,10 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       senderName: message.senderName?.trim() || "뜨친",
       text: message.text,
     });
+
+    window.requestAnimationFrame(() => {
+      chatInputRef.current?.focus();
+    });
   };
 
   const handleReplyCancel = () => {
@@ -337,13 +353,102 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const loadOlderMessages = useCallback(() => {
     const scrollContainer = scrollContainerElementRef.current;
 
-    if (!scrollContainer || !hasNextPage || isFetchingNextPage) {
+    if (
+      !scrollContainer ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      isLocatingLastReadMessage
+    ) {
       return;
     }
 
     previousScrollHeightRef.current = scrollContainer.scrollHeight;
     void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLocatingLastReadMessage]);
+
+  const hasLoadedLastReadMessage = useMemo(
+    () =>
+      entryLastReadMessageId !== null &&
+      messages.some((message) => message.messageId === entryLastReadMessageId),
+    [entryLastReadMessageId, messages],
+  );
+
+  const handleLocateLastReadMessage = useCallback(async () => {
+    if (
+      !entryLastReadMessageId ||
+      hasLoadedLastReadMessage ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      isLocatingLastReadMessage
+    ) {
+      return;
+    }
+
+    const operationId = ++locateLastReadOperationRef.current;
+    setIsLocatingLastReadMessage(true);
+
+    try {
+      let canFetchMore: boolean = hasNextPage;
+
+      while (canFetchMore && locateLastReadOperationRef.current === operationId) {
+        const result = await fetchNextPage();
+        const nextMessages = flattenChatMessagesData(result.data);
+
+        if (nextMessages.some((message) => message.messageId === entryLastReadMessageId)) {
+          setShouldScrollToLastReadMessage(true);
+          return;
+        }
+
+        canFetchMore = result.hasNextPage === true;
+      }
+
+      if (locateLastReadOperationRef.current === operationId) {
+        showToast("마지막으로 읽은 메시지를 찾지 못했습니다.");
+      }
+    } catch {
+      if (locateLastReadOperationRef.current === operationId) {
+        showToast("메시지를 불러오지 못했습니다. 다시 시도해 주세요.");
+      }
+    } finally {
+      if (locateLastReadOperationRef.current === operationId) {
+        setIsLocatingLastReadMessage(false);
+      }
+    }
+  }, [
+    entryLastReadMessageId,
+    fetchNextPage,
+    hasLoadedLastReadMessage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLocatingLastReadMessage,
+    showToast,
+  ]);
+
+  useEffect(() => {
+    if (!shouldScrollToLastReadMessage || !lastReadMarkerElement || !scrollContainerElement) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const markerRect = lastReadMarkerElement.getBoundingClientRect();
+      const scrollContainerRect = scrollContainerElement.getBoundingClientRect();
+      const targetTop =
+        markerRect.top - scrollContainerRect.top + scrollContainerElement.scrollTop;
+
+      scrollContainerElement.scrollTo({ top: targetTop, behavior: "smooth" });
+      updateScrollPositionState();
+      setShouldScrollToLastReadMessage(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [
+    lastReadMarkerElement,
+    scrollContainerElement,
+    shouldScrollToLastReadMessage,
+    updateScrollPositionState,
+  ]);
 
   useEffect(() => {
     const scrollContainer = scrollContainerElementRef.current;
@@ -588,7 +693,21 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
           aria-label="채팅 메시지 목록"
         >
           <div ref={setTopSentinelElement} aria-hidden="true" className="h-px" />
-          {isFetchingNextPage ? (
+          {entryLastReadMessageId && !hasLoadedLastReadMessage && hasNextPage ? (
+            <div className="sticky top-0 z-20 flex h-0 -translate-y-2 justify-center">
+              <button
+                type="button"
+                onClick={() => void handleLocateLastReadMessage()}
+                disabled={isLocatingLastReadMessage || isFetchingNextPage}
+                className="min-h-10 rounded-full border border-ufo-border-light bg-white px-4 text-xs font-semibold whitespace-nowrap text-ufo-brand shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLocatingLastReadMessage
+                  ? "마지막으로 읽은 메시지를 찾는 중입니다."
+                  : "마지막으로 읽은 메시지로 이동"}
+              </button>
+            </div>
+          ) : null}
+          {isFetchingNextPage && !isLocatingLastReadMessage ? (
             <p className="absolute top-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white px-4 py-2 text-center text-xs text-ufo-text-dim shadow-sm" role="status">
               이전 메시지를 불러오는 중입니다.
             </p>
@@ -611,6 +730,8 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
               currentUserName={currentUserName}
               isLoading={isMessagesPending}
               errorMessage={errorMessage}
+              lastReadMessageId={entryLastReadMessageId}
+              onLastReadMarkerRefChange={setLastReadMarkerElement}
               onRetry={isInitialMessagesError ? () => void messagesQuery.refetch() : undefined}
               onDeleteFailedMessage={sendChatMessage.removeFailedMessage}
               onReplyMessageSelect={handleReplyMessageSelect}
@@ -637,6 +758,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
             </p>
           ) : null}
           <ChatInput
+            ref={chatInputRef}
             value={messageText}
             isSending={sendChatMessage.isPending}
             placeholder={`${chatInputPlaceholderName}(으)로 대화해보세요.`}

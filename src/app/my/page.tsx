@@ -127,9 +127,6 @@ export default function MyPage() {
     { label: "출석체크", href: "/events/attendance" },
     { label: "친구 초대/등록", href: "/my/friends" },
   ];
-  const adminMenuItems: MenuItem[] = [
-    { label: "관리자 페이지로 이동", href: "/admin" },
-  ];
   const helpMenuItems: MenuItem[] = [
     { label: "UFO 가이드", href: "/onboarding" },
     creditGuideMenuItem,
@@ -275,9 +272,6 @@ export default function MyPage() {
         </section>
 
         <div className="space-y-2">
-          {meQuery.data.role === "ADMIN" ? (
-            <MenuSection title="관리자" items={adminMenuItems} />
-          ) : null}
           <MenuSection title="이벤트" items={eventMenuItems} />
           <MenuSection title="도움말" items={helpMenuItems} />
         </div>

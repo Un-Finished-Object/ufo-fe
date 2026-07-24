@@ -1,13 +1,3 @@
-export type AdminChatMessage = {
-  id: number;
-  senderId: number;
-  senderName: string;
-  text: string;
-  createdAt: string;
-  replySenderName: string | null;
-  replyMessageId: number | null;
-};
-
 export type AdminChatRoom = {
   chatId: number;
   patternId: number;
@@ -17,17 +7,6 @@ export type AdminChatRoom = {
   lastMessage: string;
   lastMessageAt: string;
   createdAt: string;
-};
-
-export type AdminChatMessagePage = {
-  chatId: number;
-  patternId: number;
-  chatName: string;
-  chatCreatedAt: string;
-  lastMessageId: number | null;
-  hasNext: boolean;
-  nextMessageId: number | null;
-  messages: AdminChatMessage[];
 };
 
 export type AdminAlternativeComment = {
