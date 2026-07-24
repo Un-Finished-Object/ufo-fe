@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 const MAX_MESSAGE_LENGTH = 100;
 const MAX_TEXTAREA_HEIGHT_PX = 96;
@@ -21,18 +21,23 @@ type ChatInputProps = {
   onSendMessage: () => void;
 };
 
-export default function ChatInput({
-  value,
-  isSending,
-  placeholder = "뜨개감지(으)로 대화해보세요.",
-  isSubmitDisabled = false,
-  replyPreview = null,
-  onChange,
-  onCancelReply,
-  onSendMessage,
-}: ChatInputProps) {
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput(
+  {
+    value,
+    isSending,
+    placeholder = "뜨개감지(으)로 대화해보세요.",
+    isSubmitDisabled = false,
+    replyPreview = null,
+    onChange,
+    onCancelReply,
+    onSendMessage,
+  },
+  ref,
+) {
   const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useImperativeHandle(ref, () => textareaRef.current as HTMLTextAreaElement, []);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -127,4 +132,6 @@ export default function ChatInput({
       </form>
     </div>
   );
-}
+});
+
+export default ChatInput;

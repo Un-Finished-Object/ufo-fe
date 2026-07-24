@@ -1,5 +1,6 @@
 import { http } from "msw";
 import { mockChats, mockPatterns } from "@/mocks/fixtures/core";
+import { mockChatMessages } from "@/mocks/fixtures/chat";
 import { mockState } from "@/mocks/state/mockState";
 import { apiError, apiSuccess, requireMockAuth } from "@/mocks/utils/response";
 
@@ -59,13 +60,50 @@ export const accountHandlers = [
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
     return apiSuccess({ chats: mockState.chats, page: 1, nextPage: 0 });
   }),
-  http.get("/v1/chat/:chatId/messages", ({ request }) => {
+  http.get("/v1/chat/:chatId/messages", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    return apiSuccess({ lastMessageId: 3, hasNext: false, nextMessageId: null, messages: [
-      { messageId: 1, senderName: "한코두코", text: "안녕하세요! 같이 즐겁게 떠요.", createdAt: "2026-07-17T09:00:00+09:00" },
-      { messageId: 2, senderName: "뜨개구름", text: "저는 몸통부터 시작했어요.", createdAt: "2026-07-17T09:05:00+09:00" },
-      { messageId: 3, senderName: "한코두코", text: "소매 분리까지 떴어요!", replySenderName: "뜨개구름", replyMessageId: 2, createdAt: "2026-07-17T09:10:00+09:00" },
-    ] });
+
+    const chatId = Number(params.chatId);
+    const cursor = new URL(request.url).searchParams.get("messageId");
+    const cursorMessageId = cursor ? Number(cursor) : null;
+    const defaultLastReadMessageId =
+      chatId === 102 ? 15 : chatId === 103 ? null : chatId === 104 ? 999 : 3;
+    const entryLastReadMessageId =
+      mockState.adminLastReadMessageIds.get(chatId) ?? defaultLastReadMessageId;
+    const page =
+      cursorMessageId === null
+        ? {
+            messages: mockChatMessages.slice(12),
+            hasNext: true,
+            nextMessageId: 12,
+            lastMessageId: entryLastReadMessageId,
+          }
+        : cursorMessageId === 12
+          ? {
+              messages: mockChatMessages.slice(4, 12),
+              hasNext: true,
+              nextMessageId: 4,
+              lastMessageId: 20,
+            }
+          : {
+              messages: mockChatMessages.slice(0, 4),
+              hasNext: false,
+              nextMessageId: null,
+              lastMessageId: 20,
+            };
+
+    return apiSuccess({
+      lastMessageId: page.lastMessageId,
+      hasNext: page.hasNext,
+      nextMessageId: page.nextMessageId,
+      messages: page.messages.map((message) => ({
+        ...message,
+        deletedAt:
+          mockState.adminDeletedChatMessages.get(message.messageId) ??
+          message.deletedAt ??
+          null,
+      })),
+    });
   }),
   http.patch("/v1/chat/:chatId/status", async ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");

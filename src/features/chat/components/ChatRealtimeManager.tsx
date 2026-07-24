@@ -79,6 +79,8 @@ export default function ChatRealtimeManager() {
             return;
           }
 
+          applyIncomingChatMessage(queryClient, roomId, event.message);
+
           const { currentRoomId, showToast } = useChatRealtimeStore.getState();
           const roomMetadata = roomMetadataRef.current.get(roomId);
 
@@ -89,7 +91,6 @@ export default function ChatRealtimeManager() {
           const isMine = event.message.senderName?.trim() === roomMetadata.nickname.trim();
 
           if (currentRoomId === roomId) {
-            applyIncomingChatMessage(queryClient, roomId, event.message);
             updateChatRoomLastMessage(queryClient, roomId, event.message.text);
             return;
           }

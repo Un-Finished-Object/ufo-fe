@@ -1,4 +1,12 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import {
+  mergeChatMessagesInfiniteData,
+  type ChatMessagesInfiniteData,
+} from "@/features/chat/hooks/useChatMessagesQuery";
+import {
+  fetchChatMessages,
+  type ChatMessagesPage,
+} from "@/features/chat/services/fetchChatMessages";
 import { buildApiUrl } from "@/lib/api/client";
 import {
   createInvalidApiResponseError,
@@ -7,7 +15,7 @@ import {
 } from "@/lib/api/ApiError";
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
-import type { AdminChatMessage, AdminChatMessagePage, AdminChatRoom } from "@/features/admin/types";
+import type { AdminChatRoom } from "@/features/admin/types";
 
 type AdminChatRoomResponse = {
   chatId?: number;
@@ -22,30 +30,6 @@ type AdminChatRoomResponse = {
 
 type AdminChatListResponse = {
   data?: { chats?: AdminChatRoomResponse[]; page?: number; nextPages?: number };
-  error?: unknown;
-};
-
-type AdminChatMessageResponse = {
-  senderId?: number;
-  senderName?: string;
-  messageId?: number;
-  text?: string;
-  replySenderName?: string | null;
-  replyMessageId?: number | null;
-  createdAt?: string;
-};
-
-type AdminChatMessagesResponse = {
-  data?: {
-    chatId?: number;
-    patternId?: number;
-    chatName?: string;
-    chatCreatedAt?: string;
-    lastMessageId?: number | null;
-    hasNext?: boolean;
-    nextMessageId?: number | null;
-    messages?: AdminChatMessageResponse[];
-  };
   error?: unknown;
 };
 
@@ -68,7 +52,9 @@ function parseChatRoom(room: AdminChatRoomResponse): AdminChatRoom | null {
     typeof room.unRead !== "number" ||
     typeof room.lastMessage !== "string" ||
     typeof room.lastMessageAt !== "string" ||
-    typeof room.createdAt !== "string"
+    Number.isNaN(Date.parse(room.lastMessageAt)) ||
+    typeof room.createdAt !== "string" ||
+    Number.isNaN(Date.parse(room.createdAt))
   ) return null;
 
   return {
@@ -80,26 +66,6 @@ function parseChatRoom(room: AdminChatRoomResponse): AdminChatRoom | null {
     lastMessage: room.lastMessage,
     lastMessageAt: room.lastMessageAt,
     createdAt: room.createdAt,
-  };
-}
-
-function parseMessage(message: AdminChatMessageResponse): AdminChatMessage | null {
-  if (
-    typeof message.senderId !== "number" ||
-    typeof message.senderName !== "string" ||
-    typeof message.messageId !== "number" ||
-    typeof message.text !== "string" ||
-    typeof message.createdAt !== "string"
-  ) return null;
-
-  return {
-    id: message.messageId,
-    senderId: message.senderId,
-    senderName: message.senderName,
-    text: message.text,
-    createdAt: message.createdAt,
-    replySenderName: typeof message.replySenderName === "string" ? message.replySenderName : null,
-    replyMessageId: typeof message.replyMessageId === "number" ? message.replyMessageId : null,
   };
 }
 
@@ -128,35 +94,6 @@ export async function fetchAdminChatRooms(page: number, signal?: AbortSignal) {
   };
 }
 
-export async function fetchAdminChatMessages({ chatId, beforeMessageId, signal }: { chatId: number; beforeMessageId: number | null; signal?: AbortSignal }) {
-  const query = beforeMessageId === null ? "" : `?beforeMessageId=${beforeMessageId}`;
-  const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/admin/chats/${chatId}/messages${query}`),
-    init: { method: "GET", credentials: "include", signal },
-  });
-  if (!response.ok) await throwApiError(response, "Failed to load admin chat messages.");
-
-  const payload = (await response.json()) as AdminChatMessagesResponse;
-  if (payload.error) throwApiPayloadError(payload.error, "Failed to load admin chat messages.");
-  const data = payload.data;
-  if (!data || typeof data.chatId !== "number" || typeof data.patternId !== "number" || typeof data.chatName !== "string" || typeof data.chatCreatedAt !== "string" || typeof data.hasNext !== "boolean" || !Array.isArray(data.messages)) {
-    throw createInvalidApiResponseError("Invalid admin chat messages response.");
-  }
-  const messages = data.messages.map(parseMessage);
-  if (messages.some((message) => message === null)) throw createInvalidApiResponseError("Invalid admin chat message item.");
-
-  return {
-    chatId: data.chatId,
-    patternId: data.patternId,
-    chatName: data.chatName,
-    chatCreatedAt: data.chatCreatedAt,
-    lastMessageId: typeof data.lastMessageId === "number" ? data.lastMessageId : null,
-    hasNext: data.hasNext,
-    nextMessageId: typeof data.nextMessageId === "number" ? data.nextMessageId : null,
-    messages: messages.filter((message): message is AdminChatMessage => message !== null),
-  } satisfies AdminChatMessagePage;
-}
-
 export async function deleteAdminChatMessage(chatId: number, messageId: number) {
   const response = await fetchAuthenticated({
     input: buildApiUrl(`/v1/admin/chats/${chatId}/messages/${messageId}`),
@@ -168,7 +105,11 @@ export async function deleteAdminChatMessage(chatId: number, messageId: number) 
   if (!payload.data || payload.data.chatId !== chatId || payload.data.messageId !== messageId || typeof payload.data.deletedAt !== "string") {
     throw createInvalidApiResponseError("Invalid deleted admin chat message response.");
   }
-  return payload.data;
+  return {
+    chatId,
+    messageId,
+    deletedAt: payload.data.deletedAt,
+  };
 }
 
 export function adminChatListQueryOptions(page: number) {
@@ -180,12 +121,51 @@ export function adminChatListQueryOptions(page: number) {
   });
 }
 
-export function adminChatMessagesQueryOptions(chatId: number) {
-  return infiniteQueryOptions({
+export function adminChatMessagesQueryOptions(
+  chatId: number,
+  onInitialPageFetched?: (lastReadMessageId: string | null) => void,
+) {
+  return infiniteQueryOptions<
+    ChatMessagesPage,
+    Error,
+    ChatMessagesInfiniteData,
+    ReturnType<typeof adminChatQueryKeys.messages>,
+    string | null
+  >({
     queryKey: adminChatQueryKeys.messages(chatId),
-    queryFn: ({ pageParam, signal }) => fetchAdminChatMessages({ chatId, beforeMessageId: pageParam, signal }),
-    initialPageParam: null as number | null,
-    getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.nextMessageId ?? undefined : undefined,
+    queryFn: async ({ pageParam, signal }) => {
+      const page = await fetchChatMessages(String(chatId), {
+        cursorMessageId: pageParam,
+        signal,
+      });
+
+      if (pageParam === null) {
+        onInitialPageFetched?.(page.lastReadMessageId);
+      }
+
+      return page;
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
+      if (!lastPage.hasNext) {
+        return undefined;
+      }
+
+      if (
+        !lastPage.nextCursor ||
+        allPageParams.some((pageParam) => pageParam === lastPage.nextCursor)
+      ) {
+        throw new Error("Admin chat message pagination returned a missing or repeated cursor.");
+      }
+
+      return lastPage.nextCursor;
+    },
+    structuralSharing: (currentData, incomingData) =>
+      mergeChatMessagesInfiniteData(
+        currentData as ChatMessagesInfiniteData | undefined,
+        incomingData as ChatMessagesInfiniteData,
+      ),
     refetchOnMount: "always",
+    staleTime: QUERY_STALE_TIME.realtime,
   });
 }

@@ -6,6 +6,7 @@ export type ChatMessage = {
   replyMessageId?: string | null;
   text: string;
   createdAt: string | null;
+  deletedAt: string | null;
   status?: "pending" | "confirmed" | "failed";
 };
 
