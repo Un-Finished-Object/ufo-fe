@@ -61,6 +61,7 @@ export type HomePatternItem = {
 };
 
 const PATTERN_FALLBACK_IMAGE = "/image/UFO.svg";
+const MAX_RECOMMENDED_PATTERN_COUNT = 30;
 
 function mapPatternItems(items: PatternApiItem[] | RecommendApiItem[], limit?: number) {
   const mappedItems = items
@@ -154,7 +155,7 @@ export async function fetchRecommendedPatterns(
     throw createInvalidApiResponseError("Failed to load recommended patterns.");
   }
 
-  return mapPatternItems(payload.data.items);
+  return mapPatternItems(payload.data.items, MAX_RECOMMENDED_PATTERN_COUNT);
 }
 
 export async function fetchUserInterests(

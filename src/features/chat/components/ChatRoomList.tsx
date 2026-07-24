@@ -67,9 +67,6 @@ function ChatRoomSummary({ room }: { room: ChatRoom }) {
           {room.favorite ? <FavoriteIcon /> : null}
         </div>
         <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
-          내 이름: {room.nickname}
-        </p>
-        <p className="mt-1 truncate text-xs leading-none text-ufo-text-dim">
           {room.lastMessage}
         </p>
       </div>
@@ -158,7 +155,7 @@ function ChatRoomItem({
       <Link
         href={`/chats/${room.chatId}`}
         className="flex items-center gap-3 px-4 py-3"
-        aria-label={`${room.name} 채팅방, 내 이름 ${room.nickname}, 읽지 않은 메시지 ${room.unreadCount > 99 ? "99개 이상" : `${room.unreadCount}개`}, 마지막 메시지 ${room.lastMessage || "없음"}`}
+        aria-label={`${room.name} 채팅방, 읽지 않은 메시지 ${room.unreadCount > 99 ? "99개 이상" : `${room.unreadCount}개`}, 마지막 메시지 ${room.lastMessage || "없음"}`}
       >
         <ChatRoomSummary room={room} />
       </Link>

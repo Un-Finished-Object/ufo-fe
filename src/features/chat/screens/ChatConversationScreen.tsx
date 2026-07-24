@@ -49,7 +49,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
   const roomMeta = chatRoom
       ? {
         title: chatRoom.name,
-        participants: chatRoom.nickname,
+        nickname: chatRoom.nickname,
       }
     : null;
   const chatStatusQuery = useChatStatusQuery(roomId);
@@ -562,7 +562,7 @@ export default function ChatConversationScreen({ chatId }: ChatConversationScree
       <MobileShell fullHeight dynamicViewport>
         <ChatRoomTopBar
           title={roomMeta?.title ?? "채팅방"}
-          subtitle={roomMeta?.participants ?? null}
+          subtitle={roomMeta?.nickname ?? null}
           right={[
             {
               type: "favorite",
