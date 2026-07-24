@@ -12,6 +12,27 @@ export const authHandlers = [
     await applyMockDelay();
     return requireMockAuth(request) ? apiSuccess(mockState.user) : apiError(401, "Unauthorized");
   }),
+  http.post("/v1/auth/signup", async ({ request }) => {
+    await applyMockDelay();
+    if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
+    const body = await request.json() as {
+      userName?: string;
+      profileImageKey?: string | null;
+      keywords?: string[];
+    };
+    mockState.user = {
+      ...mockState.user,
+      ...(body.userName ? { nickname: body.userName } : {}),
+      ...(body.profileImageKey ? { profileImage: "/mock/pattern-card.svg" } : {}),
+    };
+    mockState.interests = Array.isArray(body.keywords) ? body.keywords : [];
+    return apiSuccess({
+      userId: mockState.user.userId,
+      userName: mockState.user.nickname,
+      profileImageUrl: mockState.user.profileImage,
+      keywords: mockState.interests,
+    });
+  }),
   http.patch("/v1/users/me", async ({ request }) => {
     await applyMockDelay();
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
