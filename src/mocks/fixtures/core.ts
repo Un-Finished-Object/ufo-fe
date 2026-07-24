@@ -8,10 +8,46 @@ export const mockUser = {
 };
 
 export const mockPatterns = [
-  { id: 1, title: "포근한 라글란 스웨터", thumbnailUrl: "/mock/pattern-card.svg", author: "뜨개구름" },
-  { id: 2, title: "봄날의 케이블 가디건", thumbnailUrl: "/mock/plush-pink.svg", author: "실과바늘" },
-  { id: 3, title: "매일 쓰는 니트 베스트", thumbnailUrl: "/mock/plush-white.svg", author: "한코두코" },
-  { id: 4, title: "초보자를 위한 목도리", thumbnailUrl: "/mock/banner-blue.svg", author: "포근공방" },
+  {
+    id: 1,
+    title: "포근한 라글란 스웨터",
+    thumbnailUrl: "/mock/pattern-card.svg",
+    author: "뜨개구름",
+    category: "apparel",
+    subCategory: "long_sweater",
+  },
+  {
+    id: 2,
+    title: "봄날의 케이블 가디건",
+    thumbnailUrl: "/mock/plush-pink.svg",
+    author: "실과바늘",
+    category: "apparel",
+    subCategory: "outer",
+  },
+  {
+    id: 3,
+    title: "산뜻한 반소매 스웨터",
+    thumbnailUrl: "/mock/plush-white.svg",
+    author: "한코두코",
+    category: "apparel",
+    subCategory: "short_sweater",
+  },
+  {
+    id: 4,
+    title: "초보자를 위한 목도리",
+    thumbnailUrl: "/mock/banner-blue.svg",
+    author: "포근공방",
+    category: "accessories",
+    subCategory: "others",
+  },
+  {
+    id: 5,
+    title: "매일 드는 니트 가방",
+    thumbnailUrl: "/mock/plush-pink.svg",
+    author: "뜨개구름",
+    category: "bags",
+    subCategory: "others",
+  },
 ];
 
 export const mockPatternDetail = {
@@ -21,8 +57,8 @@ export const mockPatternDetail = {
   author: "뜨개구름",
   stats: { views: 1280, scraps: 86 },
   meta: {
-    category: "clothes",
-    subCategory: "sweater",
+    category: "apparel",
+    subCategory: "long_sweater",
     gauge: "10cm × 10cm = 20코 × 28단",
     originalNeedle: "4.0mm, 4.5mm 줄바늘",
     requiredYarnAmount: "약 900m",
@@ -114,8 +150,10 @@ export const mockPatternDetails = Object.fromEntries(
       images: [pattern.thumbnailUrl],
       meta: {
         ...mockPatternDetail.meta,
+        category: pattern.category,
+        subCategory: pattern.subCategory,
         originalYarn:
-          pattern.id === mockPatternDetail.id
+          pattern.id === mockPatternDetail.id || pattern.category === "bags"
             ? mockPatternDetail.meta.originalYarn
             : [],
       },

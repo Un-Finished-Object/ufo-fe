@@ -76,6 +76,7 @@ export type PatternDetailData = {
   id: number;
   title: string;
   author: string;
+  categoryCode: string;
   credits: number;
   image: string;
   isScrapped: boolean;
@@ -89,7 +90,6 @@ export type PatternDetailData = {
     size: string;
     measurement: string;
     needle: string;
-    yarn: string;
     amount: string;
     gauge: string;
   };
@@ -152,10 +152,6 @@ function normalizeOriginalYarnSets(
   }, []);
 }
 
-function formatOriginalYarnSummary(originalYarnSets: OriginalYarnSet[]) {
-  return originalYarnSets.length > 0 ? `${originalYarnSets.length}세트` : "-";
-}
-
 export function patternDetailQueryKey(patternId: number, viewerKey: string) {
   return ["patternDetail", patternId, viewerKey] as const;
 }
@@ -198,6 +194,7 @@ export async function fetchPatternDetail(
     id: payload.data.id,
     title: payload.data.title,
     author: getSafeText(payload.data.author),
+    categoryCode: getOptionalText(payload.data.meta?.category),
     image: payload.data.images?.[0] || "/image/UFO.svg",
     isScrapped: Boolean(payload.data.my?.scrapped),
     credits: 20,
@@ -214,7 +211,6 @@ export async function fetchPatternDetail(
       size: getSafeText(payload.data.meta?.size),
       measurement: getSafeText(payload.data.meta?.actualSize),
       needle: getSafeText(payload.data.meta?.originalNeedle),
-      yarn: formatOriginalYarnSummary(originalYarnSets),
       amount: getSafeText(payload.data.meta?.requiredYarnAmount),
       gauge: getSafeText(payload.data.meta?.gauge),
     },

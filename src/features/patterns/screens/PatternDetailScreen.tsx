@@ -75,7 +75,6 @@ const detailRows = [
   { label: "사이즈", key: "size" },
   { label: "실측", key: "measurement" },
   { label: "사용바늘", key: "needle" },
-  { label: "원작실", key: "yarn" },
   { label: "소요량", key: "amount" },
   { label: "게이지", key: "gauge" },
 ] as const;
@@ -1301,6 +1300,7 @@ export default function PatternDetailScreen({
   const isScrapped = pattern?.isScrapped ?? false;
   const scrapCount = pattern?.stats.scraps ?? 0;
   const originalYarnSets = pattern?.originalYarnSets ?? [];
+  const supportsAlternativeYarn = pattern?.categoryCode !== "bags";
   const originalYarnSelectionPatternId = pattern?.id ?? null;
   const requestedOriginalYarnSetIndex =
     originalYarnSelectionState.patternId === originalYarnSelectionPatternId
@@ -1334,6 +1334,7 @@ export default function PatternDetailScreen({
       authStatus !== "loading" &&
       isAuthenticated &&
       pattern !== null &&
+      supportsAlternativeYarn &&
       hasAlternativePurchase &&
       activeOriginalYarnSetId !== null,
   });
@@ -1473,7 +1474,7 @@ export default function PatternDetailScreen({
   };
 
   const handleAlternativePurchaseClick = () => {
-    if (!pattern) {
+    if (!pattern || !supportsAlternativeYarn) {
       return;
     }
 
@@ -1684,45 +1685,47 @@ export default function PatternDetailScreen({
                   )}
                 </AlternativeYarnSection>
 
-                <AlternativeYarnSection
-                  title="추천 대체실"
-                  titleAction={<AlternativeRecommendationInfo />}
-                >
-                  {isResolvingAlternativePurchase ? (
-                    <AlternativeSectionMessage>
-                      구매 정보를 확인하고 있어요.
-                    </AlternativeSectionMessage>
-                  ) : hasAlternativePurchase ? (
-                    activeOriginalYarnSetId === null ? (
+                {supportsAlternativeYarn ? (
+                  <AlternativeYarnSection
+                    title="추천 대체실"
+                    titleAction={<AlternativeRecommendationInfo />}
+                  >
+                    {isResolvingAlternativePurchase ? (
                       <AlternativeSectionMessage>
-                        대체실 정보를 조회할 원작실 세트가 없어요.
+                        구매 정보를 확인하고 있어요.
                       </AlternativeSectionMessage>
-                    ) : patternAlternativesQuery.isPending ? (
-                      <AlternativeSectionMessage>
-                        대체실 정보를 불러오고 있어요.
-                      </AlternativeSectionMessage>
-                    ) : patternAlternativesQuery.isError ? (
-                      <AlternativeSectionMessage>
-                        대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
-                      </AlternativeSectionMessage>
-                    ) : visibleAlternativeSets.length > 0 ? (
-                      <RankedAlternativeYarnGroups
-                        key={activeOriginalYarnSetId}
-                        sets={visibleAlternativeSets}
-                      />
+                    ) : hasAlternativePurchase ? (
+                      activeOriginalYarnSetId === null ? (
+                        <AlternativeSectionMessage>
+                          대체실 정보를 조회할 원작실 세트가 없어요.
+                        </AlternativeSectionMessage>
+                      ) : patternAlternativesQuery.isPending ? (
+                        <AlternativeSectionMessage>
+                          대체실 정보를 불러오고 있어요.
+                        </AlternativeSectionMessage>
+                      ) : patternAlternativesQuery.isError ? (
+                        <AlternativeSectionMessage>
+                          대체실 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+                        </AlternativeSectionMessage>
+                      ) : visibleAlternativeSets.length > 0 ? (
+                        <RankedAlternativeYarnGroups
+                          key={activeOriginalYarnSetId}
+                          sets={visibleAlternativeSets}
+                        />
+                      ) : (
+                        <AlternativeSectionMessage>
+                          등록된 대체실 정보가 아직 없어요.
+                        </AlternativeSectionMessage>
+                      )
                     ) : (
-                      <AlternativeSectionMessage>
-                        등록된 대체실 정보가 아직 없어요.
-                      </AlternativeSectionMessage>
-                    )
-                  ) : (
-                    <AlternativePurchaseGate
-                      credits={patternAccessCredits}
-                      disabled={purchaseAccessMutation.isPending}
-                      onPurchaseClick={handleAlternativePurchaseClick}
-                    />
-                  )}
-                </AlternativeYarnSection>
+                      <AlternativePurchaseGate
+                        credits={patternAccessCredits}
+                        disabled={purchaseAccessMutation.isPending}
+                        onPurchaseClick={handleAlternativePurchaseClick}
+                      />
+                    )}
+                  </AlternativeYarnSection>
+                ) : null}
               </div>
             )}
           </div>
@@ -1758,7 +1761,7 @@ export default function PatternDetailScreen({
           }}
         />
       ) : null}
-      {purchaseDialogType === "alternative" ? (
+      {purchaseDialogType === "alternative" && supportsAlternativeYarn ? (
         <AlternativePurchaseSheet
           credits={patternAccessCredits}
           currentCreditText={currentCreditText}

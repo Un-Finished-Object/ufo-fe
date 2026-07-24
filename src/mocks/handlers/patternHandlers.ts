@@ -27,8 +27,16 @@ function createInitialAlternativeComments(altSetId: number) {
 export const patternHandlers = [
   http.get("/v1/patterns", async ({ request }) => {
     await applyMockDelay();
-    const page = Number(new URL(request.url).searchParams.get("page") ?? 1);
-    return apiSuccess({ items: patternItems(), page, nextPage: 0, totalPages: 1 });
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get("page") ?? 1);
+    const category = url.searchParams.get("category");
+    const subCategory = url.searchParams.get("subCategory");
+    const items = mockPatterns.filter(
+      (pattern) =>
+        (!category || category === "all" || pattern.category === category) &&
+        (!subCategory || pattern.subCategory === subCategory),
+    );
+    return apiSuccess({ items: patternItems(items), page, nextPage: 0, totalPages: 1 });
   }),
   http.get("/v1/patterns/search", async ({ request }) => {
     await applyMockDelay();
