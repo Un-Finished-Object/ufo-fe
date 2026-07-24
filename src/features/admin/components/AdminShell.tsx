@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import AdminNavigation from "@/features/admin/components/AdminNavigation";
 import { getAdminPageTitle } from "@/features/admin/lib/adminNavigation";
+import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";
 
 function MenuIcon() {
   return (
@@ -30,12 +31,17 @@ function AdminBrand() {
   );
 }
 
-export default function AdminShell({ children }: { children: ReactNode }) {
+type AdminShellProps = {
+  children: ReactNode;
+  routes: AdminRoutePaths;
+};
+
+export default function AdminShell({ children, routes }: AdminShellProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const pageTitle = getAdminPageTitle(pathname);
+  const pageTitle = getAdminPageTitle(pathname, routes);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -64,7 +70,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-ufo-bg text-ufo-text md:flex">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-ufo-divider bg-ufo-surface px-4 py-6 md:flex">
         <div className="px-3"><AdminBrand /></div>
-        <div className="mt-8 flex-1"><AdminNavigation /></div>
+        <div className="mt-8 flex-1"><AdminNavigation routes={routes} /></div>
       </aside>
 
       <div className="mx-auto min-w-0 max-w-[430px] flex-1 bg-ufo-surface md:ml-64 md:max-w-none md:bg-transparent">
@@ -120,7 +126,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 <CloseIcon />
               </button>
             </div>
-            <div className="mt-8 flex-1"><AdminNavigation onNavigate={closeMenu} /></div>
+            <div className="mt-8 flex-1"><AdminNavigation routes={routes} onNavigate={closeMenu} /></div>
           </section>
         </div>
       ) : null}

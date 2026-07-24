@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { adminRouteSegments } from "@/features/admin/lib/adminRoutes";
+import { adminRoutes, adminRouteSegments } from "@/features/admin/lib/adminRoutes";
 import AdminChatHistoryScreen from "@/features/admin/screens/AdminChatHistoryScreen";
 import { noIndexMetadata } from "@/lib/metadata";
 
@@ -21,5 +21,11 @@ export default async function AdminChatHistoryPage({ params }: AdminChatHistoryP
     notFound();
   }
 
-  return <AdminChatHistoryScreen key={parsedChatId} chatId={parsedChatId} />;
+  return (
+    <AdminChatHistoryScreen
+      key={parsedChatId}
+      chatId={parsedChatId}
+      chatListHref={adminRoutes.chat}
+    />
+  );
 }

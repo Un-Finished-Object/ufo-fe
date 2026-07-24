@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { adminRouteSegments } from "@/features/admin/lib/adminRoutes";
+import { adminRoutes, adminRouteSegments } from "@/features/admin/lib/adminRoutes";
 import AdminAlternativeCommentScreen from "@/features/admin/screens/AdminAlternativeCommentScreen";
 import AdminChatRoomListScreen from "@/features/admin/screens/AdminChatRoomListScreen";
 import AdminMainScreen from "@/features/admin/screens/AdminMainScreen";
@@ -14,8 +14,10 @@ type AdminSectionPageProps = {
 export default async function AdminSectionPage({ params }: AdminSectionPageProps) {
   const { section } = await params;
 
-  if (section === adminRouteSegments.main) return <AdminMainScreen />;
-  if (section === adminRouteSegments.chat) return <AdminChatRoomListScreen />;
+  if (section === adminRouteSegments.main) return <AdminMainScreen routes={adminRoutes} />;
+  if (section === adminRouteSegments.chat) {
+    return <AdminChatRoomListScreen chatRoute={adminRoutes.chat} />;
+  }
   if (section === adminRouteSegments.comment) return <AdminAlternativeCommentScreen />;
 
   notFound();

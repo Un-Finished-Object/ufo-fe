@@ -6,21 +6,24 @@ import ChatIcon from "@/components/icons/ChatIcon";
 import CommentIcon from "@/components/icons/CommentIcon";
 import HomeIcon from "@/components/icons/HomeIcon";
 import {
-  adminNavigationItems,
+  getAdminNavigationItems,
   isAdminNavigationItemActive,
 } from "@/features/admin/lib/adminNavigation";
+import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";
 
 type AdminNavigationProps = {
+  routes: AdminRoutePaths;
   onNavigate?: () => void;
 };
 
-export default function AdminNavigation({ onNavigate }: AdminNavigationProps) {
+export default function AdminNavigation({ routes, onNavigate }: AdminNavigationProps) {
   const pathname = usePathname();
+  const navigationItems = getAdminNavigationItems(routes);
 
   return (
     <nav aria-label="관리자 메뉴">
       <ul className="space-y-1">
-        {adminNavigationItems.map((item) => {
+        {navigationItems.map((item) => {
           const isActive = isAdminNavigationItemActive(pathname, item.href);
 
           return (

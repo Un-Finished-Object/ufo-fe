@@ -14,16 +14,16 @@ function readAdminRouteSegment(name: string, value: string | undefined) {
 
 export const adminRouteSegments = {
   main: readAdminRouteSegment(
-    "NEXT_PUBLIC_ADMIN_MAIN_PATH",
-    process.env.NEXT_PUBLIC_ADMIN_MAIN_PATH,
+    "ADMIN_MAIN_PATH",
+    process.env.ADMIN_MAIN_PATH,
   ),
   chat: readAdminRouteSegment(
-    "NEXT_PUBLIC_ADMIN_CHAT_PATH",
-    process.env.NEXT_PUBLIC_ADMIN_CHAT_PATH,
+    "ADMIN_CHAT_PATH",
+    process.env.ADMIN_CHAT_PATH,
   ),
   comment: readAdminRouteSegment(
-    "NEXT_PUBLIC_ADMIN_COMMENT_PATH",
-    process.env.NEXT_PUBLIC_ADMIN_COMMENT_PATH,
+    "ADMIN_COMMENT_PATH",
+    process.env.ADMIN_COMMENT_PATH,
   ),
 } as const;
 
@@ -37,8 +37,6 @@ export const adminRoutes = {
   main: `/admin/${adminRouteSegments.main}`,
   chat: `/admin/${adminRouteSegments.chat}`,
   comment: `/admin/${adminRouteSegments.comment}`,
-} as const;
-
-export function getAdminChatHistoryRoute(chatId: number) {
-  return `${adminRoutes.chat}/${chatId}`;
-}
+} as const satisfies AdminRoutePaths;
+import "server-only";
+import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";

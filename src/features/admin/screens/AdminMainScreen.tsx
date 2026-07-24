@@ -1,24 +1,24 @@
 import Link from "next/link";
 import ChatIcon from "@/components/icons/ChatIcon";
 import CommentIcon from "@/components/icons/CommentIcon";
-import { adminRoutes } from "@/features/admin/lib/adminRoutes";
+import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";
 
-const managementItems = [
-  {
-    title: "채팅 관리",
-    description: "채팅방 목록과 메시지 내역을 확인합니다.",
-    href: adminRoutes.chat,
-    icon: "chat",
-  },
-  {
-    title: "대체실 댓글 관리",
-    description: "도안 대체실에 등록된 댓글을 확인합니다.",
-    href: adminRoutes.comment,
-    icon: "comment",
-  },
-] as const;
+export default function AdminMainScreen({ routes }: { routes: AdminRoutePaths }) {
+  const managementItems = [
+    {
+      title: "채팅 관리",
+      description: "채팅방 목록과 메시지 내역을 확인합니다.",
+      href: routes.chat,
+      icon: "chat",
+    },
+    {
+      title: "대체실 댓글 관리",
+      description: "도안 대체실에 등록된 댓글을 확인합니다.",
+      href: routes.comment,
+      icon: "comment",
+    },
+  ] as const;
 
-export default function AdminMainScreen() {
   return (
     <div className="px-4 py-5">
       <div className="mb-5">
