@@ -9,6 +9,7 @@ import YesOrNo from "@/components/dialogs/YesOrNo";
 import AdminChatLastReadSeparator from "@/features/admin/components/AdminChatLastReadSeparator";
 import AdminRefreshButton from "@/features/admin/components/AdminRefreshButton";
 import { useAdminChatMessagesQuery } from "@/features/admin/hooks/useAdminChatMessagesQuery";
+import { adminRoutes } from "@/features/admin/lib/adminRoutes";
 import {
   adminChatQueryKeys,
   deleteAdminChatMessage,
@@ -229,7 +230,7 @@ export default function AdminChatHistoryScreen({ chatId }: { chatId: number }) {
     <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden px-4 py-5 md:px-8 md:py-8">
       <div className="mb-5 flex shrink-0 items-end justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href="/admin/chats" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-ufo-divider bg-ufo-surface text-ufo-brand" aria-label="채팅방 목록으로 돌아가기">
+          <Link href={adminRoutes.chat} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-ufo-divider bg-ufo-surface text-ufo-brand" aria-label="채팅방 목록으로 돌아가기">
             <BackIcon className="h-5 w-5" />
           </Link>
           <div className="min-w-0">

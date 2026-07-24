@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ChatIcon from "@/components/icons/ChatIcon";
 import CommentIcon from "@/components/icons/CommentIcon";
+import HomeIcon from "@/components/icons/HomeIcon";
 import {
   adminNavigationItems,
   isAdminNavigationItemActive,
@@ -34,7 +35,9 @@ export default function AdminNavigation({ onNavigate }: AdminNavigationProps) {
                     : "text-ufo-text-secondary hover:bg-ufo-bg hover:text-ufo-text"
                 }`}
               >
-                {item.icon === "chat" ? (
+                {item.icon === "home" ? (
+                  <HomeIcon className="h-5 w-5" />
+                ) : item.icon === "chat" ? (
                   <ChatIcon className="h-5 w-5" />
                 ) : (
                   <CommentIcon className="h-5 w-5" />

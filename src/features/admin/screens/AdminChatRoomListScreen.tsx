@@ -8,6 +8,7 @@ import Pagination from "@/components/common/Pagination";
 import SearchBar from "@/components/common/SearchBar";
 import StateBlock from "@/components/common/StateBlock";
 import AdminRefreshButton from "@/features/admin/components/AdminRefreshButton";
+import { getAdminChatHistoryRoute } from "@/features/admin/lib/adminRoutes";
 import { adminChatListQueryOptions } from "@/features/admin/queries/adminChatQueries";
 
 function formatDateTime(value: string) {
@@ -83,7 +84,7 @@ export default function AdminChatRoomListScreen() {
             <ul className="md:hidden">
               {rooms.map((room) => (
                 <li key={room.chatId} className="border-b border-ufo-divider">
-                  <Link href={`/admin/chats/${room.chatId}`} className="block px-4 py-4" aria-label={`${room.name} 채팅 내역 보기`}>
+                  <Link href={getAdminChatHistoryRoute(room.chatId)} className="block px-4 py-4" aria-label={`${room.name} 채팅 내역 보기`}>
                     <div className="flex items-start gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-ufo-chat-thumbnail">
                         {room.imageUrl ? <Image src={room.imageUrl} alt="" fill sizes="56px" className="object-cover" /> : <span className="flex h-full items-center justify-center text-xs font-bold text-ufo-brand">UFO</span>}
@@ -125,7 +126,7 @@ export default function AdminChatRoomListScreen() {
                       <td className="max-w-72 px-5 py-4"><p className="truncate text-xs text-ufo-text-secondary">{room.lastMessage || "메시지가 없습니다."}</p></td>
                       <td className="px-5 py-4 text-center">{room.unreadCount > 0 ? <span className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-ufo-chat-unread px-1 text-[10px] font-bold text-ufo-surface">{room.unreadCount}</span> : <span className="text-ufo-text-dim">-</span>}</td>
                       <td className="px-5 py-4 text-xs text-ufo-text-secondary">{formatDateTime(room.lastMessageAt)}</td>
-                      <td className="px-5 py-4 text-right"><Link href={`/admin/chats/${room.chatId}`} className="inline-flex min-h-9 items-center rounded-lg border border-ufo-border px-3 text-xs font-semibold text-ufo-brand">상세 보기</Link></td>
+                      <td className="px-5 py-4 text-right"><Link href={getAdminChatHistoryRoute(room.chatId)} className="inline-flex min-h-9 items-center rounded-lg border border-ufo-border px-3 text-xs font-semibold text-ufo-brand">상세 보기</Link></td>
                     </tr>
                   ))}
                 </tbody>

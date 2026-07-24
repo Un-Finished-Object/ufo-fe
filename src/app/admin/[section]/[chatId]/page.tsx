@@ -1,18 +1,23 @@
 import { notFound } from "next/navigation";
+import { adminRouteSegments } from "@/features/admin/lib/adminRoutes";
 import AdminChatHistoryScreen from "@/features/admin/screens/AdminChatHistoryScreen";
 import { noIndexMetadata } from "@/lib/metadata";
 
 export const metadata = noIndexMetadata;
 
 type AdminChatHistoryPageProps = {
-  params: Promise<{ chatId: string }>;
+  params: Promise<{ section: string; chatId: string }>;
 };
 
 export default async function AdminChatHistoryPage({ params }: AdminChatHistoryPageProps) {
-  const { chatId } = await params;
+  const { section, chatId } = await params;
   const parsedChatId = Number(chatId);
 
-  if (!Number.isInteger(parsedChatId) || parsedChatId <= 0) {
+  if (
+    section !== adminRouteSegments.chat ||
+    !Number.isInteger(parsedChatId) ||
+    parsedChatId <= 0
+  ) {
     notFound();
   }
 
