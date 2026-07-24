@@ -31,10 +31,11 @@ type BannerItem = {
 
 const bannerPosts: BannerItem[] = [
   { id: 1, title: "출석체크하고 매일매일 크레딧 받기", count: "1 / 5", href: "/events/attendance", imageSrc: "/image/attendance_banner.svg" },
-  { id: 2, title: "감성 니팅 잡화를\n한눈에 모아보기", count: "2 / 5" },
-  { id: 3, title: "요즘 인기 패턴을\n바로 확인하기", count: "3 / 5" },
-  { id: 4, title: "취향 저격 도안을\n지금 찾아보기", count: "4 / 5" },
-  { id: 5, title: "커뮤니티 추천 작품을\n둘러보기", count: "5 / 5" },
+  { id: 2, title: "크레딧, 알고 쓰면 더 즐거워요", count: "2 / 6", href: "/my/help/credits", imageSrc: "/image/credit_guide_banner.svg" },
+  { id: 3, title: "감성 니팅 잡화를\n한눈에 모아보기", count: "3 / 6" },
+  { id: 4, title: "요즘 인기 패턴을\n바로 확인하기", count: "4 / 6" },
+  { id: 5, title: "취향 저격 도안을\n지금 찾아보기", count: "5 / 6" },
+  { id: 6, title: "커뮤니티 추천 작품을\n둘러보기", count: "6 / 6" },
 ];
 
 function EmptyPatternSection({ message }: { message: string }) {

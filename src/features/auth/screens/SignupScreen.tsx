@@ -26,8 +26,8 @@ import {
 } from "@/features/auth/lib/signupOptions";
 import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQueries";
 import { checkNicknameAvailability } from "@/features/auth/services/checkNicknameAvailability";
-import { updateMyInterests } from "@/features/auth/services/updateMyInterests";
-import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
+import { completeSignup } from "@/features/auth/services/completeSignup";
+import { homeQueryKeys } from "@/features/home/queries/homeQueries";
 import { isApiError } from "@/lib/api/ApiError";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legalLinks";
 import {
@@ -124,28 +124,25 @@ export default function SignupScreen() {
   });
 
   const signupMutation = useMutation({
-    mutationFn: async () => {
-      const updatedProfile = await updateMyProfile({
+    mutationFn: () =>
+      completeSignup({
         userName: normalizedNickname,
         profileImageKey: profileImage?.imageKey ?? null,
-      });
-
-      if (selectedInterests.length > 0) {
-        await updateMyInterests(selectedInterests);
-      }
-
-      return updatedProfile;
-    },
+        keywords: selectedInterests,
+      }),
     onSuccess: (profile) => {
       queryClient.setQueryData<UserProfile | null>(userQueryKeys.me, (previous) =>
         previous
           ? {
               ...previous,
-              nickname: profile.nickname ?? normalizedNickname,
-              profileImage: profile.profileImage ?? profileImage?.imageUrl ?? previous.profileImage,
+              userId: profile.userId,
+              nickname: profile.userName,
+              profileImage: profile.profileImageUrl,
             }
           : previous,
       );
+      void queryClient.invalidateQueries({ queryKey: homeQueryKeys.interestsRoot });
+      void queryClient.invalidateQueries({ queryKey: homeQueryKeys.recommendPatternsRoot });
       router.replace("/onboarding");
     },
     onError: (error) => {
