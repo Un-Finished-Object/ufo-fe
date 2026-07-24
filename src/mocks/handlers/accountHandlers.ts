@@ -60,18 +60,23 @@ export const accountHandlers = [
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
     return apiSuccess({ chats: mockState.chats, page: 1, nextPage: 0 });
   }),
-  http.get("/v1/chat/:chatId/messages", ({ request }) => {
+  http.get("/v1/chat/:chatId/messages", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
 
+    const chatId = Number(params.chatId);
     const cursor = new URL(request.url).searchParams.get("messageId");
     const cursorMessageId = cursor ? Number(cursor) : null;
+    const defaultLastReadMessageId =
+      chatId === 102 ? 15 : chatId === 103 ? null : chatId === 104 ? 999 : 3;
+    const entryLastReadMessageId =
+      mockState.adminLastReadMessageIds.get(chatId) ?? defaultLastReadMessageId;
     const page =
       cursorMessageId === null
         ? {
             messages: mockChatMessages.slice(12),
             hasNext: true,
             nextMessageId: 12,
-            lastMessageId: 3,
+            lastMessageId: entryLastReadMessageId,
           }
         : cursorMessageId === 12
           ? {
@@ -91,7 +96,13 @@ export const accountHandlers = [
       lastMessageId: page.lastMessageId,
       hasNext: page.hasNext,
       nextMessageId: page.nextMessageId,
-      messages: page.messages.map((message) => ({ deletedAt: null, ...message })),
+      messages: page.messages.map((message) => ({
+        ...message,
+        deletedAt:
+          mockState.adminDeletedChatMessages.get(message.messageId) ??
+          message.deletedAt ??
+          null,
+      })),
     });
   }),
   http.patch("/v1/chat/:chatId/status", async ({ params, request }) => {
