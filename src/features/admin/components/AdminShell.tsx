@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import BackIcon from "@/components/icons/BackIcon";
 import AdminNavigation from "@/features/admin/components/AdminNavigation";
-import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { getAdminPageTitle } from "@/features/admin/lib/adminNavigation";
 
 function MenuIcon() {
@@ -35,12 +32,10 @@ function AdminBrand() {
 
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const meQuery = useMeQuery();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pageTitle = getAdminPageTitle(pathname);
-  const adminName = meQuery.data?.nickname || "관리자";
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -70,18 +65,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-ufo-divider bg-ufo-surface px-4 py-6 md:flex">
         <div className="px-3"><AdminBrand /></div>
         <div className="mt-8 flex-1"><AdminNavigation /></div>
-        <Link
-          href="/"
-          className="flex min-h-12 items-center gap-3 rounded-xl border border-ufo-divider px-3 text-sm font-semibold text-ufo-text-secondary hover:bg-ufo-bg"
-        >
-          <BackIcon className="h-5 w-5" />
-          사용자 화면으로 돌아가기
-        </Link>
       </aside>
 
       <div className="mx-auto min-w-0 max-w-[430px] flex-1 bg-ufo-surface md:ml-64 md:max-w-none md:bg-transparent">
         <header className="sticky top-0 z-20 border-b border-ufo-divider bg-ufo-surface/95 backdrop-blur">
-          <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 md:px-8">
+          <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center px-4 md:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 ref={menuButtonRef}
@@ -99,9 +87,6 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 <h1 className="truncate text-base font-semibold">{pageTitle}</h1>
               </div>
             </div>
-            <p className="max-w-36 truncate text-sm font-semibold text-ufo-text-secondary" title={adminName}>
-              {adminName}
-            </p>
           </div>
         </header>
 
@@ -136,14 +121,6 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               </button>
             </div>
             <div className="mt-8 flex-1"><AdminNavigation onNavigate={closeMenu} /></div>
-            <Link
-              href="/"
-              onClick={closeMenu}
-              className="flex min-h-12 items-center gap-3 rounded-xl border border-ufo-divider px-3 text-sm font-semibold text-ufo-text-secondary"
-            >
-              <BackIcon className="h-5 w-5" />
-              사용자 화면으로 돌아가기
-            </Link>
           </section>
         </div>
       ) : null}
