@@ -16,5 +16,5 @@ export default async function AdminChatHistoryPage({ params }: AdminChatHistoryP
     notFound();
   }
 
-  return <AdminChatHistoryScreen chatId={parsedChatId} />;
+  return <AdminChatHistoryScreen key={parsedChatId} chatId={parsedChatId} />;
 }
