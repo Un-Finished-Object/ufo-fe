@@ -26,7 +26,7 @@ type MainForYouSectionProps = {
   authCacheKey: string;
 };
 
-const MAX_INTEREST_COUNT = 4;
+const MAX_INTEREST_COUNT = 3;
 
 const interestRows = [
   {
@@ -119,7 +119,7 @@ export default function MainForYouSection({
       return;
     }
 
-    setDraftInterests(selectedInterests);
+    setDraftInterests(selectedInterests.slice(0, MAX_INTEREST_COUNT));
     setIsModalOpen(true);
   };
 
@@ -263,7 +263,11 @@ export default function MainForYouSection({
                         } ${disabled ? "opacity-45" : ""}`}
                         aria-pressed={selected}
                         aria-disabled={disabled}
-                        title={disabled ? "관심사는 최대 4개까지 선택할 수 있습니다." : undefined}
+                        title={
+                          disabled
+                            ? `관심사는 최대 ${MAX_INTEREST_COUNT}개까지 선택할 수 있습니다.`
+                            : undefined
+                        }
                       >
                         {interest.label}
                       </button>

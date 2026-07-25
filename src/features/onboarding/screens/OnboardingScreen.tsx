@@ -119,7 +119,7 @@ export default function OnboardingScreen() {
           </span>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-6">
           <OnboardingSlide
             slide={currentSlide}
             step={currentStep}
