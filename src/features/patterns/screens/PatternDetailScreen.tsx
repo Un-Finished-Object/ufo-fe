@@ -1227,7 +1227,7 @@ function AlternativeRecommendationInfo() {
       <button
         type="button"
         onClick={() => setIsOpen((previous) => !previous)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-text-secondary"
+        className="flex h-8 w-4.5 items-center justify-center rounded-full text-ufo-text-secondary"
         aria-label="대체실 추천 시스템 안내"
         aria-expanded={isOpen}
         aria-controls="alternative-recommendation-info"
@@ -1244,7 +1244,7 @@ function AlternativeRecommendationInfo() {
         >
           <p className="text-sm font-bold text-ufo-text">UFO 대체실 추천 시스템</p>
           <p className="mt-2 text-xs leading-5 text-ufo-text-secondary">
-            원작실과 후보 실의 정보를 비교해 역할별 추천 순위를 제공해요.
+            원작실과 후보 실의 정보를 비교해 추천 순위를 제공해요.
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             {[
