@@ -1768,7 +1768,14 @@ export default function PatternDetailScreen({
           mainText="채팅방에 입장하시겠습니까?"
           subText={
             <>
-              <span className="block">현재 크레딧 {currentCreditText}</span>
+              <ul className="list-inside list-disc space-y-1 text-center font-medium text-ufo-error">
+                <li>
+                  본 채팅방에서 도안의 PDF 파일, 캡처본, 주요 차트, 코수/단수 등의 상세 치수
+                  공유가 절대 불가합니다
+                </li>
+                <li>위 사항을 어길 시 강제 퇴장 조치될 수 있습니다.</li>
+              </ul>
+              <span className="mt-3 block">현재 크레딧 {currentCreditText}</span>
               <span className="block">필요 크레딧 {patternAccessCredits} 크레딧</span>
               {purchaseErrorMessage ? (
                 <span className="mt-2 block text-ufo-error">{purchaseErrorMessage}</span>
