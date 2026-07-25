@@ -280,7 +280,7 @@ function ChatMessageItem({
         </span>
       ) : null}
       <article
-        className={`group/message flex touch-pan-y gap-1.5 transition-[transform,opacity] duration-150 ${
+        className={`group/message flex w-full touch-pan-y gap-1.5 transition-[transform,opacity] duration-150 ${
           shouldTreatAsMine ? "justify-end" : "justify-start"
         } ${isPressing ? "opacity-80" : "opacity-100"}`}
         style={{ transform: `translateX(${swipeOffset}px)` }}
