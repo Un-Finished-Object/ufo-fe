@@ -76,6 +76,7 @@ export const mockPatternDetail = {
           component: "메리노울 100%",
           store: "UFO 실가게",
           length: 120,
+          isCalculatedLength: true,
         },
         secondYarn: {
           yarnId: 2,
@@ -86,6 +87,7 @@ export const mockPatternDetail = {
           component: "메리노울 100%",
           store: "UFO 실가게",
           length: 120,
+          isCalculatedLength: false,
         },
         subYarn: null,
       },
@@ -100,6 +102,7 @@ export const mockPatternDetail = {
           component: "메리노울 100%",
           store: "UFO 실가게",
           length: 120,
+          isCalculatedLength: true,
         },
         secondYarn: {
           yarnId: 3,
@@ -110,6 +113,7 @@ export const mockPatternDetail = {
           component: "메리노울 100%",
           store: "UFO 실가게",
           length: 120,
+          isCalculatedLength: false,
         },
         subYarn: null,
       },
@@ -123,7 +127,8 @@ export const mockPatternDetail = {
           cost: 11000,
           component: "알파카 90%, 나일론 10%",
           store: "솜솜뜨개",
-          length: 130,
+          length: null,
+          isCalculatedLength: null,
         },
         secondYarn: {
           yarnId: 5,
@@ -134,6 +139,7 @@ export const mockPatternDetail = {
           component: "알파카 90%, 나일론 10%",
           store: "솜솜뜨개",
           length: 130,
+          isCalculatedLength: false,
         },
         subYarn: null,
       },
@@ -173,6 +179,7 @@ function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: numbe
   return Array.from({ length: 15 }, (_, index) => {
     const ranking = index + 1;
     const altId = originalYarnSetId * 1000 + roleOffset + ranking;
+    const length = index === 2 ? null : 120 + index * 5;
 
     return {
       altId,
@@ -184,7 +191,8 @@ function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: numbe
       cost: 7500 + index * 500,
       component: index % 2 === 0 ? "메리노울 100%" : "알파카 90%, 나일론 10%",
       store: index % 2 === 0 ? "UFO 실가게" : "솜솜뜨개",
-      length: 120 + index * 5,
+      length,
+      isCalculatedLength: length === null ? null : index % 2 === 0,
       componentScore: index === 0 ? null : Math.max(70, 100 - index),
       lengthScore: index === 0 ? null : Math.max(70, 98 - index),
       gaugeScore: index === 0 ? null : Math.max(70, 96 - index),

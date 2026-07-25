@@ -413,6 +413,19 @@ function getAlternativeText(value: string) {
   return trimmedValue ? trimmedValue : null;
 }
 
+function formatYarnLength(
+  length: number | null,
+  isCalculatedLength: boolean | null,
+) {
+  const formattedLength = formatAlternativeNumber(length, "m");
+
+  if (!formattedLength) {
+    return null;
+  }
+
+  return isCalculatedLength ? `${formattedLength} (예상)` : formattedLength;
+}
+
 type YarnInfoDetailItem = {
   label: string;
   value: string;
@@ -437,7 +450,10 @@ function getAlternativeDetailItems(item: PatternAlternativeItem): YarnInfoDetail
   return [
     { label: "실 합수", value: formatAlternativeNumber(item.ply, "합") },
     { label: "무게", value: formatAlternativeNumber(item.weight, "g") },
-    { label: "길이", value: formatAlternativeNumber(item.length, "m") },
+    {
+      label: "길이",
+      value: formatYarnLength(item.length, item.isCalculatedLength),
+    },
     { label: "구매처", value: getAlternativeText(item.store) },
   ].filter((detail): detail is { label: string; value: string } => detail.value !== null);
 }
@@ -885,7 +901,10 @@ function getOriginalYarnDetailItems(yarn: OriginalYarn): YarnInfoDetailItem[] {
   return [
     { label: "실 합수", value: formatAlternativeNumber(yarn.ply, "합") },
     { label: "무게", value: formatAlternativeNumber(yarn.weight, "g") },
-    { label: "길이", value: formatAlternativeNumber(yarn.length, "m") },
+    {
+      label: "길이",
+      value: formatYarnLength(yarn.length, yarn.isCalculatedLength),
+    },
     { label: "구매처", value: getAlternativeText(yarn.store) },
   ].filter((detail): detail is YarnInfoDetailItem => detail.value !== null);
 }

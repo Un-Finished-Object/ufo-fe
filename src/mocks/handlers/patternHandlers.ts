@@ -105,7 +105,7 @@ export const patternHandlers = [
   http.get("/v1/yarns/:yarnId/", ({ params }) => apiSuccess({ yarnId: Number(params.yarnId), yarnName: "메리노 포근", weight: 50, cost: 9000, component: "메리노울 100%", store: "UFO 실가게", length: 120 })),
   http.get("/v1/yarns/alternatives/:setId", ({ params, request }) =>
     requireMockAuth(request)
-      ? apiSuccess(createMockPatternAlternatives(Number(params.setId)))
+      ? apiSuccess({ items: [createMockPatternAlternatives(Number(params.setId))] })
       : apiError(401, "Unauthorized"),
   ),
   http.get("/v1/alternatives/:altId/reaction", ({ params, request }) => {

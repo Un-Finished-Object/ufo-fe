@@ -52,6 +52,7 @@ type OriginalYarnResponse = {
   component?: string | null;
   store?: string | null;
   length?: number | null;
+  isCalculatedLength?: boolean | null;
 };
 
 export type OriginalYarn = {
@@ -63,6 +64,7 @@ export type OriginalYarn = {
   component: string;
   store: string;
   length: number | null;
+  isCalculatedLength: boolean | null;
 };
 
 export type OriginalYarnSet = {
@@ -112,6 +114,8 @@ function normalizeOriginalYarn(
     return null;
   }
 
+  const length = typeof yarn.length === "number" ? yarn.length : null;
+
   return {
     yarnId: yarn.yarnId,
     yarnName: getOptionalText(yarn.yarnName),
@@ -120,7 +124,11 @@ function normalizeOriginalYarn(
     cost: typeof yarn.cost === "number" ? yarn.cost : null,
     component: getOptionalText(yarn.component),
     store: getOptionalText(yarn.store),
-    length: typeof yarn.length === "number" ? yarn.length : null,
+    length,
+    isCalculatedLength:
+      length !== null && typeof yarn.isCalculatedLength === "boolean"
+        ? yarn.isCalculatedLength
+        : null,
   };
 }
 
