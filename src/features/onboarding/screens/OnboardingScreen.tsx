@@ -6,7 +6,9 @@ import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react
 import MobileShell from "@/components/layout/MobileShell";
 import OnboardingProgress from "@/features/onboarding/components/OnboardingProgress";
 import OnboardingSlide from "@/features/onboarding/components/OnboardingSlide";
+import SignupWelcomeDialog from "@/features/onboarding/components/SignupWelcomeDialog";
 import { onboardingSlides } from "@/features/onboarding/lib/onboardingSlides";
+import { SIGNUP_WELCOME_SESSION_KEY } from "@/features/onboarding/lib/signupWelcome";
 
 const SWIPE_THRESHOLD_PX = 45;
 
@@ -14,6 +16,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const touchStartXRef = useRef<number | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSignupWelcomeOpen, setIsSignupWelcomeOpen] = useState(false);
   const isLastStep = currentStep === onboardingSlides.length - 1;
   const currentSlide = onboardingSlides[currentStep];
 
@@ -30,15 +33,33 @@ export default function OnboardingScreen() {
     setCurrentStep((step) => Math.min(onboardingSlides.length - 1, step + 1));
   }, [isLastStep, router]);
 
+  const closeSignupWelcome = useCallback(() => {
+    setIsSignupWelcomeOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (window.sessionStorage.getItem(SIGNUP_WELCOME_SESSION_KEY) !== "true") {
+        return;
+      }
+
+      window.sessionStorage.removeItem(SIGNUP_WELCOME_SESSION_KEY);
+      setIsSignupWelcomeOpen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isSignupWelcomeOpen) return;
       if (event.key === "ArrowLeft") goToPreviousStep();
       if (event.key === "ArrowRight") goToNextStep();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNextStep, goToPreviousStep]);
+  }, [goToNextStep, goToPreviousStep, isSignupWelcomeOpen]);
 
   const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     touchStartXRef.current = event.touches[0]?.clientX ?? null;
@@ -134,6 +155,9 @@ export default function OnboardingScreen() {
           </div>
         </div>
       </div>
+      {isSignupWelcomeOpen ? (
+        <SignupWelcomeDialog onClose={closeSignupWelcome} />
+      ) : null}
     </MobileShell>
   );
 }

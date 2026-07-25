@@ -8,6 +8,8 @@ export const patternCategoryLabelMap = {
 export const patternSubCategoryLabelMap = {
   outer: "가디건/자켓/볼레로",
   sweater: "스웨터",
+  long_sweater: "긴소매 스웨터",
+  short_sweater: "반소매 스웨터",
   vest: "조끼/민소매/뷔스티에",
   dress: "원피스",
   others: "기타",
@@ -23,7 +25,8 @@ export const patternCategoryApiMap: Record<string, string> = {
 
 export const patternSubCategoryApiMap: Record<string, string> = {
   "가디건/자켓/볼레로": "outer",
-  "스웨터": "sweater",
+  "긴소매 스웨터": "long_sweater",
+  "반소매 스웨터": "short_sweater",
   "조끼/민소매/뷔스티에": "vest",
   "원피스": "dress",
   "기타": "others",

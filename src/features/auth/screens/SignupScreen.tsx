@@ -28,6 +28,7 @@ import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQue
 import { checkNicknameAvailability } from "@/features/auth/services/checkNicknameAvailability";
 import { completeSignup } from "@/features/auth/services/completeSignup";
 import { homeQueryKeys } from "@/features/home/queries/homeQueries";
+import { SIGNUP_WELCOME_SESSION_KEY } from "@/features/onboarding/lib/signupWelcome";
 import { isApiError } from "@/lib/api/ApiError";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legalLinks";
 import {
@@ -38,6 +39,8 @@ import {
 
 const NICKNAME_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
 const MAX_NICKNAME_GENERATION_ATTEMPTS = 10;
+const DEFAULT_PROFILE_IMAGE_KEY = "defaults/profile.png";
+const DEFAULT_PROFILE_IMAGE_URL = "https://cdn.knit-ufo.co.kr/defaults/profile.png";
 
 type AgreementKey = "terms" | "privacy";
 
@@ -127,7 +130,7 @@ export default function SignupScreen() {
     mutationFn: () =>
       completeSignup({
         userName: normalizedNickname,
-        profileImageKey: profileImage?.imageKey ?? null,
+        profileImageKey: profileImage?.imageKey ?? DEFAULT_PROFILE_IMAGE_KEY,
         keywords: selectedInterests,
       }),
     onSuccess: (profile) => {
@@ -143,6 +146,8 @@ export default function SignupScreen() {
       );
       void queryClient.invalidateQueries({ queryKey: homeQueryKeys.interestsRoot });
       void queryClient.invalidateQueries({ queryKey: homeQueryKeys.recommendPatternsRoot });
+      void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
+      window.sessionStorage.setItem(SIGNUP_WELCOME_SESSION_KEY, "true");
       router.replace("/onboarding");
     },
     onError: (error) => {
@@ -164,7 +169,7 @@ export default function SignupScreen() {
     generateNicknameMutation.isPending ||
     uploadMutation.isPending ||
     signupMutation.isPending;
-  const profileImageSrc = previewImageUrl ?? meQuery.data?.profileImage ?? null;
+  const profileImageSrc = previewImageUrl ?? DEFAULT_PROFILE_IMAGE_URL;
 
   const handleImageChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -17,6 +17,7 @@ type PresignedImageUpload = {
   presignedUrl: string;
   imageKey: string;
   imageUrl: string;
+  uploadHeaders: Record<string, string>;
 };
 
 export type UploadedImageFile = {
@@ -33,6 +34,20 @@ type PresignedImageResponse = {
   };
   error?: unknown;
 };
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.entries(value).every(
+      ([headerName, headerValue]) =>
+        headerName.trim().length > 0 &&
+        typeof headerValue === "string" &&
+        headerValue.trim().length > 0,
+    )
+  );
+}
 
 function validatePresignedResponse(payload: PresignedImageResponse, files: File[]) {
   if (!payload.data || !Array.isArray(payload.data.urls)) {
@@ -52,8 +67,19 @@ function validatePresignedResponse(payload: PresignedImageResponse, files: File[
     }
   });
 
-  payload.data.urls.forEach((url) => {
-    if (!url.presignedUrl?.trim() || !url.imageKey?.trim() || !url.imageUrl?.trim()) {
+  payload.data.urls.forEach((url, index) => {
+    if (
+      !url.presignedUrl?.trim() ||
+      !url.imageKey?.trim() ||
+      !url.imageUrl?.trim() ||
+      !isStringRecord(url.uploadHeaders)
+    ) {
+      throw createInvalidApiResponseError("Failed to create image upload URLs.");
+    }
+
+    const uploadHeaders = new Headers(url.uploadHeaders);
+
+    if (uploadHeaders.get("Content-Type") !== files[index]?.type) {
       throw createInvalidApiResponseError("Failed to create image upload URLs.");
     }
   });
@@ -135,9 +161,7 @@ export async function uploadImageFiles({
       const upload = uploads[index];
       const response = await fetch(upload.presignedUrl, {
         method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
+        headers: upload.uploadHeaders,
         body: file,
       });
 

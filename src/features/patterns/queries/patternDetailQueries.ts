@@ -52,6 +52,7 @@ type OriginalYarnResponse = {
   component?: string | null;
   store?: string | null;
   length?: number | null;
+  isCalculatedLength?: boolean | null;
 };
 
 export type OriginalYarn = {
@@ -63,6 +64,7 @@ export type OriginalYarn = {
   component: string;
   store: string;
   length: number | null;
+  isCalculatedLength: boolean | null;
 };
 
 export type OriginalYarnSet = {
@@ -76,6 +78,7 @@ export type PatternDetailData = {
   id: number;
   title: string;
   author: string;
+  categoryCode: string;
   credits: number;
   image: string;
   isScrapped: boolean;
@@ -89,7 +92,6 @@ export type PatternDetailData = {
     size: string;
     measurement: string;
     needle: string;
-    yarn: string;
     amount: string;
     gauge: string;
   };
@@ -112,6 +114,8 @@ function normalizeOriginalYarn(
     return null;
   }
 
+  const length = typeof yarn.length === "number" ? yarn.length : null;
+
   return {
     yarnId: yarn.yarnId,
     yarnName: getOptionalText(yarn.yarnName),
@@ -120,7 +124,11 @@ function normalizeOriginalYarn(
     cost: typeof yarn.cost === "number" ? yarn.cost : null,
     component: getOptionalText(yarn.component),
     store: getOptionalText(yarn.store),
-    length: typeof yarn.length === "number" ? yarn.length : null,
+    length,
+    isCalculatedLength:
+      length !== null && typeof yarn.isCalculatedLength === "boolean"
+        ? yarn.isCalculatedLength
+        : null,
   };
 }
 
@@ -150,10 +158,6 @@ function normalizeOriginalYarnSets(
 
     return normalizedSets;
   }, []);
-}
-
-function formatOriginalYarnSummary(originalYarnSets: OriginalYarnSet[]) {
-  return originalYarnSets.length > 0 ? `${originalYarnSets.length}세트` : "-";
 }
 
 export function patternDetailQueryKey(patternId: number, viewerKey: string) {
@@ -198,6 +202,7 @@ export async function fetchPatternDetail(
     id: payload.data.id,
     title: payload.data.title,
     author: getSafeText(payload.data.author),
+    categoryCode: getOptionalText(payload.data.meta?.category),
     image: payload.data.images?.[0] || "/image/UFO.svg",
     isScrapped: Boolean(payload.data.my?.scrapped),
     credits: 20,
@@ -214,7 +219,6 @@ export async function fetchPatternDetail(
       size: getSafeText(payload.data.meta?.size),
       measurement: getSafeText(payload.data.meta?.actualSize),
       needle: getSafeText(payload.data.meta?.originalNeedle),
-      yarn: formatOriginalYarnSummary(originalYarnSets),
       amount: getSafeText(payload.data.meta?.requiredYarnAmount),
       gauge: getSafeText(payload.data.meta?.gauge),
     },

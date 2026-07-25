@@ -38,3 +38,60 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI",
   Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
 }
+
+/* Signup-only celebration motion. Kept here because Tailwind has no radial burst primitive. */
+.signup-firework-burst {
+  --firework-delay: 0s;
+  height: 1px;
+  width: 1px;
+}
+
+.signup-firework-particle {
+  --firework-angle: 0deg;
+  animation: signup-firework 1.8s ease-out var(--firework-delay) 2;
+  border-radius: 9999px;
+  height: 9px;
+  left: -2px;
+  opacity: 0;
+  position: absolute;
+  top: -4px;
+  transform-origin: 2px 4px;
+  width: 4px;
+}
+
+.signup-welcome-card {
+  animation: signup-welcome-card 500ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+@keyframes signup-firework {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--firework-angle)) translateY(0) scale(0.4);
+  }
+  18% {
+    opacity: 1;
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--firework-angle)) translateY(-54px) scale(0.1);
+  }
+}
+
+@keyframes signup-welcome-card {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signup-firework-particle,
+  .signup-welcome-card {
+    animation: none;
+  }
+}
