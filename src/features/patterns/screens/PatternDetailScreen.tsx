@@ -1227,7 +1227,7 @@ function AlternativeRecommendationInfo() {
       <button
         type="button"
         onClick={() => setIsOpen((previous) => !previous)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-ufo-text-secondary"
+        className="flex h-8 w-4.5 items-center justify-center rounded-full text-ufo-text-secondary"
         aria-label="대체실 추천 시스템 안내"
         aria-expanded={isOpen}
         aria-controls="alternative-recommendation-info"
@@ -1244,7 +1244,7 @@ function AlternativeRecommendationInfo() {
         >
           <p className="text-sm font-bold text-ufo-text">UFO 대체실 추천 시스템</p>
           <p className="mt-2 text-xs leading-5 text-ufo-text-secondary">
-            원작실과 후보 실의 정보를 비교해 역할별 추천 순위를 제공해요.
+            원작실과 후보 실의 정보를 비교해 추천 순위를 제공해요.
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             {[
@@ -1768,7 +1768,14 @@ export default function PatternDetailScreen({
           mainText="채팅방에 입장하시겠습니까?"
           subText={
             <>
-              <span className="block">현재 크레딧 {currentCreditText}</span>
+              <ul className="list-inside list-disc space-y-1 text-center font-medium text-ufo-error">
+                <li>
+                  본 채팅방에서 도안의 PDF 파일, 캡처본, 주요 차트, 코수/단수 등의 상세 치수
+                  공유가 절대 불가합니다
+                </li>
+                <li>위 사항을 어길 시 강제 퇴장 조치될 수 있습니다.</li>
+              </ul>
+              <span className="mt-3 block">현재 크레딧 {currentCreditText}</span>
               <span className="block">필요 크레딧 {patternAccessCredits} 크레딧</span>
               {purchaseErrorMessage ? (
                 <span className="mt-2 block text-ufo-error">{purchaseErrorMessage}</span>

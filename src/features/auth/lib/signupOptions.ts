@@ -12,7 +12,7 @@ export const SIGNUP_INTEREST_OPTIONS = [
   "메리야스",
 ] as const;
 
-export const MAX_SIGNUP_INTEREST_COUNT = 4;
+export const MAX_SIGNUP_INTEREST_COUNT = 3;
 
 const NICKNAME_ADJECTIVES = [
   "포근한",

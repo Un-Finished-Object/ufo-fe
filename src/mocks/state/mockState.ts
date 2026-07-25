@@ -28,7 +28,7 @@ function createMockState(): MockState {
   return {
     authenticated: true,
     balance: 120,
-    interests: ["스웨터", "가디건", "초보"],
+    interests: ["빈티지", "오버사이즈", "아란무늬"],
     scrappedPatternIds: new Set([1, 3]),
     purchases: new Map([[1, { chat: true, alternative: true, chatRoomId: 101 }]]),
     alternativeReactions: new Map(),
