@@ -220,7 +220,7 @@ function ChatMessageItem({
         longPressTimeoutRef.current = null;
       }
 
-      const swipeDirection = shouldTreatAsMine ? 1 : -1;
+      const swipeDirection = -1;
       const directionalDistance = deltaX * swipeDirection;
       const nextOffset =
         Math.min(Math.max(directionalDistance, 0), MAX_SWIPE_OFFSET_PX) * swipeDirection;
@@ -271,16 +271,14 @@ function ChatMessageItem({
     >
       {swipeOffset !== 0 ? (
         <span
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-xs font-semibold text-ufo-brand ${
-            shouldTreatAsMine ? "left-2" : "right-2"
-          }`}
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ufo-brand"
           aria-hidden="true"
         >
           답장
         </span>
       ) : null}
       <article
-        className={`group/message flex w-full touch-pan-y gap-1.5 transition-[transform,opacity] duration-150 ${
+        className={`group/message flex w-full touch-pan-y gap-1.5 transition-[transform,opacity] duration-150 [@media(pointer:coarse)]:select-none [@media(pointer:coarse)]:[-webkit-touch-callout:none] ${
           shouldTreatAsMine ? "justify-end" : "justify-start"
         } ${isPressing ? "opacity-80" : "opacity-100"}`}
         style={{ transform: `translateX(${swipeOffset}px)` }}
