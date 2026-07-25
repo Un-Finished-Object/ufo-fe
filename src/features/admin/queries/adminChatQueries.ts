@@ -34,7 +34,7 @@ type AdminChatListResponse = {
 };
 
 type DeleteAdminChatMessageResponse = {
-  data?: { chatId?: number; messageId?: number; deletedAt?: string };
+  data?: { chatRoomId?: number; messageId?: number; deletedAt?: string };
   error?: unknown;
 };
 
@@ -94,19 +94,19 @@ export async function fetchAdminChatRooms(page: number, signal?: AbortSignal) {
   };
 }
 
-export async function deleteAdminChatMessage(chatId: number, messageId: number) {
+export async function deleteAdminChatMessage(chatRoomId: number, messageId: number) {
   const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/admin/chats/${chatId}/messages/${messageId}`),
+    input: buildApiUrl(`/v1/admin/chats/${chatRoomId}/messages/${messageId}`),
     init: { method: "DELETE", credentials: "include" },
   });
   if (!response.ok) await throwApiError(response, "Failed to delete admin chat message.");
   const payload = (await response.json()) as DeleteAdminChatMessageResponse;
   if (payload.error) throwApiPayloadError(payload.error, "Failed to delete admin chat message.");
-  if (!payload.data || payload.data.chatId !== chatId || payload.data.messageId !== messageId || typeof payload.data.deletedAt !== "string") {
+  if (!payload.data || payload.data.chatRoomId !== chatRoomId || payload.data.messageId !== messageId || typeof payload.data.deletedAt !== "string") {
     throw createInvalidApiResponseError("Invalid deleted admin chat message response.");
   }
   return {
-    chatId,
+    chatRoomId,
     messageId,
     deletedAt: payload.data.deletedAt,
   };

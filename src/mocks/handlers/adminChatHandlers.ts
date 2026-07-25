@@ -27,7 +27,7 @@ export const adminChatHandlers = [
       nextPages: Math.max(totalPages - page, 0),
     });
   }),
-  http.post("/v1/admin/chats/:chatRoomId/messages/:messageId/read", ({ params, request }) => {
+  http.post("/v1/admin/chats/:chatRoomId/messages/:messageId/check", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
 
     const chatRoomId = parsePositiveInteger(params.chatRoomId as string | undefined);
@@ -51,23 +51,23 @@ export const adminChatHandlers = [
     return apiSuccess({
       chatRoomId,
       messageId,
-      updatedAt: new Date().toISOString(),
+      checkedAt: new Date().toISOString(),
     });
   }),
   http.delete("/v1/admin/chats/:chatRoomId/messages/:messageId", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
 
-    const chatId = parsePositiveInteger(params.chatRoomId as string | undefined);
+    const chatRoomId = parsePositiveInteger(params.chatRoomId as string | undefined);
     const messageId = parsePositiveInteger(params.messageId as string | undefined);
     const messageExists = mockChatMessages.some((message) => message.messageId === messageId);
 
-    if (!chatId || !messageId || !messageExists) {
+    if (!chatRoomId || !messageId || !messageExists) {
       return apiError(404, "Chat message not found");
     }
 
     const deletedAt = new Date().toISOString();
     mockState.adminDeletedChatMessages.set(messageId, deletedAt);
 
-    return apiSuccess({ chatId, messageId, deletedAt });
+    return apiSuccess({ chatRoomId, messageId, deletedAt });
   }),
 ];
