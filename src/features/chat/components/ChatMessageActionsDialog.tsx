@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 
 type ChatMessageAction = {
   label: string;
@@ -16,7 +16,6 @@ export default function ChatMessageActionsDialog({
   actions,
   onClose,
 }: ChatMessageActionsDialogProps) {
-  const titleId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const firstActionRef = useRef<HTMLButtonElement | null>(null);
 
@@ -66,20 +65,13 @@ export default function ChatMessageActionsDialog({
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 px-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={titleId}
+      aria-label="메시지 작업"
       onKeyDown={handleKeyDown}
     >
       <div
         ref={dialogRef}
         className="w-full max-w-[336px] overflow-hidden rounded-2xl bg-ufo-surface shadow-lg"
       >
-        <h3
-          id={titleId}
-          className="border-b border-ufo-border-light px-6 py-5 text-center text-[15px] font-medium text-ufo-text-secondary"
-        >
-          메시지 설정
-        </h3>
-
         <div className="divide-y divide-ufo-border-light">
           {actions.map((action, index) => (
             <button
