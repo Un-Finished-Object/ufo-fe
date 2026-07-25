@@ -16,15 +16,11 @@ export const accountHandlers = [
     return apiSuccess({ valid: body.referralCode === "AAAADDDDD" });
   }),
   http.get("/v1/credits/rules", () => apiSuccess({
-    dailyMaxEarnCredits: 30,
     earnRules: [
-      { key: "SIGN_UP", amount: 50, description: "회원 가입", dailyLimitExempt: true },
-      { key: "ATTENDANCE", amount: 5, description: "출석체크 (연속 출석 시 보상 증가)", dailyLimitExempt: false },
-      { key: "FRIEND_INVITATION", amount: 150, description: "친구 초대", dailyLimitExempt: true },
+      { key: "ATTENDANCE_DAILY", amount: 10, description: "매일 00시 이후 최초 접속 시 1회", dailyLimitExempt: false },
     ],
     spendRules: [
-      { key: "YARN_ALTERNATIVE", amount: 10, description: "대체 실 추천", dailyLimitExempt: true },
-      { key: "PATTERN_CHAT", amount: 10, description: "채팅방", dailyLimitExempt: true },
+      { key: "CHATROOM_ENTRY", amount: -10, description: "특정 도안 채팅방 영구 해금", dailyLimitExempt: false },
     ],
   })),
   http.get("/v1/credits/transactions", ({ request }) => {

@@ -10,10 +10,6 @@ import {
 } from "@/features/my/queries/creditRuleQueries";
 
 function formatCreditAmount(rule: CreditRuleItem, type: "earn" | "spend") {
-  if (rule.key === "ATTENDANCE") {
-    return "5~30 크레딧";
-  }
-
   const absoluteAmount = Math.abs(rule.amount);
 
   return `${type === "earn" ? "+" : "-"}${absoluteAmount} 크레딧`;
@@ -51,11 +47,6 @@ function CreditRuleList({
                   {formatCreditAmount(rule, type)}
                 </p>
               </div>
-              {rule.key === "ATTENDANCE" ? (
-                <p className="mt-2 text-xs leading-5 text-ufo-text-dim">
-                  예시: 5 → 10 → 15 → 20 → 25 → 30 (이후 30 크레딧 고정)
-                </p>
-              ) : null}
             </li>
           ))}
         </ul>
@@ -110,9 +101,6 @@ export default function CreditGuideScreen() {
             <h1 className="text-xl font-bold tracking-tight text-ufo-text">크레딧 사용 안내</h1>
             <p className="mt-3 text-sm leading-6 text-ufo-text-secondary">
               크레딧은 UFO에서 활동하거나 일부 기능을 이용할 때 획득하고 사용할 수 있어요.
-            </p>
-            <p className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-ufo-brand-pale px-4 py-2 text-sm font-semibold text-ufo-brand">
-              연속 출석 6일차부터 매일 {creditRulesQuery.data.dailyMaxEarnCredits} 크레딧
             </p>
           </div>
 

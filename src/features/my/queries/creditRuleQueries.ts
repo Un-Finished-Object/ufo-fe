@@ -5,7 +5,7 @@ import {
   throwApiError,
   throwApiPayloadError,
 } from "@/lib/api/ApiError";
-import { fetchPublic } from "@/lib/fetch/fetchPublic";
+import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type CreditRuleApiItem = {
@@ -16,7 +16,6 @@ type CreditRuleApiItem = {
 };
 
 type CreditRulesPayload = {
-  dailyMaxEarnCredits?: number;
   earnRules?: CreditRuleApiItem[];
   spendRules?: CreditRuleApiItem[];
 };
@@ -34,7 +33,6 @@ export type CreditRuleItem = {
 };
 
 export type CreditRulesResult = {
-  dailyMaxEarnCredits: number;
   earnRules: CreditRuleItem[];
   spendRules: CreditRuleItem[];
 };
@@ -61,10 +59,11 @@ function mapCreditRuleItem(item: CreditRuleApiItem) {
 }
 
 export async function fetchCreditRules({ signal }: { signal?: AbortSignal } = {}) {
-  const response = await fetchPublic({
+  const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/credits/rules"),
     init: {
       method: "GET",
+      credentials: "include",
       signal,
     },
   });
@@ -79,19 +78,19 @@ export async function fetchCreditRules({ signal }: { signal?: AbortSignal } = {}
     throwApiPayloadError(payload.error, "Failed to load credit rules.");
   }
 
-  if (!payload.data || typeof payload.data.dailyMaxEarnCredits !== "number") {
+  if (
+    !payload.data ||
+    !Array.isArray(payload.data.earnRules) ||
+    !Array.isArray(payload.data.spendRules)
+  ) {
     throw createInvalidApiResponseError("Failed to load credit rules.");
   }
 
-  const earnRules = Array.isArray(payload.data.earnRules) ? payload.data.earnRules : [];
-  const spendRules = Array.isArray(payload.data.spendRules) ? payload.data.spendRules : [];
-
   return {
-    dailyMaxEarnCredits: payload.data.dailyMaxEarnCredits,
-    earnRules: earnRules
+    earnRules: payload.data.earnRules
       .map(mapCreditRuleItem)
       .filter((item): item is CreditRuleItem => item !== null),
-    spendRules: spendRules
+    spendRules: payload.data.spendRules
       .map(mapCreditRuleItem)
       .filter((item): item is CreditRuleItem => item !== null),
   } satisfies CreditRulesResult;
