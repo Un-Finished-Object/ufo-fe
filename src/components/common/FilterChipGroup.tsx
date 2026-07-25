@@ -9,6 +9,7 @@ type FilterChipGroupProps<T extends string> = {
   value: T | null | "";
   onChange: (value: T) => void;
   wrap?: boolean;
+  variant?: "primary" | "secondary";
 };
 
 export default function FilterChipGroup<T extends string>({
@@ -17,6 +18,7 @@ export default function FilterChipGroup<T extends string>({
   value,
   onChange,
   wrap = true,
+  variant = "primary",
 }: FilterChipGroupProps<T>) {
   return (
     <section>
@@ -28,17 +30,21 @@ export default function FilterChipGroup<T extends string>({
       >
         {options.map((option) => {
           const isActive = option.value === value;
+          const chipClassName =
+            variant === "secondary"
+              ? isActive
+                ? "h-6 border border-ufo-brand bg-ufo-brand-soft px-2.5 text-[11px] text-ufo-text"
+                : "h-6 border border-ufo-brand-soft bg-ufo-surface px-2.5 text-[11px] text-ufo-text-secondary"
+              : isActive
+                ? "h-7 bg-ufo-brand-soft px-3 text-xs text-ufo-text"
+                : "h-7 border border-ufo-border bg-transparent px-3 text-xs text-ufo-text-secondary";
 
           return (
             <button
               key={option.value}
               type="button"
               onClick={() => onChange(option.value)}
-              className={`h-7 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
-                isActive
-                  ? "bg-ufo-brand-soft text-ufo-text"
-                  : "border border-ufo-border bg-transparent text-ufo-text-secondary"
-              }`}
+              className={`whitespace-nowrap rounded-md font-semibold ${chipClassName}`}
               aria-pressed={isActive}
             >
               {option.label}

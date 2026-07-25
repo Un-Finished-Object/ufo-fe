@@ -22,7 +22,8 @@ import { patternCatalogQueryOptions } from "@/features/patterns/queries/patternC
 const mainCategories = ["ALL", "의류", "가방/파우치", "목도리/장갑/모자", "기타"] as const;
 const clothingSubCategories = [
   "가디건/자켓/볼레로",
-  "스웨터",
+  "긴소매 스웨터",
+  "반소매 스웨터",
   "조끼/민소매/뷔스티에",
   "원피스",
   "기타",
@@ -54,8 +55,6 @@ export default function PatternCatalogScreen({ initialPage }: PatternCatalogScre
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(initialPage);
 
-  const isSingleButtonMode =
-    selectedMainCategory === "의류" && selectedClothingSubCategory !== null;
   const profileHref = isAuthenticated ? "/my" : "/login";
   const authCacheKey = isAuthenticated
     ? currentUser?.userId ?? currentUser?.email ?? "member"
@@ -169,30 +168,16 @@ export default function PatternCatalogScreen({ initialPage }: PatternCatalogScre
         </section>
 
         {selectedMainCategory === "의류" ? (
-          <section className="mb-3 px-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {isSingleButtonMode && selectedClothingSubCategory ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedClothingSubCategory(null);
-                    resetPage();
-                  }}
-                  className="h-7 whitespace-nowrap rounded-md bg-ufo-brand-soft px-3 text-xs font-semibold text-ufo-text"
-                >
-                  {selectedClothingSubCategory}
-                </button>
-              ) : (
-                <FilterChipGroup
-                  options={clothingSubCategories.map((subCategory) => ({
-                    label: subCategory,
-                    value: subCategory,
-                  }))}
-                  value={selectedClothingSubCategory ?? ""}
-                  onChange={handleClothingSubCategoryClick}
-                />
-              )}
-            </div>
+          <section className="mb-3 px-4 pt-1">
+            <FilterChipGroup
+              options={clothingSubCategories.map((subCategory) => ({
+                label: subCategory,
+                value: subCategory,
+              }))}
+              value={selectedClothingSubCategory ?? ""}
+              onChange={handleClothingSubCategoryClick}
+              variant="secondary"
+            />
           </section>
         ) : null}
 

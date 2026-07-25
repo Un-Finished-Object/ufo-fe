@@ -19,6 +19,7 @@ type PatternAlternativeItemResponse = {
   component?: string | null;
   store?: string | null;
   length?: number | null;
+  isCalculatedLength?: boolean | null;
   componentScore?: number | null;
   lengthScore?: number | null;
   gaugeScore?: number | null;
@@ -34,7 +35,9 @@ type PatternAlternativeSetResponse = {
 };
 
 type PatternAlternativesResponse = {
-  data?: PatternAlternativeSetResponse;
+  data?: {
+    items?: PatternAlternativeSetResponse[] | null;
+  };
   error?: unknown;
 };
 
@@ -49,6 +52,7 @@ export type PatternAlternativeItem = {
   component: string;
   store: string;
   length: number | null;
+  isCalculatedLength: boolean | null;
   componentScore: number | null;
   lengthScore: number | null;
   gaugeScore: number | null;
@@ -71,6 +75,8 @@ function getSafeText(value?: string | null) {
 function mapPatternAlternativeItem(
   item: PatternAlternativeItemResponse,
 ): PatternAlternativeItem {
+  const length = typeof item.length === "number" ? item.length : null;
+
   return {
     altId: typeof item.altId === "number" ? item.altId : null,
     ranking: typeof item.ranking === "number" ? item.ranking : null,
@@ -81,7 +87,11 @@ function mapPatternAlternativeItem(
     cost: typeof item.cost === "number" ? item.cost : null,
     component: getSafeText(item.component),
     store: getSafeText(item.store),
-    length: typeof item.length === "number" ? item.length : null,
+    length,
+    isCalculatedLength:
+      length !== null && typeof item.isCalculatedLength === "boolean"
+        ? item.isCalculatedLength
+        : null,
     componentScore: typeof item.componentScore === "number" ? item.componentScore : null,
     lengthScore: typeof item.lengthScore === "number" ? item.lengthScore : null,
     gaugeScore: typeof item.gaugeScore === "number" ? item.gaugeScore : null,
@@ -135,11 +145,11 @@ export async function fetchPatternAlternatives(
     throwApiPayloadError(payload.error, "Failed to load pattern alternatives.");
   }
 
-  if (!payload.data) {
+  if (!payload.data || !Array.isArray(payload.data.items)) {
     throw createInvalidApiResponseError("Failed to load pattern alternatives.");
   }
 
-  return [mapPatternAlternativeSet(payload.data)];
+  return payload.data.items.map(mapPatternAlternativeSet);
 }
 
 export function patternAlternativesQueryOptions(originalYarnSetId: number) {

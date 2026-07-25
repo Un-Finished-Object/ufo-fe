@@ -27,8 +27,16 @@ function createInitialAlternativeComments(altSetId: number) {
 export const patternHandlers = [
   http.get("/v1/patterns", async ({ request }) => {
     await applyMockDelay();
-    const page = Number(new URL(request.url).searchParams.get("page") ?? 1);
-    return apiSuccess({ items: patternItems(), page, nextPage: 0, totalPages: 1 });
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get("page") ?? 1);
+    const category = url.searchParams.get("category");
+    const subCategory = url.searchParams.get("subCategory");
+    const items = mockPatterns.filter(
+      (pattern) =>
+        (!category || category === "all" || pattern.category === category) &&
+        (!subCategory || pattern.subCategory === subCategory),
+    );
+    return apiSuccess({ items: patternItems(items), page, nextPage: 0, totalPages: 1 });
   }),
   http.get("/v1/patterns/search", async ({ request }) => {
     await applyMockDelay();
@@ -97,7 +105,7 @@ export const patternHandlers = [
   http.get("/v1/yarns/:yarnId/", ({ params }) => apiSuccess({ yarnId: Number(params.yarnId), yarnName: "메리노 포근", weight: 50, cost: 9000, component: "메리노울 100%", store: "UFO 실가게", length: 120 })),
   http.get("/v1/yarns/alternatives/:setId", ({ params, request }) =>
     requireMockAuth(request)
-      ? apiSuccess(createMockPatternAlternatives(Number(params.setId)))
+      ? apiSuccess({ items: [createMockPatternAlternatives(Number(params.setId))] })
       : apiError(401, "Unauthorized"),
   ),
   http.get("/v1/alternatives/:altId/reaction", ({ params, request }) => {
