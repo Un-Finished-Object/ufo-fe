@@ -2,6 +2,9 @@ import { http } from "msw";
 import { mockState } from "@/mocks/state/mockState";
 import { apiError, apiSuccess, applyMockDelay, requireMockAuth } from "@/mocks/utils/response";
 
+const DEFAULT_PROFILE_IMAGE_KEY = "defaults/profile.png";
+const DEFAULT_PROFILE_IMAGE_URL = "https://cdn.knit-ufo.co.kr/defaults/profile.png";
+
 export const authHandlers = [
   http.post("/v1/auth/token/refresh", async () => {
     await applyMockDelay();
@@ -23,7 +26,14 @@ export const authHandlers = [
     mockState.user = {
       ...mockState.user,
       ...(body.userName ? { nickname: body.userName } : {}),
-      ...(body.profileImageKey ? { profileImage: "/mock/pattern-card.svg" } : {}),
+      ...(body.profileImageKey
+        ? {
+            profileImage:
+              body.profileImageKey === DEFAULT_PROFILE_IMAGE_KEY
+                ? DEFAULT_PROFILE_IMAGE_URL
+                : "/mock/pattern-card.svg",
+          }
+        : {}),
     };
     mockState.interests = Array.isArray(body.keywords) ? body.keywords : [];
     return apiSuccess({
