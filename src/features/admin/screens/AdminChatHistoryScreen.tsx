@@ -13,7 +13,7 @@ import {
   adminChatQueryKeys,
   deleteAdminChatMessage,
 } from "@/features/admin/queries/adminChatQueries";
-import { readAdminChatMessage } from "@/features/admin/services/readAdminChatMessage";
+import { checkAdminChatMessage } from "@/features/admin/services/readAdminChatMessage";
 import {
   flattenChatMessagesData,
   type ChatMessagesInfiniteData,
@@ -40,7 +40,7 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
   const messages = messagesQuery.messages;
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [readFeedback, setReadFeedback] = useState<string | null>(null);
+  const [checkFeedback, setCheckFeedback] = useState<string | null>(null);
   const [initialPositionFeedback, setInitialPositionFeedback] = useState<string | null>(null);
   const [isPreparingInitialPosition, setIsPreparingInitialPosition] = useState(true);
   const scrollContainerRef = useRef<HTMLElement>(null);
@@ -79,18 +79,18 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
     },
   });
 
-  const readMutation = useMutation({
-    mutationFn: (messageId: string) => readAdminChatMessage(chatId, Number(messageId)),
+  const checkMutation = useMutation({
+    mutationFn: (messageId: string) => checkAdminChatMessage(chatId, Number(messageId)),
     onMutate: () => {
-      setReadFeedback(null);
+      setCheckFeedback(null);
     },
     onSuccess: async (_, messageId) => {
       setSelectedMessageId((current) => current === messageId ? null : current);
-      setReadFeedback("메시지를 확인했습니다.");
+      setCheckFeedback("메시지를 확인했습니다.");
       await queryClient.invalidateQueries({ queryKey: [...adminChatQueryKeys.root, "list"] });
     },
     onError: () => {
-      setReadFeedback("메시지를 확인하지 못했습니다. 다시 시도해 주세요.");
+      setCheckFeedback("메시지를 확인하지 못했습니다. 다시 시도해 주세요.");
     },
   });
 
@@ -120,7 +120,7 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
     setIsPreparingInitialPosition(true);
     setInitialPositionFeedback(null);
     setSelectedMessageId(null);
-    setReadFeedback(null);
+    setCheckFeedback(null);
     messagesQuery.resetEntryLastReadMessageId();
     await queryClient.resetQueries({ queryKey: adminChatQueryKeys.messages(chatId), exact: true });
   }, [chatId, messagesQuery, queryClient]);
@@ -271,15 +271,15 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
                 <p className="text-xs font-semibold text-ufo-text-secondary">
                   {selectedMessageId ? `메시지 ${selectedMessageId} 선택됨` : "확인할 메시지를 선택해 주세요."}
                 </p>
-                {readFeedback || initialPositionFeedback ? <p className="mt-0.5 text-[11px] text-ufo-text-subtle" role="status">{readFeedback ?? initialPositionFeedback}</p> : null}
+                {checkFeedback || initialPositionFeedback ? <p className="mt-0.5 text-[11px] text-ufo-text-subtle" role="status">{checkFeedback ?? initialPositionFeedback}</p> : null}
               </div>
               <button
                 type="button"
-                onClick={() => selectedMessageId && readMutation.mutate(selectedMessageId)}
-                disabled={!selectedMessageId || readMutation.isPending}
+                onClick={() => selectedMessageId && checkMutation.mutate(selectedMessageId)}
+                disabled={!selectedMessageId || checkMutation.isPending}
                 className="min-h-9 shrink-0 rounded-lg bg-ufo-brand px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-ufo-text-muted"
               >
-                {readMutation.isPending ? "확인 중" : "메시지 확인"}
+                {checkMutation.isPending ? "확인 중" : "메시지 확인"}
               </button>
             </div>
 
@@ -305,21 +305,27 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
                   const isLastReadMessage =
                     messageId !== null &&
                     messageId === messagesQuery.entryLastReadMessageId;
+                  const canCheckMessage =
+                    messageId !== null &&
+                    (
+                      messagesQuery.entryLastReadMessageId === null ||
+                      Number(messageId) > Number(messagesQuery.entryLastReadMessageId)
+                    );
 
                   return (
                     <li key={messageId ?? message.clientMessageId ?? message.createdAt}>
                       {showDate ? <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-ufo-divider" /><time className="text-[11px] text-ufo-text-dim">{date}</time><span className="h-px flex-1 bg-ufo-divider" /></div> : null}
                       {isLastReadMessage ? <AdminChatLastReadSeparator ref={lastReadMarkerRef} /> : null}
                       <article className="flex items-start gap-3">
-                        {messageId ? (
+                        {canCheckMessage ? (
                           <input
                             type="checkbox"
                             checked={selectedMessageId === messageId}
                             onChange={() => {
-                              setReadFeedback(null);
+                              setCheckFeedback(null);
                               setSelectedMessageId((current) => current === messageId ? null : messageId);
                             }}
-                            disabled={readMutation.isPending}
+                            disabled={checkMutation.isPending}
                             className="mt-2 h-5 w-5 shrink-0 accent-ufo-brand"
                             aria-label={`${senderName}님의 ${formatTime(message.createdAt)} 메시지 선택`}
                           />

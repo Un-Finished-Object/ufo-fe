@@ -27,7 +27,7 @@ export const adminChatHandlers = [
       nextPages: Math.max(totalPages - page, 0),
     });
   }),
-  http.post("/v1/admin/chats/:chatRoomId/messages/:messageId/read", ({ params, request }) => {
+  http.post("/v1/admin/chats/:chatRoomId/messages/:messageId/check", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
 
     const chatRoomId = parsePositiveInteger(params.chatRoomId as string | undefined);
@@ -51,7 +51,7 @@ export const adminChatHandlers = [
     return apiSuccess({
       chatRoomId,
       messageId,
-      updatedAt: new Date().toISOString(),
+      checkedAt: new Date().toISOString(),
     });
   }),
   http.delete("/v1/admin/chats/:chatRoomId/messages/:messageId", ({ params, request }) => {
