@@ -1,6 +1,7 @@
 import { http } from "msw";
 import { mockState } from "@/mocks/state/mockState";
 import { apiError, apiSuccess, applyMockDelay, requireMockAuth } from "@/mocks/utils/response";
+import { SIGNUP_REWARD_CREDITS } from "@/features/onboarding/lib/signupWelcome";
 
 const DEFAULT_PROFILE_IMAGE_KEY = "defaults/profile.png";
 const DEFAULT_PROFILE_IMAGE_URL = "https://cdn.knit-ufo.co.kr/defaults/profile.png";
@@ -35,12 +36,14 @@ export const authHandlers = [
           }
         : {}),
     };
+    mockState.balance += SIGNUP_REWARD_CREDITS;
     mockState.interests = Array.isArray(body.keywords) ? body.keywords : [];
     return apiSuccess({
       userId: mockState.user.userId,
       userName: mockState.user.nickname,
       profileImageUrl: mockState.user.profileImage,
       keywords: mockState.interests,
+      signupRewardCredits: SIGNUP_REWARD_CREDITS,
     });
   }),
   http.patch("/v1/users/me", async ({ request }) => {

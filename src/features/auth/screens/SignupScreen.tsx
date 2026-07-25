@@ -28,6 +28,7 @@ import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQue
 import { checkNicknameAvailability } from "@/features/auth/services/checkNicknameAvailability";
 import { completeSignup } from "@/features/auth/services/completeSignup";
 import { homeQueryKeys } from "@/features/home/queries/homeQueries";
+import { SIGNUP_WELCOME_SESSION_KEY } from "@/features/onboarding/lib/signupWelcome";
 import { isApiError } from "@/lib/api/ApiError";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legalLinks";
 import {
@@ -145,6 +146,8 @@ export default function SignupScreen() {
       );
       void queryClient.invalidateQueries({ queryKey: homeQueryKeys.interestsRoot });
       void queryClient.invalidateQueries({ queryKey: homeQueryKeys.recommendPatternsRoot });
+      void queryClient.invalidateQueries({ queryKey: userQueryKeys.wallet });
+      window.sessionStorage.setItem(SIGNUP_WELCOME_SESSION_KEY, "true");
       router.replace("/onboarding");
     },
     onError: (error) => {
