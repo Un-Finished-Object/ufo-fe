@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import Providers from "@/app/providers";
 import MockProvider from "@/components/providers/MockProvider";
 import { siteConfig } from "@/lib/metadata";
-import "./globals.css";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const pretendard = localFont({
   src: "../../public/fonts/PretendardVariable.woff2",
@@ -66,6 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={pretendard.variable}>
+      <GoogleAnalytics gaId="G-HB8Y9YKSMF"></GoogleAnalytics>
       <body className="antialiased">
         <MockProvider>
           <Providers>{children}</Providers>
