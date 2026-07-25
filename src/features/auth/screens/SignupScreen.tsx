@@ -393,8 +393,10 @@ export default function SignupScreen() {
           <button
             type="submit"
             disabled={isSubmitDisabled}
-            className={`mt-9 h-12 w-full rounded-xl text-base font-semibold text-white transition ${
-              isSubmitDisabled ? "bg-ufo-border text-ufo-text-dim" : "bg-ufo-brand"
+            className={`mt-9 h-12 w-full rounded-xl text-base font-semibold transition ${
+              isSubmitDisabled
+                ? "bg-ufo-border-light text-ufo-text-muted"
+                : "bg-ufo-brand text-white"
             }`}
           >
             {signupMutation.isPending ? "저장 중..." : "UFO 시작하기"}
