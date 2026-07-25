@@ -18,6 +18,7 @@ type PatternAlternativeItemResponse = {
   cost?: number | null;
   component?: string | null;
   store?: string | null;
+  thickness?: string | null;
   length?: number | null;
   isCalculatedLength?: boolean | null;
   componentScore?: number | null;
@@ -34,9 +35,7 @@ type PatternAlternativeSetResponse = {
 };
 
 type PatternAlternativesResponse = {
-  data?: {
-    items?: PatternAlternativeSetResponse[] | null;
-  };
+  data?: PatternAlternativeSetResponse | null;
   error?: unknown;
 };
 
@@ -50,6 +49,7 @@ export type PatternAlternativeItem = {
   cost: number | null;
   component: string;
   store: string;
+  thickness: string;
   length: number | null;
   isCalculatedLength: boolean | null;
   componentScore: number | null;
@@ -85,6 +85,7 @@ function mapPatternAlternativeItem(
     cost: typeof item.cost === "number" ? item.cost : null,
     component: getSafeText(item.component),
     store: getSafeText(item.store),
+    thickness: getSafeText(item.thickness),
     length,
     isCalculatedLength:
       length !== null && typeof item.isCalculatedLength === "boolean"
@@ -142,11 +143,11 @@ export async function fetchPatternAlternatives(
     throwApiPayloadError(payload.error, "Failed to load pattern alternatives.");
   }
 
-  if (!payload.data || !Array.isArray(payload.data.items)) {
+  if (!payload.data || typeof payload.data !== "object") {
     throw createInvalidApiResponseError("Failed to load pattern alternatives.");
   }
 
-  return payload.data.items.map(mapPatternAlternativeSet);
+  return [mapPatternAlternativeSet(payload.data)];
 }
 
 export function patternAlternativesQueryOptions(originalYarnSetId: number) {
