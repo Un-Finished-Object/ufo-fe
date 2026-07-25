@@ -24,7 +24,6 @@ type PatternAlternativeItemResponse = {
   lengthScore?: number | null;
   gaugeScore?: number | null;
   needleScore?: number | null;
-  username?: string | null;
 };
 
 type PatternAlternativeSetResponse = {
@@ -57,7 +56,6 @@ export type PatternAlternativeItem = {
   lengthScore: number | null;
   gaugeScore: number | null;
   needleScore: number | null;
-  username: string;
 };
 
 export type PatternAlternativeSet = {
@@ -96,7 +94,6 @@ function mapPatternAlternativeItem(
     lengthScore: typeof item.lengthScore === "number" ? item.lengthScore : null,
     gaugeScore: typeof item.gaugeScore === "number" ? item.gaugeScore : null,
     needleScore: typeof item.needleScore === "number" ? item.needleScore : null,
-    username: getSafeText(item.username),
   };
 }
 
