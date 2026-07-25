@@ -191,6 +191,7 @@ function createMockAlternativeYarns(originalYarnSetId: number, roleOffset: numbe
       cost: 7500 + index * 500,
       component: index % 2 === 0 ? "메리노울 100%" : "알파카 90%, 나일론 10%",
       store: index % 2 === 0 ? "UFO 실가게" : "솜솜뜨개",
+      thickness: index % 3 === 0 ? "1.5" : null,
       length,
       isCalculatedLength: length === null ? null : index % 2 === 0,
       componentScore: index === 0 ? null : Math.max(70, 100 - index),
