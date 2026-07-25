@@ -4,6 +4,7 @@ import Providers from "@/app/providers";
 import MockProvider from "@/components/providers/MockProvider";
 import { siteConfig } from "@/lib/metadata";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import "./globals.css";
 
 const pretendard = localFont({
   src: "../../public/fonts/PretendardVariable.woff2",
