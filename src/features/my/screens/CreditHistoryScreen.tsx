@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import FilterChipGroup from "@/components/common/FilterChipGroup";
 import Pagination from "@/components/common/Pagination";
 import StateBlock from "@/components/common/StateBlock";
@@ -29,13 +28,15 @@ const typeFilterOptions = [
   { label: "전체", value: "all" },
   { label: "획득", value: "earn" },
   { label: "소비", value: "spend" },
-  { label: "조정", value: "adjust" },
 ] satisfies Array<{ label: string; value: CreditTransactionTypeFilter }>;
 
 const reasonFilterOptions = [
   { label: "전체", value: "all" },
-  { label: "출석", value: "attendance" },
-  { label: "채팅", value: "chat" },
+  { label: "회원가입", value: "signup_bonus" },
+  { label: "출석", value: "attendance_daily" },
+  { label: "친구 초대", value: "referral_bonus" },
+  { label: "채팅", value: "chatroom_entry" },
+  { label: "대체실", value: "alt_yarn_view" },
 ] satisfies Array<{ label: string; value: CreditTransactionReasonFilter }>;
 
 const transactionTypeLabels: Record<string, string> = {
@@ -45,9 +46,16 @@ const transactionTypeLabels: Record<string, string> = {
 };
 
 const transactionReasonLabels: Record<string, string> = {
+  signup_bonus: "회원가입",
+  attendance_daily: "출석",
+  referral_bonus: "친구 초대",
+  chatroom_entry: "채팅방 입장",
+  alt_yarn_view: "대체실 조회",
+  SIGNUP_BONUS: "회원가입",
   ATTENDANCE_DAILY: "출석",
+  REFERRAL_BONUS: "친구 초대",
   CHATROOM_ENTRY: "채팅방 입장",
-  CHAT_ENTRY_FEE: "채팅방 입장",
+  ALT_YARN_VIEW: "대체실 조회",
 };
 
 function formatDateTime(value: string) {
@@ -126,15 +134,17 @@ export default function CreditHistoryScreen({
   initialType,
   initialReason,
 }: CreditHistoryScreenProps) {
-  const router = useRouter();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [selectedType, setSelectedType] = useState(initialType);
+  const [selectedReason, setSelectedReason] = useState(initialReason);
   const meQuery = useMeQuery();
   const transactionsQuery = useQuery(
     creditTransactionsQueryOptions(
       {
-        page: initialPage,
-        type: initialType,
-        reason: initialReason,
+        page: currentPage,
+        type: selectedType,
+        reason: selectedReason,
       },
       { enabled: Boolean(meQuery.data) },
     ),
@@ -152,56 +162,27 @@ export default function CreditHistoryScreen({
     }
   }, [showAuthRequiredToast, transactionsQuery.error]);
 
-  const buildRoute = useCallback(
-    ({
-      page,
-      type,
-      reason,
-    }: {
-      page: number;
-      type: CreditTransactionTypeFilter;
-      reason: CreditTransactionReasonFilter;
-    }) => {
-      const params = new URLSearchParams();
-
-      if (page > 1) {
-        params.set("page", String(page));
-      }
-
-      if (type !== "all") {
-        params.set("type", type);
-      }
-
-      if (reason !== "all") {
-        params.set("reason", reason);
-      }
-
-      const queryString = params.toString();
-
-      return queryString ? `/my/credits?${queryString}` : "/my/credits";
+  const handleTypeChange = useCallback(
+    (type: CreditTransactionTypeFilter) => {
+      setCurrentPage(1);
+      setSelectedType(type);
     },
     [],
   );
 
-  const handleTypeChange = useCallback(
-    (type: CreditTransactionTypeFilter) => {
-      router.push(buildRoute({ page: 1, type, reason: initialReason }));
-    },
-    [buildRoute, initialReason, router],
-  );
-
   const handleReasonChange = useCallback(
     (reason: CreditTransactionReasonFilter) => {
-      router.push(buildRoute({ page: 1, type: initialType, reason }));
+      setCurrentPage(1);
+      setSelectedReason(reason);
     },
-    [buildRoute, initialType, router],
+    [],
   );
 
   const handlePageChange = useCallback(
     (page: number) => {
-      router.push(buildRoute({ page, type: initialType, reason: initialReason }));
+      setCurrentPage(page);
     },
-    [buildRoute, initialReason, initialType, router],
+    [],
   );
 
   const handleRetry = useCallback(() => {
@@ -213,7 +194,7 @@ export default function CreditHistoryScreen({
   const isError =
     meQuery.isError || (transactionsQuery.isError && !isApiError(transactionsQuery.error, 401));
   const transactions = transactionsQuery.data?.items ?? [];
-  const currentPage = transactionsQuery.data?.page ?? initialPage;
+  const responsePage = transactionsQuery.data?.page ?? currentPage;
   const nextPage = transactionsQuery.data?.nextPage ?? 0;
 
   return (
@@ -237,13 +218,13 @@ export default function CreditHistoryScreen({
           <FilterChipGroup
             label="분류"
             options={typeFilterOptions}
-            value={initialType}
+            value={selectedType}
             onChange={handleTypeChange}
           />
           <FilterChipGroup
             label="사유"
             options={reasonFilterOptions}
-            value={initialReason}
+            value={selectedReason}
             onChange={handleReasonChange}
           />
         </section>
@@ -287,7 +268,7 @@ export default function CreditHistoryScreen({
             </section>
 
             <Pagination
-              currentPage={currentPage}
+              currentPage={responsePage}
               nextPage={nextPage}
               onPageChange={handlePageChange}
             />
