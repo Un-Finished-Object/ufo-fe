@@ -72,12 +72,18 @@ export const adminChatHandlers = [
     }
 
     const deletedAt = new Date().toISOString();
+    const isLatestMessage = mockChatMessages.at(-1)?.messageId === messageId;
+
     mockState.adminDeletedChatMessages.set(messageId, deletedAt);
-    mockState.adminDeletedMessageRoomIds.add(chatRoomId);
-    const room = mockState.adminChatRooms.find((chat) => chat.chatId === chatRoomId);
-    if (room) {
-      room.lastMessage = "삭제한 메시지입니다";
-      room.lastMessageDeleted = true;
+
+    if (isLatestMessage) {
+      mockState.adminDeletedMessageRoomIds.add(chatRoomId);
+      const room = mockState.adminChatRooms.find((chat) => chat.chatId === chatRoomId);
+
+      if (room) {
+        room.lastMessage = "삭제한 메시지입니다";
+        room.lastMessageDeleted = true;
+      }
     }
 
     return apiSuccess({ chatRoomId, messageId, deletedAt });
