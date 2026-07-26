@@ -306,9 +306,7 @@ export default function AttendanceCalendar() {
                 return (
                   <div
                     key={day}
-                    className={`flex flex-col items-center gap-1 py-1 ${
-                      todayCell ? "rounded-md border border-ufo-brand" : ""
-                    }`}
+                    className="flex flex-col items-center gap-1 py-1"
                   >
                     <span
                       className={`text-sm font-medium leading-none ${
