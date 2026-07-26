@@ -4,7 +4,7 @@ const SITE_URL = "https://www.knit-ufo.co.kr";
 const SITE_NAME = "UFO";
 const SITE_FULL_NAME = "Un-Finished Object";
 const SITE_DESCRIPTION =
-  "UFO(Un-Finished Object)는 뜨개인을 위한 도안 정보, 대체 실 추천과 도안 기반 커뮤니티 서비스입니다.";
+  "대체실 추천받고 온라인 뜨친이랑 프로젝트 완성하기";
 const SITE_THEME_COLOR = "#ffaba6";
 const SITE_INSTAGRAM_URL = "https://www.instagram.com/ufoknitting";
 
