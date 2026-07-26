@@ -33,7 +33,7 @@ function createUnauthorizedResponse() {
 }
 
 async function refreshSession() {
-  return refreshAccessToken({ mode: "auto" });
+  return refreshAccessToken({ mode: "required" });
 }
 
 export async function request({

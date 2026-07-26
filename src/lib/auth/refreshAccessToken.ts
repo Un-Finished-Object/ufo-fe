@@ -1,7 +1,6 @@
 import { buildApiUrl } from "@/lib/api/client";
 import { clearAccessToken, setAccessToken } from "@/lib/auth/accessToken";
 
-export const ACCESS_TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;
 
 type RefreshMode = "auto" | "required";
@@ -23,14 +22,22 @@ type RefreshResponsePayload = {
 async function syncAccessToken(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
-    return;
+    return false;
   }
 
   try {
     const payload = (await response.clone().json()) as RefreshResponsePayload;
-    setAccessToken(payload.data.accessToken);
+    const token = payload.data.accessToken?.trim();
+    const expiresIn = payload.data.expiresIn;
+
+    if (!token || !Number.isFinite(expiresIn) || expiresIn <= 0) {
+      return false;
+    }
+
+    setAccessToken(token, expiresIn);
+    return true;
   } catch {
-    // Ignore malformed refresh payloads and keep the existing in-memory token.
+    return false;
   }
 }
 
@@ -61,7 +68,12 @@ export async function refreshAccessToken({
     });
 
     if (response.ok) {
-      await syncAccessToken(response);
+      const didSyncAccessToken = await syncAccessToken(response);
+
+      if (!didSyncAccessToken) {
+        return new Response(null, { status: 502 });
+      }
+
       lastAutoRefreshFailureAt = 0;
       return response;
     }
