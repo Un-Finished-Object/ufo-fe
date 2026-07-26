@@ -184,16 +184,10 @@ export default function MyActivityScreen({ initialPage }: MyActivityScreenProps)
         <TopBar
           left="back"
           leftHref="/my"
-          title="나의 활동"
+          title="구매한 프로젝트"
           right={[{ type: "home", href: "/", ariaLabel: "홈으로 이동" }]}
           showBottomBorder
         />
-
-        <section className="border-b-2 border-ufo-border px-4 py-3 text-center">
-          <h2 className="text-base font-semibold tracking-[-0.02em] text-ufo-brand">
-            구매한 프로젝트
-          </h2>
-        </section>
 
         {isLoading ? (
           <StateBlock

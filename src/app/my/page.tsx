@@ -258,7 +258,7 @@ export default function MyPage() {
               onClick={handleMyActivityClick}
               className="mt-3 w-full rounded-xl bg-ufo-brand-pale px-4 py-2 text-base font-semibold tracking-[-0.02em] text-ufo-text-neutral"
             >
-              나의 활동 보기
+              구매한 프로젝트 보기
             </button>
           </article>
         </section>
