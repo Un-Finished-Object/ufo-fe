@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPageMetadata, siteConfig } from "@/lib/metadata";
 import PatternDetailScreen from "@/features/patterns/screens/PatternDetailScreen";
-import { mockPatternDetail, mockPatterns } from "@/mocks/fixtures/core";
-import { isMockMode } from "@/mocks/config";
+import { getPublicPatternDetail } from "@/features/patterns/services/fetchPublicPatternDetail";
 
 type PatternDetailPageProps = {
   params: Promise<{
@@ -11,80 +10,29 @@ type PatternDetailPageProps = {
   }>;
 };
 
-type PatternMetadataResponse = {
-  data?: {
-    id?: number;
-    title?: string;
-    images?: string[];
-  };
-};
-
-function buildPatternMetadataApiUrl(patternId: number) {
-  const apiProxyTarget = process.env.NEXT_API_PROXY_TARGET?.replace(/\/$/, "");
-  const baseUrl = apiProxyTarget || siteConfig.url;
-
-  return `${baseUrl}/v1/patterns/${patternId}`;
-}
-
-async function fetchPatternMetadata(patternId: number) {
-  if (isMockMode()) {
-    const pattern = mockPatterns.find((item) => item.id === patternId);
-    return pattern
-      ? { id: pattern.id, title: pattern.title, image: pattern.thumbnailUrl }
-      : { id: mockPatternDetail.id, title: mockPatternDetail.title, image: mockPatternDetail.images[0] };
-  }
-
-  try {
-    const response = await fetch(buildPatternMetadataApiUrl(patternId), {
-      next: { revalidate: 300 },
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = (await response.json()) as PatternMetadataResponse;
-    const pattern = payload.data;
-
-    if (
-      typeof pattern?.id !== "number" ||
-      typeof pattern.title !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      id: pattern.id,
-      title: pattern.title,
-      image: pattern.images?.[0],
-    };
-  } catch {
+function parsePatternId(value: string) {
+  if (!/^[1-9]\d*$/.test(value)) {
     return null;
   }
+
+  const patternId = Number(value);
+  return Number.isSafeInteger(patternId) ? patternId : null;
 }
 
 export async function generateMetadata({
   params,
 }: PatternDetailPageProps): Promise<Metadata> {
   const { patternId } = await params;
-  const numericPatternId = Number(patternId);
+  const numericPatternId = parsePatternId(patternId);
 
-  if (Number.isNaN(numericPatternId)) {
-    return createPageMetadata({
-      title: "뜨개 도안",
-      description: "UFO에서 뜨개 도안 정보를 확인해보세요.",
-      path: "/patterns",
-    });
+  if (numericPatternId === null) {
+    notFound();
   }
 
-  const pattern = await fetchPatternMetadata(numericPatternId);
+  const pattern = await getPublicPatternDetail(numericPatternId);
 
   if (!pattern) {
-    return createPageMetadata({
-      title: "뜨개 도안",
-      description: "UFO에서 뜨개 도안 정보를 확인해보세요.",
-      path: `/patterns/${numericPatternId}`,
-    });
+    notFound();
   }
 
   const description = `${pattern.title} 도안의 사용 실, 바늘, 게이지 정보를 UFO에서 확인해보세요.`;
@@ -102,11 +50,22 @@ export async function generateMetadata({
 
 export default async function PatternDetailPage({ params }: PatternDetailPageProps) {
   const { patternId } = await params;
-  const numericPatternId = Number(patternId);
+  const numericPatternId = parsePatternId(patternId);
 
-  if (Number.isNaN(numericPatternId)) {
+  if (numericPatternId === null) {
     notFound();
   }
 
-  return <PatternDetailScreen patternId={numericPatternId} />;
+  const pattern = await getPublicPatternDetail(numericPatternId);
+
+  if (!pattern) {
+    notFound();
+  }
+
+  return (
+    <PatternDetailScreen
+      patternId={numericPatternId}
+      initialPattern={pattern}
+    />
+  );
 }

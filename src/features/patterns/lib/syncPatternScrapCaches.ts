@@ -9,8 +9,8 @@ import {
 import type { PatternCatalogResult } from "@/features/patterns/services/fetchPatternCatalogResults";
 import {
   patternDetailQueryKey,
-  type PatternDetailData,
 } from "@/features/patterns/queries/patternDetailQueries";
+import type { PatternDetailData } from "@/features/patterns/lib/patternDetailData";
 import {
   patternSearchQueryKeys,
 } from "@/features/patterns/queries/patternSearchQueries";

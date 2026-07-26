@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
 } from "react";
-import StateBlock from "@/components/common/StateBlock";
 import Pagination from "@/components/common/Pagination";
 import ToastMessage from "@/components/common/ToastMessage";
 import CreditBadge from "@/components/credits/CreditBadge";
@@ -47,7 +46,8 @@ import {
 import type {
   OriginalYarn,
   OriginalYarnSet,
-} from "@/features/patterns/queries/patternDetailQueries";
+  PatternDetailData,
+} from "@/features/patterns/lib/patternDetailData";
 import {
   patternPurchaseQueryKey,
   patternPurchaseStatusQueryOptions,
@@ -57,12 +57,14 @@ import {
 } from "@/features/patterns/queries/patternPurchaseQueries";
 import { patternDetailQueryOptions } from "@/features/patterns/queries/patternDetailQueries";
 import { syncPatternScrapCaches } from "@/features/patterns/lib/syncPatternScrapCaches";
+import { useRecordPatternView } from "@/features/patterns/hooks/useRecordPatternView";
 import { updatePatternScrap } from "@/features/patterns/services/updatePatternScrap";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
 
 type PatternDetailScreenProps = {
   patternId: number;
+  initialPattern: PatternDetailData;
 };
 
 type OriginalYarnSelectionState = {
@@ -1313,6 +1315,7 @@ function AlternativeSectionMessage({ children }: { children: ReactNode }) {
 
 export default function PatternDetailScreen({
   patternId,
+  initialPattern,
 }: PatternDetailScreenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -1322,9 +1325,14 @@ export default function PatternDetailScreen({
     : "guest";
   const patternDetailQuery = useQuery({
     ...patternDetailQueryOptions(patternId, authCacheKey),
-    enabled: authStatus !== "loading",
+    enabled: authStatus === "authenticated",
+    initialData: authCacheKey === "guest" ? initialPattern : undefined,
   });
-  const pattern = patternDetailQuery.data ?? null;
+  const pattern = patternDetailQuery.data ?? initialPattern;
+  const recordedViewCount = useRecordPatternView({
+    patternId,
+    enabled: authStatus === "authenticated",
+  });
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const walletQuery = useWalletQuery({ enabled: isAuthenticated && pattern !== null });
   const [activeTab, setActiveTab] = useState<DetailTabValue>("alternative");
@@ -1572,52 +1580,6 @@ export default function PatternDetailScreen({
     setSelectedOriginalYarnRole(null);
   };
 
-  if (patternDetailQuery.isPending) {
-    return (
-      <MobileShell surfaceClassName="pb-20">
-          <TopBar
-            left="back"
-            onLeftClick={() => router.back()}
-            showBottomBorder
-            right={[
-              { type: "chat", href: "/chats", ariaLabel: "채팅" },
-              { type: "profile", href: profileHref, ariaLabel: "프로필" },
-            ]}
-          />
-
-          <StateBlock type="loading" title="도안 정보를 불러오고 있어요." className="px-4 py-16" />
-      </MobileShell>
-    );
-  }
-
-  if (!pattern) {
-    const errorMessage =
-      isApiError(patternDetailQuery.error, 404)
-        ? "요청하신 도안을 찾을 수 없어요."
-        : "잠시 후 다시 시도해주세요.";
-
-    return (
-      <MobileShell surfaceClassName="pb-20">
-          <TopBar
-            left="back"
-            onLeftClick={() => router.back()}
-            showBottomBorder
-            right={[
-              { type: "chat", href: "/chats", ariaLabel: "채팅" },
-              { type: "profile", href: profileHref, ariaLabel: "프로필" },
-            ]}
-          />
-
-          <StateBlock
-            type="error"
-            title="도안 정보를 불러오지 못했어요."
-            description={errorMessage}
-            className="px-4 py-16"
-          />
-      </MobileShell>
-    );
-  }
-
   return (
     <>
       <MobileShell surfaceClassName="pb-28">
@@ -1635,7 +1597,7 @@ export default function PatternDetailScreen({
           <div className="relative mb-4 aspect-[5/4] w-full overflow-hidden">
             <Image
               src={pattern.image}
-              alt={`${pattern.title} hero image`}
+              alt={`${pattern.title} 도안 대표 이미지`}
               fill
               className="object-cover"
             />
@@ -1665,7 +1627,7 @@ export default function PatternDetailScreen({
           </div>
           <p className="mt-1 text-sm font-medium text-ufo-text-neutral">{pattern.author}</p>
           <p className="mt-1 text-xs text-ufo-text-dim">
-            조회 {pattern.stats.views} · 찜 {scrapCount}
+            조회 {recordedViewCount ?? pattern.stats.views} · 찜 {scrapCount}
           </p>
         </section>
 
@@ -1694,7 +1656,7 @@ export default function PatternDetailScreen({
           <DetailTabSwitch value={activeTab} onChange={setActiveTab} />
 
           <div className="mt-4">
-            {activeTab === "description" ? (
+            <div hidden={activeTab !== "description"}>
               <div className="overflow-hidden border border-ufo-text-muted/30 bg-ufo-brand-pale">
                 {detailRows.map((row) => (
                   <div
@@ -1710,7 +1672,9 @@ export default function PatternDetailScreen({
                   </div>
                 ))}
               </div>
-            ) : (
+            </div>
+
+            <div hidden={activeTab !== "alternative"}>
               <div className="space-y-4">
                 <AlternativeYarnSection title="원작실">
                   {activeOriginalYarnSet ? (
@@ -1768,7 +1732,7 @@ export default function PatternDetailScreen({
                   </AlternativeYarnSection>
                 ) : null}
               </div>
-            )}
+            </div>
           </div>
         </section>
       </MobileShell>

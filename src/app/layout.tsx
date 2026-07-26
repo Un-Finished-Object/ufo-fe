@@ -51,10 +51,6 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [siteConfig.ogImage.url],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
   verification: {
     other: {
       "naver-site-verification": "745e9ee1b746445978b005095b4d15d0e881c49c",
