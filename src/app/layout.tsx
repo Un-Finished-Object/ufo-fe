@@ -4,6 +4,7 @@ import Providers from "@/app/providers";
 import MockProvider from "@/components/providers/MockProvider";
 import { siteConfig } from "@/lib/metadata";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -70,6 +71,7 @@ export default function RootLayout({
         <MockProvider>
           <Providers>{children}</Providers>
         </MockProvider>
+        <Analytics />
       </body>
     </html>
   );

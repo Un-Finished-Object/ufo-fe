@@ -3,17 +3,18 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useSyncExternalStore } from "react";
 import {
-  clearAccessToken,
-  getAccessToken,
-  getAccessTokenExpiresAt,
+  getAccessTokenSnapshot,
+  getInitialAccessTokenSnapshot,
   subscribeAccessToken,
 } from "@/lib/auth/accessToken";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import {
+  ensureFreshAccessToken,
+  isAccessTokenRefreshDue,
+  type RefreshReason,
+} from "@/lib/auth/refreshCoordinator";
 import { userQueryKeys } from "@/features/auth/queries/userQueries";
-import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 
-const ACCESS_TOKEN_REFRESH_LEAD_MS = 60 * 1000;
-const ACCESS_TOKEN_REFRESH_RETRY_MS = 30 * 1000;
+const MAX_TIMER_DELAY_MS = 2_147_000_000;
 
 export function useAccessTokenRefresh() {
   const queryClient = useQueryClient();
@@ -22,19 +23,18 @@ export function useAccessTokenRefresh() {
     () => Boolean(queryClient.getQueryData(userQueryKeys.me)),
     () => false,
   );
-  const accessToken = useSyncExternalStore(
+  const tokenSnapshot = useSyncExternalStore(
     subscribeAccessToken,
-    getAccessToken,
-    () => null,
-  );
-  const accessTokenExpiresAt = useSyncExternalStore(
-    subscribeAccessToken,
-    getAccessTokenExpiresAt,
-    () => null,
+    getAccessTokenSnapshot,
+    getInitialAccessTokenSnapshot,
   );
 
   useEffect(() => {
-    if (!isAuthenticated || !accessToken) {
+    if (
+      !isAuthenticated ||
+      !tokenSnapshot.token ||
+      tokenSnapshot.sessionPhase !== "active"
+    ) {
       return;
     }
 
@@ -57,65 +57,68 @@ export function useAccessTokenRefresh() {
 
       clearRefreshTimer();
       refreshTimerId = window.setTimeout(() => {
-        void refreshSession();
-      }, Math.max(0, delayMs));
+        void runRefresh("scheduled");
+      }, Math.min(MAX_TIMER_DELAY_MS, Math.max(0, delayMs)));
     };
 
-    const refreshSession = async () => {
+    const runRefresh = async (reason: RefreshReason) => {
       clearRefreshTimer();
+      const result = await ensureFreshAccessToken({ reason });
 
-      try {
-        const response = await refreshAccessToken({ mode: "auto" });
+      if (!isActive) {
+        return;
+      }
 
-        if (response.ok) {
-          return;
-        }
+      if (result.type === "transient-error") {
+        scheduleRefresh(result.retryAfterMs);
+        return;
+      }
 
-        if (response.status === 401 || response.status === 403) {
-          clearAccessToken();
-          clearAuthenticatedQueryCache(queryClient);
-          return;
-        }
+      const currentSnapshot = getAccessTokenSnapshot();
 
-        scheduleRefresh(ACCESS_TOKEN_REFRESH_RETRY_MS);
-      } catch {
-        scheduleRefresh(ACCESS_TOKEN_REFRESH_RETRY_MS);
+      if (currentSnapshot.token && currentSnapshot.refreshAtMs !== null) {
+        scheduleRefresh(currentSnapshot.refreshAtMs - Date.now());
       }
     };
 
-    const refreshIfNeeded = () => {
+    const refreshIfNeeded = (reason: "visibility" | "online") => {
+      const currentSnapshot = getAccessTokenSnapshot();
+
       if (
         document.visibilityState !== "visible" ||
-        (accessTokenExpiresAt !== null &&
-          accessTokenExpiresAt - Date.now() > ACCESS_TOKEN_REFRESH_LEAD_MS)
+        !currentSnapshot.token ||
+        !isAccessTokenRefreshDue(Date.now(), currentSnapshot)
       ) {
         return;
       }
 
-      void refreshSession();
+      void runRefresh(reason);
     };
 
     const handleVisibilityChange = () => {
-      refreshIfNeeded();
+      refreshIfNeeded("visibility");
+    };
+    const handleOnline = () => {
+      refreshIfNeeded("online");
     };
 
-    const refreshDelay = accessTokenExpiresAt
-      ? accessTokenExpiresAt - Date.now() - ACCESS_TOKEN_REFRESH_LEAD_MS
-      : 0;
-
-    scheduleRefresh(refreshDelay);
+    scheduleRefresh((tokenSnapshot.refreshAtMs ?? Date.now()) - Date.now());
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", refreshIfNeeded);
-    window.addEventListener("online", refreshIfNeeded);
-    window.addEventListener("pageshow", refreshIfNeeded);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("pageshow", handleVisibilityChange);
 
     return () => {
       isActive = false;
       clearRefreshTimer();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", refreshIfNeeded);
-      window.removeEventListener("online", refreshIfNeeded);
-      window.removeEventListener("pageshow", refreshIfNeeded);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("pageshow", handleVisibilityChange);
     };
-  }, [accessToken, accessTokenExpiresAt, isAuthenticated, queryClient]);
+  }, [
+    isAuthenticated,
+    tokenSnapshot.refreshAtMs,
+    tokenSnapshot.revision,
+    tokenSnapshot.sessionPhase,
+    tokenSnapshot.token,
+  ]);
 }

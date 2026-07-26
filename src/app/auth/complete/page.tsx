@@ -2,8 +2,9 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import { useEffect, useRef } from "react";
+import { beginAccessTokenSession } from "@/lib/auth/accessToken";
+import { ensureFreshAccessToken } from "@/lib/auth/refreshCoordinator";
 import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import {
   meQueryOptions,
@@ -15,17 +16,28 @@ import { clearOAuthFlow } from "@/features/auth/lib/oauthFlowSession";
 export default function AuthCompletePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const refreshTaskRef = useRef<ReturnType<typeof ensureFreshAccessToken> | null>(
+    null,
+  );
 
   useEffect(() => {
+    if (!refreshTaskRef.current) {
+      clearOAuthFlow();
+      beginAccessTokenSession();
+      refreshTaskRef.current = ensureFreshAccessToken({ reason: "login" });
+    }
+
     let isMounted = true;
 
     const finalizeLogin = async () => {
-      clearOAuthFlow();
-
       try {
-        const refreshResponse = await refreshAccessToken({ mode: "required" });
+        const refreshResult = await refreshTaskRef.current;
 
-        if (!refreshResponse.ok) {
+        if (
+          !refreshResult ||
+          (refreshResult.type !== "refreshed" &&
+            refreshResult.type !== "fresh")
+        ) {
           router.replace("/login?error=oauth_failed");
           return;
         }

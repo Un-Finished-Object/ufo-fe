@@ -4,6 +4,7 @@ import { isMockMode } from "@/mocks/config";
 
 const PROTECTED_ROUTES = ["/my", "/scraps", "/chats", "/events"];
 const REFRESH_TOKEN_COOKIE = "refresh_token";
+const REFRESH_TOKEN_PATH = "/v1/auth/token/refresh";
 const PATTERN_DETAIL_PATH = /^\/patterns\/([^/]+)$/;
 
 function isValidPatternId(value: string) {
@@ -71,6 +72,14 @@ function getFallbackUrl(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (
+    pathname === REFRESH_TOKEN_PATH &&
+    !request.cookies.has(REFRESH_TOKEN_COOKIE)
+  ) {
+    return new NextResponse(null, { status: 401 });
+  }
+
   const patternDetailMatch = pathname.match(PATTERN_DETAIL_PATH);
 
   if (patternDetailMatch) {
