@@ -60,6 +60,8 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
   const deleteMutation = useMutation({
     mutationFn: (messageId: string) => deleteAdminChatMessage(chatId, Number(messageId)),
     onSuccess: (result, messageId) => {
+      const isLatestMessage = messages.at(-1)?.messageId === messageId;
+
       queryClient.setQueryData<ChatMessagesInfiniteData>(
         adminChatQueryKeys.messages(chatId),
         (previous) => previous ? {
@@ -74,17 +76,22 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
           })),
         } : previous,
       );
-      queryClient.setQueriesData<Awaited<ReturnType<typeof fetchAdminChatRooms>>>(
-        { queryKey: [...adminChatQueryKeys.root, "list"] },
-        (previous) => previous ? {
-          ...previous,
-          chats: previous.chats.map((room) =>
-            room.chatId === chatId
-              ? { ...room, lastMessage: "삭제한 메시지입니다", lastMessageDeleted: true }
-              : room,
-          ),
-        } : previous,
-      );
+
+      if (isLatestMessage) {
+        queryClient.setQueriesData<Awaited<ReturnType<typeof fetchAdminChatRooms>>>(
+          { queryKey: [...adminChatQueryKeys.root, "list"] },
+          (previous) => previous ? {
+            ...previous,
+            chats: previous.chats.map((room) =>
+              room.chatId === chatId
+                ? { ...room, lastMessage: "삭제한 메시지입니다", lastMessageDeleted: true }
+                : room,
+            ),
+          } : previous,
+        );
+      }
+
+      void queryClient.invalidateQueries({ queryKey: [...adminChatQueryKeys.root, "list"] });
       setSelectedMessageId((current) => current === messageId ? null : current);
       setDeletingMessageId(null);
     },
