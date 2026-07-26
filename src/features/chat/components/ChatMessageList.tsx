@@ -323,11 +323,13 @@ function ChatMessageItem({
         }}
       >
         {!shouldTreatAsMine ? (
-          <div className="relative max-w-[78%]">
+          <div className="flex max-w-[78%] flex-col items-start">
             {showSenderName ? (
-              <p className="mb-1 text-sm font-semibold text-ufo-text-subtle">{senderName}</p>
+              <p className="mb-1 max-w-full truncate text-sm font-semibold text-ufo-text-subtle">
+                {senderName}
+              </p>
             ) : null}
-            <div className="rounded-xl bg-ufo-bg px-4 py-2.5 text-sm text-ufo-text">
+            <div className="relative w-fit max-w-full rounded-xl bg-ufo-bg px-4 py-2.5 text-sm text-ufo-text">
               {hasReply ? (
                 <ReplyPreview
                   senderName={replySenderName as string}
@@ -335,8 +337,8 @@ function ChatMessageItem({
                 />
               ) : null}
               <p className="whitespace-pre-wrap break-words leading-6">{message.text}</p>
+              {desktopReplyButton}
             </div>
-            {desktopReplyButton}
           </div>
         ) : null}
 

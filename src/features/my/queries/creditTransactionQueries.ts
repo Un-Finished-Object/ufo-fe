@@ -8,8 +8,14 @@ import {
 import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
 
-export type CreditTransactionTypeFilter = "all" | "earn" | "spend" | "adjust";
-export type CreditTransactionReasonFilter = "all" | "attendance" | "chat";
+export type CreditTransactionTypeFilter = "all" | "earn" | "spend";
+export type CreditTransactionReasonFilter =
+  | "all"
+  | "signup_bonus"
+  | "attendance_daily"
+  | "referral_bonus"
+  | "chatroom_entry"
+  | "alt_yarn_view";
 
 type CreditTransactionApiItem = {
   id?: string;

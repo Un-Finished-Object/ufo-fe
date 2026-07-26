@@ -108,26 +108,26 @@ export const patternHandlers = [
       ? apiSuccess(createMockPatternAlternatives(Number(params.setId)))
       : apiError(401, "Unauthorized"),
   ),
-  http.get("/v1/alternatives/:altId/reaction", ({ params, request }) => {
+  http.get("/v1/alternatives/:altSetId/reaction", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    const altId = Number(params.altId);
-    const reaction = mockState.alternativeReactions.get(altId) ?? {
+    const altSetId = Number(params.altSetId);
+    const reaction = mockState.alternativeReactions.get(altSetId) ?? {
       type: 2 as const,
-      likesCount: altId % 7,
+      likesCount: altSetId % 7,
       updatedAt: "2026-02-06T13:20:10Z",
     };
-    return apiSuccess({ altId, ...reaction });
+    return apiSuccess({ altSetId, ...reaction });
   }),
-  http.put("/v1/alternatives/:altId/reaction", async ({ params, request }) => {
+  http.put("/v1/alternatives/:altSetId/reaction", async ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    const altId = Number(params.altId);
+    const altSetId = Number(params.altSetId);
     const body = await request.json() as { type?: number };
     if (body.type !== 1 && body.type !== 2) return apiError(400, "Invalid reaction type");
     const reactionType: 1 | 2 = body.type;
 
-    const previous = mockState.alternativeReactions.get(altId) ?? {
+    const previous = mockState.alternativeReactions.get(altSetId) ?? {
       type: 2 as const,
-      likesCount: altId % 7,
+      likesCount: altSetId % 7,
       updatedAt: "2026-02-06T13:20:10Z",
     };
     const likesCount = reactionType === previous.type
@@ -138,8 +138,8 @@ export const patternHandlers = [
       likesCount,
       updatedAt: new Date().toISOString(),
     };
-    mockState.alternativeReactions.set(altId, reaction);
-    return apiSuccess({ altId, ...reaction });
+    mockState.alternativeReactions.set(altSetId, reaction);
+    return apiSuccess({ altSetId, ...reaction });
   }),
   http.get("/v1/alternatives/:altId/comments", ({ params, request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
