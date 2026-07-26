@@ -61,7 +61,7 @@ function renderLeftIcon(type: TopBarLeftType) {
         width={69}
         height={24}
         priority
-        className="h-6 w-auto shrink-0"
+        className="h-10 w-auto shrink-0"
       />
     );
   }
@@ -116,7 +116,7 @@ export default function TopBar({
               <button
                 type="button"
                 onClick={left === "back" ? handleBackClick : onLeftClick}
-                className="flex h-8 w-8 items-center justify-start rounded-full text-ufo-brand"
+                className="flex h-10 w-8 items-center justify-start rounded-full text-ufo-brand"
                 aria-label={leftAriaLabel}
               >
                 {leftElement}
