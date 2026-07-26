@@ -105,10 +105,10 @@ export default function OnboardingScreen() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Image
-              src="/ufo_pk.svg"
+              src="/ufo_pk.webp"
               alt="UFO"
-              width={69}
-              height={24}
+              width={162}
+              height={120}
               priority
               className="h-6 w-auto"
             />

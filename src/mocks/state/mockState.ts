@@ -21,6 +21,7 @@ type MockState = {
   adminReadMessageIds: Set<string>;
   adminLastReadMessageIds: Map<number, number>;
   adminDeletedChatMessages: Map<number, string>;
+  adminDeletedMessageRoomIds: Set<number>;
   attendanceDates: Set<string>;
 };
 
@@ -39,6 +40,7 @@ function createMockState(): MockState {
     adminReadMessageIds: new Set(),
     adminLastReadMessageIds: new Map(),
     adminDeletedChatMessages: new Map(),
+    adminDeletedMessageRoomIds: new Set(),
     attendanceDates: new Set(["2026-07-01", "2026-07-08", "2026-07-15"]),
   };
 }

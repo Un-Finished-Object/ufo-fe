@@ -294,7 +294,7 @@ export default function AttendanceCalendar() {
           {isFetchingMonth ? (
             <StateBlock type="loading" title="출석 정보를 불러오는 중입니다." variant="plain" />
           ) : (
-            <div className="grid grid-cols-7 gap-y-2">
+            <div className="grid grid-cols-7 pb-1">
               {cells.map((day, idx) => {
                 if (day === null) return <div key={`empty-${idx}`} />;
 
@@ -304,7 +304,12 @@ export default function AttendanceCalendar() {
                 const dayOfWeek = idx % 7;
 
                 return (
-                  <div key={day} className="flex flex-col items-center gap-1">
+                  <div
+                    key={day}
+                    className={`flex flex-col items-center gap-1 py-1 ${
+                      todayCell ? "rounded-md border border-ufo-brand" : ""
+                    }`}
+                  >
                     <span
                       className={`text-sm font-medium leading-none ${
                         todayCell

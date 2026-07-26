@@ -5,6 +5,7 @@ export type AdminChatRoom = {
   imageUrl: string | null;
   unreadCount: number;
   lastMessage: string;
+  lastMessageDeleted?: boolean;
   lastMessageAt: string;
   createdAt: string;
 };

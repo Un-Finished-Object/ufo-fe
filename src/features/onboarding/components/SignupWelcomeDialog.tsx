@@ -355,10 +355,10 @@ export default function SignupWelcomeDialog({ onClose }: SignupWelcomeDialogProp
           className="signup-welcome-card relative w-full overflow-hidden rounded-2xl border border-ufo-border-light bg-ufo-surface px-6 pb-6 pt-8 text-center shadow-lg"
         >
           <Image
-            src="/ufo_pk.svg"
+            src="/ufo_pk.webp"
             alt="UFO"
-            width={69}
-            height={24}
+            width={162}
+            height={120}
             priority
             className="mx-auto h-6 w-auto"
           />

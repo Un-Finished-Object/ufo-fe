@@ -15,10 +15,9 @@ import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import { clearAccessToken } from "@/lib/auth/accessToken";
-import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
-import { buildApiUrl } from "@/lib/api/client";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { myHelpMenuItems } from "@/features/my/lib/helpPages";
+import { requestLogout } from "@/features/auth/services/logout";
 
 type MenuItem = {
   label: string;
@@ -82,12 +81,7 @@ export default function MyPage() {
     isLoggingOutRef.current = true;
 
     try {
-      await fetchAuthenticated({
-        input: buildApiUrl("/v1/auth/logout"),
-        init: {
-          method: "POST",
-        },
-      });
+      await requestLogout();
     } finally {
       clearAccessToken();
       clearAuthenticatedQueryCache(queryClient);

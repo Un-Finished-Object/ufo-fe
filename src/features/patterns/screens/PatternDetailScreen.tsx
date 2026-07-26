@@ -96,7 +96,7 @@ const commentDateFormatter = new Intl.DateTimeFormat("ko-KR", {
 });
 const patternAccessCredits = 10;
 const alternativesPerPage = 5;
-const alternativesMaxItems = alternativesPerPage * 2;
+const alternativesMaxItems = alternativesPerPage * 3;
 
 type DetailTabSwitchProps = {
   value: DetailTabValue;
@@ -495,16 +495,26 @@ function hasVisibleAlternativeSetInfo(yarnSet: PatternAlternativeSet) {
   );
 }
 
-function AlternativeReactionButton({ altId }: { altId: number }) {
+function AlternativeReactionButton({ altSetId }: { altSetId: number }) {
   const queryClient = useQueryClient();
-  const reactionQuery = useQuery(alternativeReactionQueryOptions(altId));
+  const reactionQuery = useQuery(alternativeReactionQueryOptions(altSetId));
   const reactionMutation = useMutation({
-    mutationFn: (type: 1 | 2) => updateAlternativeReaction({ altId, type }),
+    mutationFn: (type: 1 | 2) => updateAlternativeReaction({ altSetId, type }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: alternativeReactionQueryKey(altSetId),
+      });
+    },
     onSuccess: (reaction) => {
       queryClient.setQueryData<AlternativeReaction>(
-        alternativeReactionQueryKey(altId),
+        alternativeReactionQueryKey(altSetId),
         reaction,
       );
+    },
+    onError: () => {
+      void queryClient.invalidateQueries({
+        queryKey: alternativeReactionQueryKey(altSetId),
+      });
     },
   });
   const isLiked = reactionQuery.data?.type === 1;
@@ -514,7 +524,7 @@ function AlternativeReactionButton({ altId }: { altId: number }) {
     <button
       type="button"
       onClick={() => reactionMutation.mutate(isLiked ? 2 : 1)}
-      disabled={reactionQuery.isPending || reactionMutation.isPending}
+      disabled={reactionMutation.isPending}
       className="flex min-h-8 items-center gap-1 rounded-full px-2 text-xs font-semibold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
       aria-label={isLiked ? `좋아요 취소, 현재 ${likesCount}개` : `좋아요, 현재 ${likesCount}개`}
       aria-pressed={isLiked}
@@ -857,7 +867,7 @@ function YarnInfoCard({ card }: { card: YarnInfoCardData }) {
         <div className="mt-2">
           <AlternativeComments
             altSetId={card.altId}
-            reactionAction={<AlternativeReactionButton altId={card.altId} />}
+            reactionAction={<AlternativeReactionButton altSetId={card.altId} />}
           />
         </div>
       ) : null}

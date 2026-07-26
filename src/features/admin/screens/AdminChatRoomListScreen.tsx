@@ -20,6 +20,10 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function getLastMessageLabel(room: { lastMessage: string; lastMessageDeleted?: boolean }) {
+  return room.lastMessageDeleted ? "삭제한 메시지입니다" : room.lastMessage || "메시지가 없습니다.";
+}
+
 export default function AdminChatRoomListScreen({ chatRoute }: { chatRoute: string }) {
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +34,7 @@ export default function AdminChatRoomListScreen({ chatRoute }: { chatRoute: stri
     if (!normalizedQuery) return chats;
 
     return chats.filter((room) =>
-      [room.name, String(room.chatId), String(room.patternId), room.lastMessage]
+      [room.name, String(room.chatId), String(room.patternId), getLastMessageLabel(room)]
         .some((value) => value.toLowerCase().includes(normalizedQuery)),
     );
   }, [chatsQuery.data?.chats, query]);
@@ -95,7 +99,7 @@ export default function AdminChatRoomListScreen({ chatRoute }: { chatRoute: stri
                         </div>
                         <p className="mt-1 text-xs text-ufo-text-subtle">채팅방 {room.chatId} · 도안 {room.patternId}</p>
                         <div className="mt-2 flex items-center gap-2">
-                          <p className="min-w-0 flex-1 truncate text-sm text-ufo-text-secondary">{room.lastMessage || "메시지가 없습니다."}</p>
+                          <p className="min-w-0 flex-1 truncate text-sm text-ufo-text-secondary">{getLastMessageLabel(room)}</p>
                           {room.unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ufo-chat-unread px-1 text-[10px] font-bold text-ufo-surface" aria-label={`읽지 않은 메시지 ${room.unreadCount}개`}>{room.unreadCount}</span> : null}
                         </div>
                       </div>
@@ -122,7 +126,7 @@ export default function AdminChatRoomListScreen({ chatRoute }: { chatRoute: stri
                     <tr key={room.chatId} className="hover:bg-ufo-bg/60">
                       <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-ufo-chat-thumbnail">{room.imageUrl ? <Image src={room.imageUrl} alt="" fill sizes="44px" className="object-cover" /> : null}</div><p className="max-w-56 truncate font-semibold text-ufo-text">{room.name}</p></div></td>
                       <td className="px-5 py-4 text-xs leading-5 text-ufo-text-secondary"><p>채팅방 {room.chatId}</p><p>도안 {room.patternId}</p></td>
-                      <td className="max-w-72 px-5 py-4"><p className="truncate text-xs text-ufo-text-secondary">{room.lastMessage || "메시지가 없습니다."}</p></td>
+                      <td className="max-w-72 px-5 py-4"><p className="truncate text-xs text-ufo-text-secondary">{getLastMessageLabel(room)}</p></td>
                       <td className="px-5 py-4 text-center">{room.unreadCount > 0 ? <span className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-ufo-chat-unread px-1 text-[10px] font-bold text-ufo-surface">{room.unreadCount}</span> : <span className="text-ufo-text-dim">-</span>}</td>
                       <td className="px-5 py-4 text-xs text-ufo-text-secondary">{formatDateTime(room.lastMessageAt)}</td>
                       <td className="px-5 py-4 text-right"><Link href={`${chatRoute}/${room.chatId}`} className="inline-flex min-h-9 items-center rounded-lg border border-ufo-border px-3 text-xs font-semibold text-ufo-brand">상세 보기</Link></td>

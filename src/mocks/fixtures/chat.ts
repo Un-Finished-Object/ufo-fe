@@ -137,4 +137,16 @@ export const mockChatMessages: MockChatMessage[] = [
     replyMessageId: 18,
     createdAt: "2026-07-17T09:06:00+09:00",
   },
+  {
+    messageId: 21,
+    senderName: "닉네임이아주길어도말풍선너비는짧아야하는뜨개친구",
+    text: "네!",
+    createdAt: "2026-07-17T09:06:20+09:00",
+  },
+  {
+    messageId: 22,
+    senderName: "닉네임이아주길어도말풍선너비는짧아야하는뜨개친구",
+    text: "첫 메시지 말풍선은 닉네임 길이와 무관해야 해요.",
+    createdAt: "2026-07-17T09:06:42+09:00",
+  },
 ];

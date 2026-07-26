@@ -233,10 +233,10 @@ export default function MainForYouSection({
                 닫기
               </button>
             </div>
-            <p className="ml-2 text-lg font-medium text-white">
+            <p className="ml-2 text-sm font-medium text-white">
               선택한 관심사를 바탕으로 도안을 추천해 드려요.
             </p>
-            <p className="ml-2 mb-5 mt-1 text-lg text-ufo-brand-soft">
+            <p className="ml-2 mb-5 mt-1 text-xs text-ufo-brand-soft">
               *관심사는 최대 {MAX_INTEREST_COUNT}개까지 설정할 수 있습니다.
             </p>
 

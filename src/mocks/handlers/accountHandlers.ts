@@ -25,10 +25,18 @@ export const accountHandlers = [
   })),
   http.get("/v1/credits/transactions", ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
-    return apiSuccess({ items: [
-      { id: "credit-1", type: "earn", amount: 5, balanceAfter: 120, reason: "attendance", createdAt: "2026-07-17T09:00:00+09:00" },
-      { id: "credit-2", type: "spend", amount: -20, balanceAfter: 115, reason: "chat", createdAt: "2026-07-16T11:00:00+09:00" },
-    ], page: 1, nextPage: 0 });
+    const searchParams = new URL(request.url).searchParams;
+    const type = searchParams.get("type");
+    const reason = searchParams.get("reason");
+    const items = [
+      { id: "credit-1", type: "earn", amount: 5, balanceAfter: 120, reason: "attendance_daily", createdAt: "2026-07-17T09:00:00+09:00" },
+      { id: "credit-2", type: "spend", amount: -20, balanceAfter: 115, reason: "chatroom_entry", createdAt: "2026-07-16T11:00:00+09:00" },
+      { id: "credit-3", type: "earn", amount: 10, balanceAfter: 130, reason: "signup_bonus", createdAt: "2026-07-15T10:00:00+09:00" },
+      { id: "credit-4", type: "earn", amount: 10, balanceAfter: 140, reason: "referral_bonus", createdAt: "2026-07-14T10:00:00+09:00" },
+      { id: "credit-5", type: "spend", amount: -5, balanceAfter: 135, reason: "alt_yarn_view", createdAt: "2026-07-13T14:00:00+09:00" },
+    ].filter((item) => (!type || item.type === type) && (!reason || item.reason === reason));
+
+    return apiSuccess({ items, page: 1, nextPage: 0 });
   }),
   http.get("/v1/users/me/projects", ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
