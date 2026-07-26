@@ -103,11 +103,12 @@ export default function PatternCatalogScreen({
   const authCacheKey = isAuthenticated
     ? currentUser?.userId ?? currentUser?.email ?? "member"
     : "guest";
-  const selectedCategory = patternCategoryApiMap[selectedMainCategory] ?? "all";
+  const selectedCategory =
+    selectedMainCategory === "ALL" ? "all" : selectedMainCategory;
   const selectedSortValue = sortApiMap[selectedSort] ?? "views";
   const selectedSubCategory =
     selectedMainCategory === "의류" && selectedClothingSubCategory
-      ? patternSubCategoryApiMap[selectedClothingSubCategory] ?? "others"
+      ? selectedClothingSubCategory
       : undefined;
   const patternCatalogQuery = useQuery({
     ...patternCatalogQueryOptions({
