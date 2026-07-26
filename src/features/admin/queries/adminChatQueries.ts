@@ -24,6 +24,7 @@ type AdminChatRoomResponse = {
   chatImageUrl?: string | null;
   unRead?: number;
   lastMessage?: string;
+  lastMessageDeleted?: boolean;
   lastMessageAt?: string;
   createdAt?: string;
 };
@@ -64,6 +65,7 @@ function parseChatRoom(room: AdminChatRoomResponse): AdminChatRoom | null {
     imageUrl: typeof room.chatImageUrl === "string" ? room.chatImageUrl : null,
     unreadCount: room.unRead,
     lastMessage: room.lastMessage,
+    lastMessageDeleted: room.lastMessageDeleted === true,
     lastMessageAt: room.lastMessageAt,
     createdAt: room.createdAt,
   };

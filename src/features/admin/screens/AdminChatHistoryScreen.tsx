@@ -12,6 +12,7 @@ import { useAdminChatMessagesQuery } from "@/features/admin/hooks/useAdminChatMe
 import {
   adminChatQueryKeys,
   deleteAdminChatMessage,
+  fetchAdminChatRooms,
 } from "@/features/admin/queries/adminChatQueries";
 import { checkAdminChatMessage } from "@/features/admin/services/readAdminChatMessage";
 import {
@@ -58,7 +59,7 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
 
   const deleteMutation = useMutation({
     mutationFn: (messageId: string) => deleteAdminChatMessage(chatId, Number(messageId)),
-    onSuccess: async (result, messageId) => {
+    onSuccess: (result, messageId) => {
       queryClient.setQueryData<ChatMessagesInfiniteData>(
         adminChatQueryKeys.messages(chatId),
         (previous) => previous ? {
@@ -73,9 +74,19 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
           })),
         } : previous,
       );
+      queryClient.setQueriesData<Awaited<ReturnType<typeof fetchAdminChatRooms>>>(
+        { queryKey: [...adminChatQueryKeys.root, "list"] },
+        (previous) => previous ? {
+          ...previous,
+          chats: previous.chats.map((room) =>
+            room.chatId === chatId
+              ? { ...room, lastMessage: "삭제한 메시지입니다", lastMessageDeleted: true }
+              : room,
+          ),
+        } : previous,
+      );
       setSelectedMessageId((current) => current === messageId ? null : current);
       setDeletingMessageId(null);
-      await queryClient.invalidateQueries({ queryKey: [...adminChatQueryKeys.root, "list"] });
     },
   });
 
@@ -333,7 +344,7 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
                         <div className="min-w-0 flex-1">
                           {isDeleted ? (
                             <div className="rounded-xl bg-ufo-bg px-3 py-2.5">
-                              <p className="text-sm text-ufo-text-subtle">관리자가 삭제한 메시지입니다</p>
+                              <p className="text-sm text-ufo-text-subtle">삭제한 메시지입니다</p>
                             </div>
                           ) : (
                             <>
@@ -365,7 +376,7 @@ export default function AdminChatHistoryScreen({ chatId, chatListHref }: AdminCh
       {deletingMessageId !== null ? (
         <YesOrNo
           mainText="채팅 메시지를 삭제할까요?"
-          subText={deleteMutation.isError ? "메시지를 삭제하지 못했어요. 다시 시도해 주세요." : "삭제한 메시지는 복구할 수 없어요."}
+          subText={deleteMutation.isError ? "메시지를 삭제하지 못했어요. 다시 시도해 주세요." : "삭제 후 채팅 목록에도 ‘삭제한 메시지입니다’로 표시됩니다."}
           yesLabel={deleteMutation.isPending ? "삭제 중" : "삭제"}
           noLabel="취소"
           yesDisabled={deleteMutation.isPending}
