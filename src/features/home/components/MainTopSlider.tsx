@@ -139,8 +139,6 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
       startScrollLeft: trackRef.current.scrollLeft,
       didDrag: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setIsMouseDragging(true);
   };
 
   const handleMousePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -152,9 +150,11 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
     }
 
     const deltaX = event.clientX - drag.startX;
-    if (Math.abs(deltaX) > 4) {
+    if (Math.abs(deltaX) > 4 && !drag.didDrag) {
       drag.didDrag = true;
       suppressClickRef.current = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsMouseDragging(true);
     }
 
     track.scrollLeft = drag.startScrollLeft - deltaX;
@@ -171,8 +171,11 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
     }
 
     mouseDragRef.current = null;
-    setIsMouseDragging(false);
-    handleScrollEnd();
+
+    if (drag.didDrag) {
+      setIsMouseDragging(false);
+      handleScrollEnd();
+    }
   };
 
   useEffect(() => {
