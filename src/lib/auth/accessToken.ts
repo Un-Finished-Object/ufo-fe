@@ -1,4 +1,5 @@
 export type RefreshEligibility = "unknown" | "available" | "unavailable";
+export type AccessTokenSessionPhase = "active" | "logging-out" | "inactive";
 
 export type AccessTokenSnapshot = {
   token: string | null;
@@ -7,6 +8,7 @@ export type AccessTokenSnapshot = {
   revision: number;
   sessionGeneration: number;
   refreshEligibility: RefreshEligibility;
+  sessionPhase: AccessTokenSessionPhase;
 };
 
 const MAX_REFRESH_LEAD_MS = 60 * 1000;
@@ -20,6 +22,7 @@ const initialAccessTokenSnapshot: AccessTokenSnapshot = {
   revision: 0,
   sessionGeneration: 0,
   refreshEligibility: "unknown",
+  sessionPhase: "active",
 };
 
 let accessTokenSnapshot = initialAccessTokenSnapshot;
@@ -84,6 +87,7 @@ export function applyRefreshedAccessToken({
     revision: accessTokenSnapshot.revision + 1,
     sessionGeneration: expectedGeneration,
     refreshEligibility: "available",
+    sessionPhase: accessTokenSnapshot.sessionPhase,
   });
 
   return true;
@@ -97,6 +101,7 @@ export function beginAccessTokenSession() {
     revision: accessTokenSnapshot.revision + 1,
     sessionGeneration: accessTokenSnapshot.sessionGeneration + 1,
     refreshEligibility: "unknown",
+    sessionPhase: "active",
   });
 
   return accessTokenSnapshot.sessionGeneration;
@@ -120,7 +125,8 @@ export function invalidateAccessTokenSession({
 
   if (
     accessTokenSnapshot.token === null &&
-    accessTokenSnapshot.refreshEligibility === "unavailable"
+    accessTokenSnapshot.refreshEligibility === "unavailable" &&
+    accessTokenSnapshot.sessionPhase === "inactive"
   ) {
     return true;
   }
@@ -132,6 +138,36 @@ export function invalidateAccessTokenSession({
     revision: accessTokenSnapshot.revision + 1,
     sessionGeneration: accessTokenSnapshot.sessionGeneration + 1,
     refreshEligibility: "unavailable",
+    sessionPhase: "inactive",
+  });
+
+  return true;
+}
+
+export function beginAccessTokenLogout() {
+  if (accessTokenSnapshot.sessionPhase !== "active") {
+    return null;
+  }
+
+  updateAccessTokenSnapshot({
+    ...accessTokenSnapshot,
+    sessionPhase: "logging-out",
+  });
+
+  return accessTokenSnapshot.sessionGeneration;
+}
+
+export function cancelAccessTokenLogout(expectedGeneration: number) {
+  if (
+    accessTokenSnapshot.sessionGeneration !== expectedGeneration ||
+    accessTokenSnapshot.sessionPhase !== "logging-out"
+  ) {
+    return false;
+  }
+
+  updateAccessTokenSnapshot({
+    ...accessTokenSnapshot,
+    sessionPhase: "active",
   });
 
   return true;

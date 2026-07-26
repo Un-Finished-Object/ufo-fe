@@ -30,7 +30,11 @@ export function useAccessTokenRefresh() {
   );
 
   useEffect(() => {
-    if (!isAuthenticated || !tokenSnapshot.token) {
+    if (
+      !isAuthenticated ||
+      !tokenSnapshot.token ||
+      tokenSnapshot.sessionPhase !== "active"
+    ) {
       return;
     }
 
@@ -114,6 +118,7 @@ export function useAccessTokenRefresh() {
     isAuthenticated,
     tokenSnapshot.refreshAtMs,
     tokenSnapshot.revision,
+    tokenSnapshot.sessionPhase,
     tokenSnapshot.token,
   ]);
 }

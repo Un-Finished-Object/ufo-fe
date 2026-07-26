@@ -14,7 +14,6 @@ import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
 import { useWalletQuery } from "@/features/auth/hooks/useWalletQuery";
 import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
-import { clearAccessToken } from "@/lib/auth/accessToken";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { myHelpMenuItems } from "@/features/my/lib/helpPages";
 import { requestLogout } from "@/features/auth/services/logout";
@@ -61,7 +60,8 @@ export default function MyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const isLoggingOutRef = useRef(false);
-  const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
+  const { showAuthRequiredToast, showToast, toastMessage } =
+    useAuthRequiredToast();
   const meQuery = useMeQuery();
   const walletQuery = useWalletQuery({ enabled: Boolean(meQuery.data) });
 
@@ -78,16 +78,21 @@ export default function MyPage() {
   const sinceText = `우리 뜨친된지 ${joinDateText}일 ♡`;
 
   const handleLogout = useCallback(async () => {
+    if (isLoggingOutRef.current) {
+      return;
+    }
+
     isLoggingOutRef.current = true;
 
     try {
       await requestLogout();
-    } finally {
-      clearAccessToken();
       clearAuthenticatedQueryCache(queryClient);
       router.replace("/");
+    } catch {
+      isLoggingOutRef.current = false;
+      showToast("로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.");
     }
-  }, [queryClient, router]);
+  }, [queryClient, router, showToast]);
 
   const handleRetry = useCallback(() => {
     void meQuery.refetch();

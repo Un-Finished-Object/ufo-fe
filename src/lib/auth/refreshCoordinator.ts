@@ -16,12 +16,14 @@ export type RefreshReason =
   | "visibility"
   | "online"
   | "unauthorized"
-  | "stomp";
+  | "stomp"
+  | "logout"
+  | "logout-retry";
 
 export type RefreshCoordinatorResult =
   | { type: "refreshed" | "fresh"; revision: number }
   | { type: "recently-refreshed"; revision: number }
-  | { type: "unauthorized" | "stale-session" }
+  | { type: "unauthorized" | "stale-session" | "logout-in-progress" }
   | { type: "transient-error"; retryAfterMs: number };
 
 type InFlightRefresh = {
@@ -68,19 +70,38 @@ export async function ensureFreshAccessToken({
   const snapshot = getAccessTokenSnapshot();
   const generation = snapshot.sessionGeneration;
   const now = Date.now();
+  const isLogoutReason = reason === "logout" || reason === "logout-retry";
+  const bypassRefreshGuards = reason === "login" || reason === "logout-retry";
 
   syncGeneration(generation);
+
+  if (snapshot.sessionPhase === "logging-out" && !isLogoutReason) {
+    return { type: "logout-in-progress" };
+  }
+
+  if (snapshot.sessionPhase === "inactive" && reason !== "login") {
+    return { type: "unauthorized" };
+  }
 
   if (inFlightRefresh?.generation === generation) {
     return inFlightRefresh.promise;
   }
 
-  if (reason !== "login" && snapshot.refreshEligibility === "unavailable") {
+  if (!bypassRefreshGuards && snapshot.refreshEligibility === "unavailable") {
     return { type: "unauthorized" };
   }
 
   if (
-    reason !== "login" &&
+    reason === "logout" &&
+    snapshot.token &&
+    snapshot.expiresAtMs !== null &&
+    snapshot.expiresAtMs > now
+  ) {
+    return { type: "fresh", revision: snapshot.revision };
+  }
+
+  if (
+    !bypassRefreshGuards &&
     reason !== "unauthorized" &&
     snapshot.token &&
     !isAccessTokenRefreshDue(now, snapshot)
@@ -96,7 +117,7 @@ export async function ensureFreshAccessToken({
       return { type: "recently-refreshed", revision: snapshot.revision };
     }
 
-    if (reason !== "login") {
+    if (!bypassRefreshGuards) {
       return {
         type: "transient-error",
         retryAfterMs: MIN_REFRESH_INTERVAL_MS - (now - lastRefreshSuccessAt),
@@ -104,7 +125,7 @@ export async function ensureFreshAccessToken({
     }
   }
 
-  if (reason !== "login" && now < nextAttemptAt) {
+  if (!bypassRefreshGuards && now < nextAttemptAt) {
     return { type: "transient-error", retryAfterMs: nextAttemptAt - now };
   }
 

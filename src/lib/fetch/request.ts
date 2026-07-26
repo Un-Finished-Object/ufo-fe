@@ -84,6 +84,10 @@ export async function request({
 
   let requestSnapshot = getAccessTokenSnapshot();
 
+  if (requestSnapshot.sessionPhase === "logging-out") {
+    return createRefreshUnavailableResponse();
+  }
+
   if (authMode === "required" && !canUseAccessToken(requestSnapshot)) {
     const refreshResult = await ensureFreshAccessToken({ reason: "bootstrap" });
 
@@ -116,6 +120,10 @@ export async function request({
   }
 
   const currentSnapshot = getAccessTokenSnapshot();
+
+  if (currentSnapshot.sessionPhase === "logging-out") {
+    return firstResponse;
+  }
 
   if (
     currentSnapshot.sessionGeneration !== requestSnapshot.sessionGeneration

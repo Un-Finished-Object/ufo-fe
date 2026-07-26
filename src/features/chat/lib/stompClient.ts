@@ -76,6 +76,11 @@ function resolveConnectHeadersSync(options: CreateStompClientOptions) {
 
 async function resolveConnectHeaders(options: CreateStompClientOptions) {
   const tokenSnapshot = getAccessTokenSnapshot();
+  const optionHeaders = options.getConnectHeaders?.() ?? options.connectHeaders ?? {};
+
+  if (tokenSnapshot.sessionPhase !== "active") {
+    return optionHeaders;
+  }
 
   if (!tokenSnapshot.token || isAccessTokenRefreshDue(Date.now(), tokenSnapshot)) {
     try {
@@ -85,7 +90,6 @@ async function resolveConnectHeaders(options: CreateStompClientOptions) {
     }
   }
 
-  const optionHeaders = options.getConnectHeaders?.() ?? options.connectHeaders ?? {};
   const authorizationHeaders = buildAuthorizationHeaders(getAccessToken());
 
   return mergeConnectHeaders(optionHeaders, authorizationHeaders);
