@@ -358,10 +358,6 @@ export default function AttendanceCalendar() {
               <span className="inline-block h-4 w-4 rounded-full border-2 border-ufo-border" />
               미출석
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-ufo-brand">15</span>
-              오늘
-            </span>
           </div>
         </div>{/* end bordered calendar */}
 
