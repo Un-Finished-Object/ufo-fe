@@ -56,10 +56,10 @@ function renderLeftIcon(type: TopBarLeftType) {
   if (type === "logo") {
     return (
       <Image
-        src="/ufo_pk.svg"
+        src="/ufo_pk.webp"
         alt=""
-        width={69}
-        height={24}
+        width={162}
+        height={120}
         priority
         className="h-10 w-auto shrink-0"
       />
