@@ -38,22 +38,66 @@ const sortApiMap: Record<string, string> = {
 
 type PatternCatalogScreenProps = {
   initialPage: number;
+  initialCategory: string;
+  initialSubCategory: string | null;
 };
 
-export default function PatternCatalogScreen({ initialPage }: PatternCatalogScreenProps) {
+function getMainCategoryLabel(categoryValue: string) {
+  return (
+    mainCategories.find((category) => patternCategoryApiMap[category] === categoryValue) ?? "ALL"
+  );
+}
+
+function getClothingSubCategoryLabel(subCategoryValue: string | null) {
+  if (!subCategoryValue) return null;
+
+  return (
+    clothingSubCategories.find(
+      (subCategory) => patternSubCategoryApiMap[subCategory] === subCategoryValue,
+    ) ?? null
+  );
+}
+
+function buildCatalogRoute({
+  page,
+  mainCategory,
+  clothingSubCategory,
+}: {
+  page: number;
+  mainCategory: (typeof mainCategories)[number];
+  clothingSubCategory: (typeof clothingSubCategories)[number] | null;
+}) {
+  const params = new URLSearchParams();
+  const category = patternCategoryApiMap[mainCategory] ?? "all";
+
+  if (page > 1) params.set("page", String(page));
+  if (category !== "all") params.set("category", category);
+  if (category === "apparel" && clothingSubCategory) {
+    params.set(
+      "subCategory",
+      patternSubCategoryApiMap[clothingSubCategory] ?? "others",
+    );
+  }
+
+  const queryString = params.toString();
+  return queryString ? `/patterns?${queryString}` : "/patterns";
+}
+
+export default function PatternCatalogScreen({
+  initialPage,
+  initialCategory,
+  initialSubCategory,
+}: PatternCatalogScreenProps) {
   const router = useRouter();
   const { authStatus, isAuthenticated, data: currentUser } = useAuthState();
   const [query, setQuery] = useState("");
-  const [selectedMainCategory, setSelectedMainCategory] =
-    useState<(typeof mainCategories)[number]>("ALL");
-  const [selectedClothingSubCategory, setSelectedClothingSubCategory] = useState<
-    (typeof clothingSubCategories)[number] | null
-  >(null);
+  const selectedMainCategory = getMainCategoryLabel(initialCategory);
+  const selectedClothingSubCategory = getClothingSubCategoryLabel(initialSubCategory);
   const [selectedSort, setSelectedSort] =
     useState<(typeof sortOptions)[number]>("인기순");
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const [currentPage, setCurrentPage] = useState(initialPage);
+  const currentPage = initialPage;
 
   const profileHref = isAuthenticated ? "/my" : "/login";
   const authCacheKey = isAuthenticated
@@ -89,28 +133,43 @@ export default function PatternCatalogScreen({ initialPage }: PatternCatalogScre
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    router.push(page === 1 ? "/patterns" : `/patterns?page=${page}`);
+    router.push(
+      buildCatalogRoute({
+        page,
+        mainCategory: selectedMainCategory,
+        clothingSubCategory: selectedClothingSubCategory,
+      }),
+    );
   };
 
   const resetPage = () => {
-    setCurrentPage(1);
-    router.replace("/patterns");
+    router.replace(
+      buildCatalogRoute({
+        page: 1,
+        mainCategory: selectedMainCategory,
+        clothingSubCategory: selectedClothingSubCategory,
+      }),
+    );
   };
 
   const handleMainCategoryClick = (category: (typeof mainCategories)[number]) => {
-    setSelectedMainCategory(category);
-    setSelectedClothingSubCategory(null);
-    resetPage();
+    router.replace(
+      buildCatalogRoute({ page: 1, mainCategory: category, clothingSubCategory: null }),
+    );
   };
 
   const handleClothingSubCategoryClick = (
     subCategory: (typeof clothingSubCategories)[number],
   ) => {
-    setSelectedClothingSubCategory(
-      selectedClothingSubCategory === subCategory ? null : subCategory,
+    const nextSubCategory =
+      selectedClothingSubCategory === subCategory ? null : subCategory;
+    router.replace(
+      buildCatalogRoute({
+        page: 1,
+        mainCategory: selectedMainCategory,
+        clothingSubCategory: nextSubCategory,
+      }),
     );
-    resetPage();
   };
 
   const handleSortSelect = (sort: (typeof sortOptions)[number]) => {
@@ -118,10 +177,6 @@ export default function PatternCatalogScreen({ initialPage }: PatternCatalogScre
     setIsSortOpen(false);
     resetPage();
   };
-
-  useEffect(() => {
-    setCurrentPage(initialPage);
-  }, [initialPage]);
 
   useEffect(() => {
     if (!isSortOpen) return;
