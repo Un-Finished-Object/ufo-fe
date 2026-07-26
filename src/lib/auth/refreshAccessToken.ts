@@ -1,95 +1,75 @@
 import { buildApiUrl } from "@/lib/api/client";
-import { clearAccessToken, setAccessToken } from "@/lib/auth/accessToken";
 
-const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;
-
-type RefreshMode = "auto" | "required";
-
-type RefreshAccessTokenParams = {
-  signal?: AbortSignal;
-  mode?: RefreshMode;
-};
+const REFRESH_REQUEST_TIMEOUT_MS = 10 * 1000;
 
 type RefreshResponsePayload = {
-  data: {
-    accessToken: string;
-    tokenType: string;
-    expiresIn: number;
+  data?: {
+    accessToken?: string;
+    tokenType?: string;
+    expiresIn?: number;
   };
   error?: unknown;
 };
 
-async function syncAccessToken(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
-    return false;
-  }
+export type AccessTokenRefreshResult =
+  | {
+      type: "success";
+      token: string;
+      expiresInMs: number;
+    }
+  | {
+      type: "unauthorized";
+      status: 401 | 403;
+    }
+  | {
+      type: "transient-error";
+      status?: number;
+    };
+
+export async function requestAccessTokenRefresh(): Promise<AccessTokenRefreshResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, REFRESH_REQUEST_TIMEOUT_MS);
 
   try {
-    const payload = (await response.clone().json()) as RefreshResponsePayload;
-    const token = payload.data.accessToken?.trim();
-    const expiresIn = payload.data.expiresIn;
-
-    if (!token || !Number.isFinite(expiresIn) || expiresIn <= 0) {
-      return false;
-    }
-
-    setAccessToken(token, expiresIn);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-let refreshRequestPromise: Promise<Response> | null = null;
-let lastAutoRefreshFailureAt = 0;
-
-export async function refreshAccessToken({
-  signal,
-  mode = "auto",
-}: RefreshAccessTokenParams = {}) {
-  if (
-    mode === "auto" &&
-    lastAutoRefreshFailureAt > 0 &&
-    Date.now() - lastAutoRefreshFailureAt < AUTO_REFRESH_COOLDOWN_MS
-  ) {
-    return new Response(null, { status: 401 });
-  }
-
-  if (refreshRequestPromise) {
-    return refreshRequestPromise;
-  }
-
-  refreshRequestPromise = (async () => {
     const response = await fetch(buildApiUrl("/v1/auth/token/refresh"), {
       method: "POST",
       credentials: "include",
-      signal,
+      signal: controller.signal,
     });
 
-    if (response.ok) {
-      const didSyncAccessToken = await syncAccessToken(response);
-
-      if (!didSyncAccessToken) {
-        return new Response(null, { status: 502 });
-      }
-
-      lastAutoRefreshFailureAt = 0;
-      return response;
-    }
-
     if (response.status === 401 || response.status === 403) {
-      if (mode === "auto") {
-        lastAutoRefreshFailureAt = Date.now();
-      }
-
-      clearAccessToken();
+      return { type: "unauthorized", status: response.status };
     }
 
-    return response;
-  })().finally(() => {
-    refreshRequestPromise = null;
-  });
+    if (!response.ok) {
+      return { type: "transient-error", status: response.status };
+    }
 
-  return refreshRequestPromise;
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (!contentType.includes("application/json")) {
+      return { type: "transient-error", status: 502 };
+    }
+
+    const payload = (await response.json()) as RefreshResponsePayload;
+    const token = payload.data?.accessToken?.trim();
+    const expiresInMs = payload.data?.expiresIn;
+
+    if (
+      !token ||
+      typeof expiresInMs !== "number" ||
+      !Number.isSafeInteger(expiresInMs) ||
+      expiresInMs <= 0
+    ) {
+      return { type: "transient-error", status: 502 };
+    }
+
+    return { type: "success", token, expiresInMs };
+  } catch {
+    return { type: "transient-error" };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

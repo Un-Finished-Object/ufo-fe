@@ -1,6 +1,9 @@
 import { Client, type IFrame, type StompConfig, type StompHeaders } from "@stomp/stompjs";
-import { getAccessToken } from "@/lib/auth/accessToken";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import { getAccessToken, getAccessTokenSnapshot } from "@/lib/auth/accessToken";
+import {
+  ensureFreshAccessToken,
+  isAccessTokenRefreshDue,
+} from "@/lib/auth/refreshCoordinator";
 
 const DEFAULT_RECONNECT_DELAY = 5000;
 const DEFAULT_HEARTBEAT_INCOMING = 4000;
@@ -72,22 +75,18 @@ function resolveConnectHeadersSync(options: CreateStompClientOptions) {
 }
 
 async function resolveConnectHeaders(options: CreateStompClientOptions) {
-  let accessToken = getAccessToken();
+  const tokenSnapshot = getAccessTokenSnapshot();
 
-  if (!accessToken) {
+  if (!tokenSnapshot.token || isAccessTokenRefreshDue(Date.now(), tokenSnapshot)) {
     try {
-      const refreshResponse = await refreshAccessToken();
-
-      if (refreshResponse.ok) {
-        accessToken = getAccessToken();
-      }
+      await ensureFreshAccessToken({ reason: "stomp" });
     } catch {
       // Keep the original connection flow when refresh preflight fails.
     }
   }
 
   const optionHeaders = options.getConnectHeaders?.() ?? options.connectHeaders ?? {};
-  const authorizationHeaders = buildAuthorizationHeaders(accessToken);
+  const authorizationHeaders = buildAuthorizationHeaders(getAccessToken());
 
   return mergeConnectHeaders(optionHeaders, authorizationHeaders);
 }

@@ -1,11 +1,20 @@
 import { buildApiUrl } from "@/lib/api/client";
-import { fetchAuthenticated } from "@/lib/fetch/fetchAuthenticated";
+import { clearAccessToken, getAccessToken } from "@/lib/auth/accessToken";
 
 export async function requestLogout() {
-  await fetchAuthenticated({
-    input: buildApiUrl("/v1/auth/logout"),
-    init: {
-      method: "POST",
-    },
+  const headers = new Headers();
+  const accessToken = getAccessToken();
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const logoutRequest = fetch(buildApiUrl("/v1/auth/logout"), {
+    method: "POST",
+    credentials: "include",
+    headers,
   });
+
+  clearAccessToken();
+  await logoutRequest;
 }

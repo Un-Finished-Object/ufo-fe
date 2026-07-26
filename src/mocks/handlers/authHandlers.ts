@@ -10,7 +10,11 @@ export const authHandlers = [
   http.post("/v1/auth/token/refresh", async () => {
     await applyMockDelay();
     if (!mockState.authenticated) return apiError(401, "Unauthorized");
-    return apiSuccess({ accessToken: "mock-access-token", tokenType: "Bearer", expiresIn: 7200 });
+    return apiSuccess({
+      accessToken: "mock-access-token",
+      tokenType: "Bearer",
+      expiresIn: 7_200_000,
+    });
   }),
   http.get("/v1/users/me", async ({ request }) => {
     await applyMockDelay();

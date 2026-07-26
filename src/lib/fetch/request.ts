@@ -1,5 +1,9 @@
-import { clearAccessToken, getAccessToken } from "@/lib/auth/accessToken";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
+import {
+  getAccessTokenSnapshot,
+  invalidateAccessTokenSession,
+  type AccessTokenSnapshot,
+} from "@/lib/auth/accessToken";
+import { ensureFreshAccessToken } from "@/lib/auth/refreshCoordinator";
 
 export type ApiFetchParams = {
   input: RequestInfo | URL;
@@ -32,8 +36,41 @@ function createUnauthorizedResponse() {
   return new Response(null, { status: 401 });
 }
 
-async function refreshSession() {
-  return refreshAccessToken({ mode: "required" });
+function createRefreshUnavailableResponse() {
+  return new Response(null, {
+    status: 503,
+    statusText: "Authentication refresh unavailable",
+  });
+}
+
+function canUseAccessToken(snapshot: AccessTokenSnapshot) {
+  return snapshot.token !== null;
+}
+
+async function retryWithCurrentAccessToken({
+  input,
+  init,
+}: ApiFetchParams) {
+  init?.signal?.throwIfAborted();
+  const retrySnapshot = getAccessTokenSnapshot();
+
+  if (!canUseAccessToken(retrySnapshot)) {
+    return null;
+  }
+
+  const response = await fetch(
+    input,
+    buildRequestInit(init, retrySnapshot.token, "include"),
+  );
+
+  if (response.status === 401) {
+    invalidateAccessTokenSession({
+      expectedGeneration: retrySnapshot.sessionGeneration,
+      expectedRevision: retrySnapshot.revision,
+    });
+  }
+
+  return response;
 }
 
 export async function request({
@@ -45,59 +82,73 @@ export async function request({
     return fetch(input, buildRequestInit(init, null, "omit"));
   }
 
-  let accessToken = getAccessToken();
-  let hasRefreshed = false;
+  let requestSnapshot = getAccessTokenSnapshot();
 
-  if (authMode === "required" && !accessToken) {
-    const refreshResponse = await refreshSession();
-    hasRefreshed = true;
+  if (authMode === "required" && !canUseAccessToken(requestSnapshot)) {
+    const refreshResult = await ensureFreshAccessToken({ reason: "bootstrap" });
 
-    if (!refreshResponse.ok) {
+    if (refreshResult.type === "transient-error") {
+      return createRefreshUnavailableResponse();
+    }
+
+    if (refreshResult.type !== "refreshed" && refreshResult.type !== "fresh") {
       return createUnauthorizedResponse();
     }
 
     init?.signal?.throwIfAborted();
-    accessToken = getAccessToken();
+    requestSnapshot = getAccessTokenSnapshot();
 
-    if (!accessToken) {
+    if (!canUseAccessToken(requestSnapshot)) {
       return createUnauthorizedResponse();
     }
   }
 
   const firstResponse = await fetch(
     input,
-    buildRequestInit(init, accessToken, "include"),
+    buildRequestInit(init, requestSnapshot.token, "include"),
   );
   const canRefreshAfterUnauthorized =
     firstResponse.status === 401 &&
-    !hasRefreshed &&
-    (authMode === "required" || accessToken !== null);
+    (authMode === "required" || requestSnapshot.token !== null);
 
   if (!canRefreshAfterUnauthorized) {
     return firstResponse;
   }
 
-  const refreshResponse = await refreshSession();
+  const currentSnapshot = getAccessTokenSnapshot();
 
-  if (!refreshResponse.ok) {
+  if (
+    currentSnapshot.sessionGeneration !== requestSnapshot.sessionGeneration
+  ) {
     return firstResponse;
   }
 
-  init?.signal?.throwIfAborted();
-  accessToken = getAccessToken();
+  if (
+    currentSnapshot.token &&
+    currentSnapshot.revision !== requestSnapshot.revision
+  ) {
+    return (await retryWithCurrentAccessToken({ input, init })) ?? firstResponse;
+  }
 
-  if (!accessToken) {
+  const refreshResult = await ensureFreshAccessToken({ reason: "unauthorized" });
+
+  if (refreshResult.type === "recently-refreshed") {
+    invalidateAccessTokenSession({
+      expectedGeneration: currentSnapshot.sessionGeneration,
+      expectedRevision: currentSnapshot.revision,
+    });
     return firstResponse;
   }
 
-  const retryResponse = await fetch(
-    input,
-    buildRequestInit(init, accessToken, "include"),
-  );
-
-  if (retryResponse.status === 401) {
-    clearAccessToken();
+  if (refreshResult.type === "transient-error") {
+    return authMode === "required"
+      ? createRefreshUnavailableResponse()
+      : firstResponse;
   }
 
-  return retryResponse;
+  if (refreshResult.type !== "refreshed" && refreshResult.type !== "fresh") {
+    return firstResponse;
+  }
+
+  return (await retryWithCurrentAccessToken({ input, init })) ?? firstResponse;
 }
