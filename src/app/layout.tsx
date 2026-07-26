@@ -29,6 +29,8 @@ export const metadata: Metadata = {
     "도안 채팅",
     "뜨개 커뮤니티",
     "UFO",
+    "Un-Finished Object",
+    "UFO 뜨개",
   ],
   icons: {
     icon: "/favicon.ico",
@@ -48,10 +50,6 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
     images: [siteConfig.ogImage.url],
-  },
-  robots: {
-    index: true,
-    follow: true,
   },
   verification: {
     other: {

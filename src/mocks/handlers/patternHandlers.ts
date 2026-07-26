@@ -59,6 +59,15 @@ export const patternHandlers = [
       my: { scrapped: mockState.scrappedPatternIds.has(patternId) },
     });
   }),
+  http.post("/v1/patterns/:patternId/views", ({ params, request }) => {
+    if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
+    const patternId = Number(params.patternId);
+    const patternDetail = mockPatternDetails[patternId];
+    if (!patternDetail) return apiError(404, "Pattern not found");
+    const viewCount = patternDetail.stats.views + 1;
+    patternDetail.stats.views = viewCount;
+    return apiSuccess({ viewCount });
+  }),
   http.get("/v1/users/me/interests", ({ request }) =>
     requireMockAuth(request) ? apiSuccess({ keywords: mockState.interests }) : apiError(401, "Unauthorized"),
   ),

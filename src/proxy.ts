@@ -1,7 +1,45 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { siteConfig } from "@/lib/metadata";
+import { isMockMode } from "@/mocks/config";
 
 const PROTECTED_ROUTES = ["/my", "/scraps", "/chats", "/events"];
 const REFRESH_TOKEN_COOKIE = "refresh_token";
+const PATTERN_DETAIL_PATH = /^\/patterns\/([^/]+)$/;
+
+function isValidPatternId(value: string) {
+  return /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
+}
+
+function buildPublicPatternDetailApiUrl(patternId: number) {
+  const apiProxyTarget = process.env.NEXT_API_PROXY_TARGET?.replace(/\/$/, "");
+  const baseUrl = apiProxyTarget || siteConfig.url;
+
+  return `${baseUrl}/v1/patterns/${patternId}`;
+}
+
+async function patternExists(patternId: number) {
+  if (isMockMode()) {
+    const { mockPatternDetails } = await import("@/mocks/fixtures/core");
+
+    return Boolean(mockPatternDetails[patternId]);
+  }
+
+  try {
+    const response = await fetch(buildPublicPatternDetailApiUrl(patternId), {
+      method: "GET",
+      next: { revalidate: 300 },
+    });
+
+    if (response.status === 404) {
+      return false;
+    }
+
+    return null;
+  } catch {
+    // Let the route render its normal upstream error when availability is unknown.
+    return null;
+  }
+}
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_ROUTES.some(
@@ -31,8 +69,29 @@ function getFallbackUrl(request: NextRequest) {
   return new URL("/", request.url);
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const patternDetailMatch = pathname.match(PATTERN_DETAIL_PATH);
+
+  if (patternDetailMatch) {
+    let patternIdValue: string;
+
+    try {
+      patternIdValue = decodeURIComponent(patternDetailMatch[1]);
+    } catch {
+      return NextResponse.next({ status: 404 });
+    }
+
+    if (!isValidPatternId(patternIdValue)) {
+      return NextResponse.next({ status: 404 });
+    }
+
+    const exists = await patternExists(Number(patternIdValue));
+
+    if (exists === false) {
+      return NextResponse.next({ status: 404 });
+    }
+  }
 
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
