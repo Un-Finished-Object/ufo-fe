@@ -6,8 +6,6 @@ import {
   throwApiError,
   throwApiPayloadError,
 } from "@/lib/api/ApiError";
-import { getAccessToken } from "@/lib/auth/accessToken";
-import { refreshAccessToken } from "@/lib/auth/refreshAccessToken";
 import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 export type UserProfile = {
@@ -45,14 +43,6 @@ export const userQueryKeys = {
 };
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
-  if (!getAccessToken()) {
-    const refreshResponse = await refreshAccessToken({ mode: "required" });
-
-    if (!refreshResponse.ok) {
-      return null;
-    }
-  }
-
   const response = await fetchAuthenticated({
     input: buildApiUrl("/v1/users/me"),
     init: {

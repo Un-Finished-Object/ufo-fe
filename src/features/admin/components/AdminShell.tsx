@@ -5,10 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
 import { requestLogout } from "@/features/auth/services/logout";
-import { clearAccessToken } from "@/lib/auth/accessToken";
 import AdminNavigation from "@/features/admin/components/AdminNavigation";
 import { getAdminPageTitle } from "@/features/admin/lib/adminNavigation";
 import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";
+import ToastMessage from "@/components/common/ToastMessage";
+import { useToast } from "@/hooks/useToast";
 
 function MenuIcon() {
   return (
@@ -49,6 +50,7 @@ export default function AdminShell({ children, routes }: AdminShellProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pageTitle = getAdminPageTitle(pathname, routes);
+  const { showToast, toastMessage } = useToast();
 
   const handleLogout = useCallback(async () => {
     if (isLoggingOut) return;
@@ -56,12 +58,13 @@ export default function AdminShell({ children, routes }: AdminShellProps) {
     setIsLoggingOut(true);
     try {
       await requestLogout();
-    } finally {
-      clearAccessToken();
       clearAuthenticatedQueryCache(queryClient);
       router.replace("/");
+    } catch {
+      setIsLoggingOut(false);
+      showToast("로그아웃하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
-  }, [isLoggingOut, queryClient, router]);
+  }, [isLoggingOut, queryClient, router, showToast]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -166,6 +169,7 @@ export default function AdminShell({ children, routes }: AdminShellProps) {
           </section>
         </div>
       ) : null}
+      <ToastMessage message={toastMessage} />
     </div>
   );
 }

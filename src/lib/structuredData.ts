@@ -1,6 +1,15 @@
 import { siteConfig } from "@/lib/metadata";
 
 const homeUrl = `${siteConfig.url}/`;
+const structuredDataName = "UFO 니팅";
+const structuredDataAlternateNames = [
+  "UFO",
+  "UFO 니트",
+  "UFO 뜨개",
+  "UFO Knitting",
+  siteConfig.fullName,
+  "knit-ufo.co.kr",
+] as const;
 
 export const brandStructuredData = {
   "@context": "https://schema.org",
@@ -8,8 +17,8 @@ export const brandStructuredData = {
     {
       "@type": "Organization",
       "@id": `${siteConfig.url}/#organization`,
-      name: siteConfig.name,
-      alternateName: siteConfig.fullName,
+      name: structuredDataName,
+      alternateName: structuredDataAlternateNames,
       description: siteConfig.description,
       url: homeUrl,
       logo: {
@@ -23,8 +32,8 @@ export const brandStructuredData = {
     {
       "@type": "WebSite",
       "@id": `${siteConfig.url}/#website`,
-      name: siteConfig.name,
-      alternateName: [siteConfig.fullName, "knit-ufo.co.kr"],
+      name: structuredDataName,
+      alternateName: structuredDataAlternateNames,
       description: siteConfig.description,
       url: homeUrl,
       publisher: {
