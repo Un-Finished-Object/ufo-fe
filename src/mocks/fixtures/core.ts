@@ -15,6 +15,7 @@ export const mockPatterns = [
     author: "뜨개구름",
     category: "apparel",
     subCategory: "long_sweater",
+    createdAt: "2026-07-01T09:00:00Z",
   },
   {
     id: 2,
@@ -23,6 +24,7 @@ export const mockPatterns = [
     author: "실과바늘",
     category: "apparel",
     subCategory: "outer",
+    createdAt: "2026-07-03T09:00:00Z",
   },
   {
     id: 3,
@@ -31,6 +33,7 @@ export const mockPatterns = [
     author: "한코두코",
     category: "apparel",
     subCategory: "short_sweater",
+    createdAt: "2026-07-05T09:00:00Z",
   },
   {
     id: 4,
@@ -39,6 +42,7 @@ export const mockPatterns = [
     author: "포근공방",
     category: "accessories",
     subCategory: "others",
+    createdAt: "2026-07-07T09:00:00Z",
   },
   {
     id: 5,
@@ -47,6 +51,7 @@ export const mockPatterns = [
     author: "뜨개구름",
     category: "bags",
     subCategory: "others",
+    createdAt: "2026-07-09T09:00:00Z",
   },
 ];
 

@@ -82,7 +82,7 @@ export default function TopBar({
   const { authStatus, isAuthenticated } = useAuthState();
   const { showAuthRequiredToast, toastMessage } = useAuthRequiredToast();
   const rightActions = right.slice(0, 2);
-  const leftAriaLabel = left === "logo" ? "홈" : "뒤로가기";
+  const leftAriaLabel = left === "logo" ? "UFO 홈" : "뒤로가기";
   const leftElement = renderLeftIcon(left);
   const handleBackClick = onLeftClick ?? (() => router.back());
   const handleProtectedLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
