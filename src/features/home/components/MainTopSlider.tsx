@@ -25,7 +25,15 @@ function isProtectedHref(href: string) {
 
 export default function MainTopSlider({ posts }: MainTopSliderProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const mouseDragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startScrollLeft: number;
+    didDrag: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMouseDragging, setIsMouseDragging] = useState(false);
   const interactedAtRef = useRef<number>(0);
   const snapTimeoutRef = useRef<number | null>(null);
   const { authStatus, isAuthenticated } = useAuthState();
@@ -118,6 +126,55 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
     }, 70);
   };
 
+  const handleMousePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse" || event.button !== 0 || !trackRef.current) {
+      return;
+    }
+
+    markInteraction();
+    suppressClickRef.current = false;
+    mouseDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: trackRef.current.scrollLeft,
+      didDrag: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsMouseDragging(true);
+  };
+
+  const handleMousePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = mouseDragRef.current;
+    const track = trackRef.current;
+
+    if (!drag || !track || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - drag.startX;
+    if (Math.abs(deltaX) > 4) {
+      drag.didDrag = true;
+      suppressClickRef.current = true;
+    }
+
+    track.scrollLeft = drag.startScrollLeft - deltaX;
+  };
+
+  const finishMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = mouseDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    mouseDragRef.current = null;
+    setIsMouseDragging(false);
+    handleScrollEnd();
+  };
+
   useEffect(() => {
     return () => {
       if (snapTimeoutRef.current) {
@@ -133,9 +190,23 @@ export default function MainTopSlider({ posts }: MainTopSliderProps) {
         onScroll={updateActiveIndexFromScroll}
         onTouchStart={markInteraction}
         onTouchEnd={handleScrollEnd}
-        onMouseDown={markInteraction}
-        onMouseUp={handleScrollEnd}
-        className="overflow-x-auto rounded-[24px] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
+        onPointerDown={handleMousePointerDown}
+        onPointerMove={handleMousePointerMove}
+        onPointerUp={finishMouseDrag}
+        onPointerCancel={finishMouseDrag}
+        onClickCapture={(event) => {
+          if (!suppressClickRef.current) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+          suppressClickRef.current = false;
+        }}
+        onDragStart={(event) => event.preventDefault()}
+        className={`overflow-x-auto rounded-[24px] [scrollbar-width:none] select-none [&::-webkit-scrollbar]:hidden ${
+          isMouseDragging
+            ? "cursor-grabbing snap-none"
+            : "cursor-grab snap-x snap-mandatory"
+        }`}
       >
         <div className="flex w-full">
           {posts.map((post, index) => {
