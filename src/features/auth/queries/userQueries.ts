@@ -46,7 +46,7 @@ export const userQueryKeys = {
 
 export async function fetchMe({ signal }: { signal?: AbortSignal } = {}) {
   if (!getAccessToken()) {
-    const refreshResponse = await refreshAccessToken({ mode: "auto" });
+    const refreshResponse = await refreshAccessToken({ mode: "required" });
 
     if (!refreshResponse.ok) {
       return null;
