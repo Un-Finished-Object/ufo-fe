@@ -116,7 +116,6 @@ export default function MyPage() {
   const inquiryMenuItem = helpPageMenuItems[1];
   const privacyPolicyMenuItem = helpPageMenuItems[2];
   const termsMenuItem = helpPageMenuItems[3];
-  const withdrawalMenuItem = helpPageMenuItems[4];
   const eventMenuItems: MenuItem[] = [
     { label: "출석체크", href: "/events/attendance" },
     { label: "친구 초대/등록", href: "/my/friends" },
@@ -128,7 +127,6 @@ export default function MyPage() {
     privacyPolicyMenuItem,
     termsMenuItem,
     { label: "로그아웃", onClick: handleLogout },
-    withdrawalMenuItem,
   ];
 
   if (isLoading) {

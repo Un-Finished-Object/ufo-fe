@@ -64,5 +64,4 @@ export const myHelpMenuItems = [
     href: TERMS_OF_SERVICE_URL,
     external: true,
   },
-  myHelpPages[2],
 ] satisfies MyHelpMenuItemConfig[];
