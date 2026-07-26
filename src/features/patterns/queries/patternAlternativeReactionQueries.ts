@@ -10,6 +10,7 @@ import { QUERY_STALE_TIME } from "@/lib/query/client";
 
 type AlternativeReactionResponse = {
   data?: {
+    altSetId?: number;
     altId?: number;
     type?: number;
     likesCount?: number;
@@ -19,7 +20,7 @@ type AlternativeReactionResponse = {
 };
 
 export type AlternativeReaction = {
-  altId: number;
+  altSetId: number;
   type: 1 | 2;
   likesCount: number;
   updatedAt: string;
@@ -27,19 +28,23 @@ export type AlternativeReaction = {
 
 export const alternativeReactionQueryRoot = ["alternativeReaction"] as const;
 
-export function alternativeReactionQueryKey(altId: number) {
-  return [...alternativeReactionQueryRoot, altId] as const;
+export function alternativeReactionQueryKey(altSetId: number) {
+  return [...alternativeReactionQueryRoot, altSetId] as const;
 }
 
-function parseAlternativeReaction(payload: AlternativeReactionResponse) {
+function parseAlternativeReaction(
+  payload: AlternativeReactionResponse,
+  expectedAltSetId: number,
+) {
   if (payload.error) {
     throwApiPayloadError(payload.error, "Failed to load alternative reaction.");
   }
 
   const data = payload.data;
+  const altSetId = data?.altSetId ?? data?.altId;
   if (
     !data ||
-    typeof data.altId !== "number" ||
+    altSetId !== expectedAltSetId ||
     (data.type !== 1 && data.type !== 2) ||
     typeof data.likesCount !== "number" ||
     typeof data.updatedAt !== "string"
@@ -48,7 +53,7 @@ function parseAlternativeReaction(payload: AlternativeReactionResponse) {
   }
 
   return {
-    altId: data.altId,
+    altSetId,
     type: data.type,
     likesCount: data.likesCount,
     updatedAt: data.updatedAt,
@@ -56,11 +61,11 @@ function parseAlternativeReaction(payload: AlternativeReactionResponse) {
 }
 
 export async function fetchAlternativeReaction(
-  altId: number,
+  altSetId: number,
   { signal }: { signal?: AbortSignal } = {},
 ) {
   const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/alternatives/${altId}/reaction`),
+    input: buildApiUrl(`/v1/alternatives/${altSetId}/reaction`),
     init: { method: "GET", credentials: "include", signal },
   });
 
@@ -68,18 +73,21 @@ export async function fetchAlternativeReaction(
     await throwApiError(response, "Failed to load alternative reaction.");
   }
 
-  return parseAlternativeReaction((await response.json()) as AlternativeReactionResponse);
+  return parseAlternativeReaction(
+    (await response.json()) as AlternativeReactionResponse,
+    altSetId,
+  );
 }
 
 export async function updateAlternativeReaction({
-  altId,
+  altSetId,
   type,
 }: {
-  altId: number;
+  altSetId: number;
   type: 1 | 2;
 }) {
   const response = await fetchAuthenticated({
-    input: buildApiUrl(`/v1/alternatives/${altId}/reaction`),
+    input: buildApiUrl(`/v1/alternatives/${altSetId}/reaction`),
     init: {
       method: "PUT",
       credentials: "include",
@@ -92,13 +100,16 @@ export async function updateAlternativeReaction({
     await throwApiError(response, "Failed to update alternative reaction.");
   }
 
-  return parseAlternativeReaction((await response.json()) as AlternativeReactionResponse);
+  return parseAlternativeReaction(
+    (await response.json()) as AlternativeReactionResponse,
+    altSetId,
+  );
 }
 
-export function alternativeReactionQueryOptions(altId: number) {
+export function alternativeReactionQueryOptions(altSetId: number) {
   return queryOptions({
-    queryKey: alternativeReactionQueryKey(altId),
-    queryFn: ({ signal }) => fetchAlternativeReaction(altId, { signal }),
+    queryKey: alternativeReactionQueryKey(altSetId),
+    queryFn: ({ signal }) => fetchAlternativeReaction(altSetId, { signal }),
     staleTime: QUERY_STALE_TIME.critical,
   });
 }
