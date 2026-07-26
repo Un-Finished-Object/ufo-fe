@@ -1,7 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { clearAuthenticatedQueryCache } from "@/features/auth/lib/clearAuthenticatedQueryCache";
+import { requestLogout } from "@/features/auth/services/logout";
+import { clearAccessToken } from "@/lib/auth/accessToken";
 import AdminNavigation from "@/features/admin/components/AdminNavigation";
 import { getAdminPageTitle } from "@/features/admin/lib/adminNavigation";
 import type { AdminRoutePaths } from "@/features/admin/types/adminRoutePaths";
@@ -38,10 +42,26 @@ type AdminShellProps = {
 
 export default function AdminShell({ children, routes }: AdminShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pageTitle = getAdminPageTitle(pathname, routes);
+
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    try {
+      await requestLogout();
+    } finally {
+      clearAccessToken();
+      clearAuthenticatedQueryCache(queryClient);
+      router.replace("/");
+    }
+  }, [isLoggingOut, queryClient, router]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -71,6 +91,14 @@ export default function AdminShell({ children, routes }: AdminShellProps) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-ufo-divider bg-ufo-surface px-4 py-6 md:flex">
         <div className="px-3"><AdminBrand /></div>
         <div className="mt-8 flex-1"><AdminNavigation routes={routes} /></div>
+        <button
+          type="button"
+          onClick={() => void handleLogout()}
+          disabled={isLoggingOut}
+          className="mt-6 min-h-12 rounded-xl px-3 text-left text-sm font-semibold text-ufo-text-secondary hover:bg-ufo-bg hover:text-ufo-text disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+        </button>
       </aside>
 
       <div className="mx-auto min-w-0 max-w-[430px] flex-1 bg-ufo-surface md:ml-64 md:max-w-none md:bg-transparent">
@@ -127,6 +155,14 @@ export default function AdminShell({ children, routes }: AdminShellProps) {
               </button>
             </div>
             <div className="mt-8 flex-1"><AdminNavigation routes={routes} onNavigate={closeMenu} /></div>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+              className="mt-6 min-h-12 rounded-xl px-3 text-left text-sm font-semibold text-ufo-text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+            </button>
           </section>
         </div>
       ) : null}
