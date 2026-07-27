@@ -17,8 +17,8 @@ type MetadataImage = {
 
 const DEFAULT_OG_IMAGE: MetadataImage = {
   url: "/image/og-ufo.png",
-  width: 1758,
-  height: 612,
+  width: 1350,
+  height: 1001,
   alt: SITE_NAME,
 };
 
