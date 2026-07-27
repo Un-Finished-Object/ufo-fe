@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -14,10 +14,13 @@ import {
 } from "react";
 import StateBlock from "@/components/common/StateBlock";
 import ToastMessage from "@/components/common/ToastMessage";
+import ActionListDialog from "@/components/dialogs/ActionListDialog";
 import MobileShell from "@/components/layout/MobileShell";
 import TopBar from "@/components/navigation/TopBar";
 import { useMeQuery } from "@/features/auth/hooks/useMeQuery";
+import { createRandomNickname } from "@/features/auth/lib/signupOptions";
 import { userQueryKeys, type UserProfile } from "@/features/auth/queries/userQueries";
+import { checkNicknameAvailability } from "@/features/auth/services/checkNicknameAvailability";
 import { updateMyProfile } from "@/features/auth/services/updateMyProfile";
 import { useAuthRequiredToast } from "@/hooks/useAuthRequiredToast";
 import { isApiError } from "@/lib/api/ApiError";
@@ -27,14 +30,21 @@ import {
   type UploadedImageFile,
 } from "@/services/images/uploadImageFiles";
 
+const NICKNAME_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
+const MAX_NICKNAME_GENERATION_ATTEMPTS = 10;
+const DEFAULT_PROFILE_IMAGE_KEY = "defaults/profile.png";
+const DEFAULT_PROFILE_IMAGE_URL = "/image/profile_defaults.webp";
+
 export default function ProfileEditScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const meQuery = useMeQuery();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draftNickname, setDraftNickname] = useState<string | null>(null);
+  const [debouncedNickname, setDebouncedNickname] = useState("");
   const [draftProfileImage, setDraftProfileImage] = useState<UploadedImageFile | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [isProfileImageDialogOpen, setIsProfileImageDialogOpen] = useState(false);
   const { showAuthRequiredToast, showToast, toastMessage } = useAuthRequiredToast();
 
   useEffect(() => {
@@ -50,6 +60,51 @@ export default function ProfileEditScreen() {
       showAuthRequiredToast();
     }
   }, [meQuery.data, meQuery.isError, meQuery.isPending, showAuthRequiredToast]);
+
+  const nickname = draftNickname ?? meQuery.data?.nickname ?? "";
+  const normalizedNickname = nickname.trim();
+  const initialNickname = meQuery.data?.nickname ?? "";
+  const isNicknameFormatValid =
+    normalizedNickname.length >= 2 &&
+    normalizedNickname.length <= 20 &&
+    NICKNAME_PATTERN.test(normalizedNickname);
+  const isCurrentNickname = normalizedNickname === initialNickname;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedNickname(normalizedNickname), 400);
+    return () => window.clearTimeout(timer);
+  }, [normalizedNickname]);
+
+  const nicknameCheckQuery = useQuery({
+    queryKey: ["nickname-availability", debouncedNickname],
+    queryFn: ({ signal }) => checkNicknameAvailability(debouncedNickname, signal),
+    enabled:
+      debouncedNickname.length > 0 &&
+      debouncedNickname === normalizedNickname &&
+      isNicknameFormatValid &&
+      !isCurrentNickname,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const generateNicknameMutation = useMutation({
+    mutationFn: async () => {
+      for (let attempt = 0; attempt < MAX_NICKNAME_GENERATION_ATTEMPTS; attempt += 1) {
+        const candidate = createRandomNickname();
+        if (await checkNicknameAvailability(candidate)) return candidate;
+      }
+
+      throw new Error("사용 가능한 닉네임을 만들지 못했어요.");
+    },
+    onSuccess: (availableNickname) => {
+      setDraftNickname(availableNickname);
+      setDebouncedNickname(availableNickname);
+      queryClient.setQueryData(["nickname-availability", availableNickname], true);
+    },
+    onError: () => {
+      showToast("닉네임을 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
+    },
+  });
 
   const uploadProfileImageMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -122,9 +177,6 @@ export default function ProfileEditScreen() {
     },
   });
 
-  const nickname = draftNickname ?? meQuery.data?.nickname ?? "";
-  const normalizedNickname = nickname.trim();
-  const initialNickname = meQuery.data?.nickname ?? "";
   const initialProfileImage = meQuery.data?.profileImage ?? "";
   const nextProfileImage = useMemo(
     () =>
@@ -134,13 +186,18 @@ export default function ProfileEditScreen() {
       },
     [draftProfileImage, initialProfileImage],
   );
-  const hasNicknameChanged = normalizedNickname !== initialNickname;
+  const hasNicknameChanged = !isCurrentNickname;
   const hasProfileImageChanged = nextProfileImage.imageUrl !== initialProfileImage;
+  const isNicknameAvailable =
+    isCurrentNickname ||
+    (debouncedNickname === normalizedNickname && nicknameCheckQuery.data === true);
   const isSaveDisabled =
     meQuery.isPending ||
     saveProfileMutation.isPending ||
     uploadProfileImageMutation.isPending ||
-    normalizedNickname.length === 0 ||
+    generateNicknameMutation.isPending ||
+    !isNicknameFormatValid ||
+    !isNicknameAvailable ||
     (!hasNicknameChanged && !hasProfileImageChanged);
   const profileImageSrc =
     previewImageUrl ?? (nextProfileImage.imageUrl.trim() ? nextProfileImage.imageUrl : null);
@@ -151,6 +208,21 @@ export default function ProfileEditScreen() {
   }, [meQuery]);
 
   const handleProfileImageClick = useCallback(() => {
+    setIsProfileImageDialogOpen(true);
+  }, []);
+
+  const handleDefaultProfileImageSelect = useCallback(() => {
+    if (previewImageUrl?.startsWith("blob:")) URL.revokeObjectURL(previewImageUrl);
+    setPreviewImageUrl(null);
+    setDraftProfileImage({
+      imageKey: DEFAULT_PROFILE_IMAGE_KEY,
+      imageUrl: DEFAULT_PROFILE_IMAGE_URL,
+    });
+    setIsProfileImageDialogOpen(false);
+  }, [previewImageUrl]);
+
+  const handleProfileImageFileSelect = useCallback(() => {
+    setIsProfileImageDialogOpen(false);
     fileInputRef.current?.click();
   }, []);
 
@@ -163,7 +235,10 @@ export default function ProfileEditScreen() {
     }
 
     setDraftProfileImage(null);
-    setPreviewImageUrl(URL.createObjectURL(file));
+    setPreviewImageUrl((previous) => {
+      if (previous?.startsWith("blob:")) URL.revokeObjectURL(previous);
+      return URL.createObjectURL(file);
+    });
     uploadProfileImageMutation.mutate(file);
   }, [uploadProfileImageMutation]);
 
@@ -285,7 +360,7 @@ export default function ProfileEditScreen() {
                   이메일
                 </label>
                 <div className="mt-2 rounded-2xl border border-ufo-border bg-ufo-bg px-4 py-3">
-                  <input
+                    <input
                     id="email"
                     name="email"
                     type="email"
@@ -301,18 +376,44 @@ export default function ProfileEditScreen() {
                 <label htmlFor="nickname" className="text-sm font-semibold text-ufo-text-subtle">
                   닉네임
                 </label>
-                <div className="mt-2 rounded-2xl border border-ufo-border bg-white px-4 py-3 focus-within:border-ufo-brand">
+                <div className="mt-2 flex items-center rounded-2xl border border-ufo-border bg-white px-4 focus-within:border-ufo-brand">
                   <input
                     id="nickname"
                     name="nickname"
                     type="text"
                     value={nickname}
                     onChange={(event) => setDraftNickname(event.target.value)}
-                    className="w-full bg-transparent text-base font-medium text-ufo-text outline-none placeholder:text-ufo-text-dim"
+                    className="h-12 min-w-0 flex-1 bg-transparent text-base font-medium text-ufo-text outline-none placeholder:text-ufo-text-dim"
                     placeholder="닉네임을 입력해 주세요"
                     autoComplete="nickname"
                   />
+                  <button
+                    type="button"
+                    onClick={() => generateNicknameMutation.mutate()}
+                    disabled={generateNicknameMutation.isPending}
+                    className="ml-3 shrink-0 text-xs font-semibold text-ufo-brand disabled:cursor-wait disabled:text-ufo-text-dim"
+                  >
+                    {generateNicknameMutation.isPending ? "생성 중" : "랜덤 닉네임 선택하기"}
+                  </button>
                 </div>
+                <p
+                  className={`mt-2 text-xs ${isNicknameAvailable ? "text-ufo-text-secondary" : "text-ufo-error"}`}
+                  aria-live="polite"
+                >
+                  {!normalizedNickname
+                    ? "닉네임을 입력해 주세요."
+                    : !isNicknameFormatValid
+                      ? "한글, 영문, 숫자로 2~20자까지 입력해 주세요."
+                      : isCurrentNickname
+                        ? "현재 사용 중인 닉네임이에요."
+                        : nicknameCheckQuery.isPending || debouncedNickname !== normalizedNickname
+                          ? "닉네임을 확인하고 있어요."
+                          : nicknameCheckQuery.isError
+                            ? "중복 확인에 실패했어요. 잠시 후 다시 입력해 주세요."
+                            : isNicknameAvailable
+                              ? "사용할 수 있는 닉네임이에요."
+                              : "이미 사용 중인 닉네임이에요."}
+                </p>
               </div>
 
               <button
@@ -331,6 +432,16 @@ export default function ProfileEditScreen() {
       </MobileShell>
 
       <ToastMessage message={toastMessage} />
+      {isProfileImageDialogOpen ? (
+        <ActionListDialog
+          ariaLabel="프로필 이미지 변경"
+          actions={[
+            { label: "기본 이미지 변경", onSelect: handleDefaultProfileImageSelect },
+            { label: "이미지 선택", onSelect: handleProfileImageFileSelect },
+          ]}
+          onClose={() => setIsProfileImageDialogOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

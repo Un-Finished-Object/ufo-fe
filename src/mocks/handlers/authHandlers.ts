@@ -57,7 +57,14 @@ export const authHandlers = [
     mockState.user = {
       ...mockState.user,
       ...(body.userName ? { nickname: body.userName } : {}),
-      ...(body.profileImageKey ? { profileImage: "/mock/pattern-card.svg" } : {}),
+      ...(body.profileImageKey
+        ? {
+            profileImage:
+              body.profileImageKey === DEFAULT_PROFILE_IMAGE_KEY
+                ? DEFAULT_PROFILE_IMAGE_URL
+                : "/mock/pattern-card.svg",
+          }
+        : {}),
     };
     return apiSuccess(mockState.user);
   }),

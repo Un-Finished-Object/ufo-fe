@@ -38,7 +38,7 @@ const friendPageViewOptions = [
 ] as const;
 
 const FRIEND_CODE_LENGTH = 9;
-const FRIEND_CODE_CHARACTER_PATTERN = /^[A-Z0-9]$/;
+const FRIEND_CODE_CHARACTER_PATTERN = /^[A-Za-z0-9]$/;
 const FRIEND_REGISTRATION_PERIOD_DAYS = 7;
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
@@ -58,7 +58,7 @@ function isWithinFriendRegistrationPeriod(joinDate: number | null | undefined) {
 }
 
 function normalizeFriendCodeCharacters(value: string) {
-  return Array.from(value.toUpperCase()).filter((character) =>
+  return Array.from(value).filter((character) =>
     FRIEND_CODE_CHARACTER_PATTERN.test(character),
   );
 }
@@ -163,7 +163,7 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
           }}
           type="text"
           inputMode="text"
-          pattern="[A-Z0-9]"
+          pattern="[A-Za-z0-9]"
           value={character}
           maxLength={1}
           onChange={(event) => handleChange(index, event)}
@@ -171,7 +171,7 @@ function FriendCodeInput({ value, onChange }: FriendCodeInputProps) {
           onPaste={handlePaste}
           onFocus={handleFocus}
           autoComplete="off"
-          autoCapitalize="characters"
+          autoCapitalize="none"
           className="h-12 min-w-0 caret-transparent rounded-lg border border-ufo-border-light bg-ufo-surface text-center text-base font-semibold text-ufo-text outline-none focus:border-ufo-brand"
           aria-label={`친구 초대 코드 ${index + 1}번째 자리`}
         />
@@ -375,7 +375,7 @@ export default function FriendInviteRegistrationScreen() {
                 친구 등록
               </h2>
               <p className="mt-2 text-sm leading-6 text-ufo-text-secondary">
-                친구에게 받은 영문 대문자와 숫자 9자리 초대 코드를 입력해 주세요.
+                친구에게 받은 영문 대소문자와 숫자 9자리 초대 코드를 입력해 주세요.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-4">

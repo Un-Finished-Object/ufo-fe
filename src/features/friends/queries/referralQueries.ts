@@ -50,7 +50,7 @@ export async function fetchReferral({ signal }: { signal?: AbortSignal } = {}) {
   if (
     !payload.data ||
     typeof payload.data.username !== "string" ||
-    !/^[A-Z0-9]{9}$/.test(payload.data.referralCode ?? "")
+    !/^[A-Za-z0-9]{9}$/.test(payload.data.referralCode ?? "")
   ) {
     throw createInvalidApiResponseError("Failed to load referral code.");
   }
