@@ -6,10 +6,6 @@ import {
 } from "@/mocks/fixtures/core";
 import { mockState } from "@/mocks/state/mockState";
 import { apiError, apiSuccess, applyMockDelay, requireMockAuth } from "@/mocks/utils/response";
-import {
-  patternCategoryApiMap,
-  patternSubCategoryApiMap,
-} from "@/features/patterns/lib/patternCategories";
 
 function patternItems(items = mockPatterns) {
   return items.map((pattern) => ({
@@ -35,16 +31,10 @@ export const patternHandlers = [
     const page = Number(url.searchParams.get("page") ?? 1);
     const category = url.searchParams.get("category");
     const subCategory = url.searchParams.get("subCategory");
-    const categoryCode = category ? patternCategoryApiMap[category] ?? category : null;
-    const subCategoryCode = subCategory
-      ? patternSubCategoryApiMap[subCategory] ?? subCategory
-      : null;
     const items = mockPatterns.filter(
       (pattern) =>
-        (!categoryCode ||
-          categoryCode === "all" ||
-          pattern.category === categoryCode) &&
-        (!subCategoryCode || pattern.subCategory === subCategoryCode),
+        (!category || category === "all" || pattern.category === category) &&
+        (!subCategory || pattern.subCategory === subCategory),
     );
     return apiSuccess({ items: patternItems(items), page, nextPage: 0, totalPages: 1 });
   }),
