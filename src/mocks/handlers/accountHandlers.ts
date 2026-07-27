@@ -7,13 +7,13 @@ import { apiError, apiSuccess, requireMockAuth } from "@/mocks/utils/response";
 export const accountHandlers = [
   http.get("/v1/referral", ({ request }) =>
     requireMockAuth(request)
-      ? apiSuccess({ username: mockState.user.nickname, referralCode: "AAAADDDDD" })
+      ? apiSuccess({ username: mockState.user.nickname, referralCode: "AAAaDDDDD" })
       : apiError(401, "Unauthorized"),
   ),
   http.post("/v1/referral", async ({ request }) => {
     if (!requireMockAuth(request)) return apiError(401, "Unauthorized");
     const body = await request.json() as { referralCode?: string };
-    return apiSuccess({ valid: body.referralCode === "AAAADDDDD" });
+    return apiSuccess({ valid: body.referralCode === "AAAaDDDDD" });
   }),
   http.get("/v1/credits/rules", () => apiSuccess({
     earnRules: [
