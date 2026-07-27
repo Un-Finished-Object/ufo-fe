@@ -33,7 +33,7 @@ import {
 const NICKNAME_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
 const MAX_NICKNAME_GENERATION_ATTEMPTS = 10;
 const DEFAULT_PROFILE_IMAGE_KEY = "defaults/profile.png";
-const DEFAULT_PROFILE_IMAGE_URL = "/image/profile_defaults.png";
+const DEFAULT_PROFILE_IMAGE_URL = "/image/profile_defaults.webp";
 
 export default function ProfileEditScreen() {
   const router = useRouter();
