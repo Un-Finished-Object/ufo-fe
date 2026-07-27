@@ -2,26 +2,23 @@
 
 import { useEffect, useRef, type KeyboardEvent } from "react";
 
-type ChatMessageAction = {
+export type ActionListDialogAction = {
   label: string;
   onSelect: () => void;
 };
 
-type ChatMessageActionsDialogProps = {
-  actions: ChatMessageAction[];
+type ActionListDialogProps = {
+  actions: ActionListDialogAction[];
   onClose: () => void;
+  ariaLabel: string;
 };
 
-export default function ChatMessageActionsDialog({
-  actions,
-  onClose,
-}: ChatMessageActionsDialogProps) {
+export default function ActionListDialog({ actions, onClose, ariaLabel }: ActionListDialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const firstActionRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const previouslyFocusedElement = document.activeElement as HTMLElement | null;
-
     firstActionRef.current?.focus();
 
     return () => {
@@ -36,9 +33,7 @@ export default function ChatMessageActionsDialog({
       return;
     }
 
-    if (event.key !== "Tab") {
-      return;
-    }
+    if (event.key !== "Tab") return;
 
     const focusableElements = Array.from(
       dialogRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [],
@@ -65,13 +60,10 @@ export default function ChatMessageActionsDialog({
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="메시지 작업"
+      aria-label={ariaLabel}
       onKeyDown={handleKeyDown}
     >
-      <div
-        ref={dialogRef}
-        className="w-full max-w-[336px] overflow-hidden rounded-2xl bg-ufo-surface shadow-lg"
-      >
+      <div ref={dialogRef} className="w-full max-w-[336px] overflow-hidden rounded-2xl bg-ufo-surface shadow-lg">
         <div className="divide-y divide-ufo-border-light">
           {actions.map((action, index) => (
             <button

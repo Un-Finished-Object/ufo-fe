@@ -4,7 +4,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import HomeLandingScreen from "@/features/home/screens/HomeLandingScreen";
 
 export const metadata = createPageMetadata({
-  title: "UFO 니팅 | 뜨개 도안·대체 실 추천 커뮤니티",
+  title: "UFO 니팅 | 당신을 위한 뜨개 올인원 패키지",
   absoluteTitle: true,
   path: "/",
 });

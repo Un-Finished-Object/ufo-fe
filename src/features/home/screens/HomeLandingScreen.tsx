@@ -30,7 +30,8 @@ type BannerItem = {
 
 
 const bannerPosts: BannerItem[] = [
-  { id: 1, title: "출석체크하고 매일매일 크레딧 받기", count: "1 / 5", href: "/events/attendance", imageSrc: "/image/attendance_banner.svg" },
+  { id: 1, title: "출석체크하고 매일매일 크레딧 받기", count: "1 / 2", href: "/events/attendance", imageSrc: "/image/attendance_banner.svg" },
+  { id: 2, title: "크레딧 사용법 한 눈에 알아보기", count: "2 / 2", href: "/my/help/credits", imageSrc: "/image/credit_guide_banner.svg" },
 ];
 
 function EmptyPatternSection({ message }: { message: string }) {

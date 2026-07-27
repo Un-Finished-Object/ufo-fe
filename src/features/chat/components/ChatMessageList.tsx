@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import StateBlock from "@/components/common/StateBlock";
 import ChatDateSeparator from "@/features/chat/components/ChatDateSeparator";
 import ChatLastReadSeparator from "@/features/chat/components/ChatLastReadSeparator";
-import ChatMessageActionsDialog from "@/features/chat/components/ChatMessageActionsDialog";
+import ActionListDialog from "@/components/dialogs/ActionListDialog";
 import ChatMessageSendingIndicator from "@/features/chat/components/ChatMessageSendingIndicator";
 import type { ChatMessage } from "@/features/chat/types";
 
@@ -382,7 +382,8 @@ function ChatMessageItem({
       ) : null}
 
       {isActionsDialogOpen ? (
-        <ChatMessageActionsDialog
+        <ActionListDialog
+          ariaLabel="메시지 작업"
           actions={[
             {
               label: "답장",
